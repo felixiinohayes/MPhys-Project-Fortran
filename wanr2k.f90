@@ -2,7 +2,7 @@
       Implicit None
 !--------to be midified by the usere
       character(len=80):: prefix="BiTeI"
-      integer,parameter::nkpath=3,np=200
+      integer,parameter::nkpath=3,np=600
 !--------Variables for k-mesh:
       integer,parameter::resolution = 50;
       real*8,parameter::tolerance = 0.002;
@@ -159,57 +159,26 @@
      
      open(99,file='band.plt')
      write(99,'(a,f12.8)')'ef=',ef
-     write(99,'(a)') 'set xtics ( \'
-     do i=1,nkp
-        if(trim(adjustl(kl(i))).eq.'g'.or.trim(adjustl(kl(i))).eq.'G')kl(i)="{/Symbol \107}"
-        if(i.ne.nkp) write(99,'(3a,f12.6,a)')'"',trim(adjustl(kl(i))),'"',xkl(i),", \"
-        if(i.eq.nkp) write(99,'(3a,f12.6,a)')'"',trim(adjustl(kl(i))),'"',xkl(i)," )"
-
-     enddo
-     write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.1 : 0.1]'
+     write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.12 : 0.12]'
      write(99,'(a)') &
-          'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 7.50in'
+          'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
      write(99,'(a,f4.2,a)')'set output "band.pdf"'
-     write(99,'(12(a,/),a)') &
+     write(99,'(14(a,/),a)') &
+          'set border',&
+          'unset xtics',&
+          'unset ytics',&
           'set encoding iso_8859_1',&
           'set size ratio 0 1.0,1.0',&
-          'set ylabel "E-E_{CBM} (eV)"',&
           'set yrange [-0.4: 0.4 ]',&
           'unset key',&
-          'set ytics 1.0 scale 1 nomirror out',&
           'set mytics 2',&
           'set parametric',&
           'set trange [-10:10]',&
           'set multiplot',&
-          'plot "band.dat" u 1:($2-ef):(column(3)*1.5) with points pt 7 ps variable lc rgb "blue"',&
-          'plot "band.dat" u 1:($2-ef):(column(4)*1.5) with points pt 7 ps variable lc rgb "red"',&
-          'plot "band.dat" u 1:($2-ef):(column(5)*1.5) with points pt 7 ps variable lc rgb "green"'
-      write(99,'(a)') &
-          'plot "band.dat" u 1:($2-ef) with l lt 1 lw 1.5 lc rgb "yellow",\'
-      do i=2,nkp-1
-         write(99,' (f12.6,a)') xkl(i),',t with l lt 2  lc -1,\'
-          enddo
-      write(99,'(a)') '   t,0 with l lt 2  lc -1'
-      write(99,'(a)') &
+          'plot "band.dat" every 4 u 1:($2-ef):(column(3)*4) with points pt 7 ps variable lc rgb "royalblue"',&
+          'plot "band.dat" every 4 u 1:($2-ef):(column(4)*4) with points pt 7 ps variable lc rgb "light-red"',&
+          'plot "band.dat" every 4 u 1:($2-ef):(column(5)*4) with points pt 7 ps variable lc rgb "forest-green"',&
+          'plot "band.dat" u 1:($2-ef) with l lt 1 lw 3.5 lc rgb "yellow"',&
           'unset multiplot'
-      
 
     end subroutine write_plt
-
-!plot "band.dat" u 1:($2-ef) with l lt 1 lw 3,\
-!    0.000000,t with l lt 2 lc -1,\
-!    t,0 with l lt 2 lc -1
-!plot "band.dat" u 1:($2-ef):(column(3)) with points pt 7 ps variable
-!plot "band.dat" u 1:($2-ef):(column(4)) with points pt 7 ps variable
-!plot "band.dat" u 1:($2-ef):(column(5)) with points pt 7 ps variable
-!unset multiplot
-!------- 2D k-mesh
-!    subroutine construct_kmesh(resolution, tolerance, energy_diff, ene)
-!    implicit none
-!    end subroutine construct_kmesh
-
-
-
-
-
-! ------ gfortran -o wanr2k wanr2k.f90 -lblas -llapack
