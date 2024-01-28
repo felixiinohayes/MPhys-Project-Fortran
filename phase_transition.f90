@@ -3,7 +3,7 @@ module parameters
 !--------to be midified by the usere
     character(len=80):: prefix="BiTeI"
     real*8,parameter::kmax=0.07, alpha = 0.77966, ef = 5.5632247424157093
-    integer,parameter::meshres=200, nkpoints=(2*meshres+1),nbmin=12,nbmax=13
+    integer,parameter::meshres=200, nkpoints=(2*meshres+1),nbmin=13,nbmax=13
     integer nb
     
 end module parameters
@@ -39,6 +39,7 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
     open(100,file='interpolate.dx')
+    open(200,file='sam_pt.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec_data(3,nr),rvec_data_t(3,nr),Hk(nb,nb),Top_hr(nb,nb,nr),Triv_hr(nb,nb,nr),ndeg(nr),ene(nb))
@@ -70,6 +71,14 @@ Program Projected_band_structure
     write(100, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints
     write(100, '(a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',nbmax-nbmin+1,&
                                     ' item', nkpoints*nkpoints,' data follows'
+    write(200, '(a,2(1x,i8))') 'object 1 class gridpoints counts',nkpoints,nkpoints
+    write(200, '(a,2(1x,f12.6))') 'origin',-kmax,-kmax
+    write(200, '(a,2(1x,f12.6))') 'delta',dx,0d0
+    write(200, '(a,2(1x,f12.6))') 'delta',0d0,dy
+    write(200, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints
+    write(200, '(a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',nbmax-nbmin+1,&
+                                    ' item', 3*nkpoints*nkpoints,' data follows'
+
 !----- Perform fourier transform
     allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), k_ene(nb))
     do ikx=-meshres,meshres
@@ -85,6 +94,8 @@ Program Projected_band_structure
             enddo
             call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
             write(100, '(2(1x,f12.6))') k_ene(nbmin) - ef, k_ene(nbmax) - ef
+            call projections(HK,sam,oam)
+            write(200, '(6(1x,f12.6))') sam(:,nbmin), sam(:,nbmax)
         enddo
     enddo
     write(100,'(A,/,A,/,A,/,A)') &
@@ -93,4 +104,44 @@ Program Projected_band_structure
     'component "connections" value 2', &
     'component "data" value 3', &
     'end'
+    write(200,'(A,/,A,/,A,/,A)') &
+    'object "regular positions regular connections" class field', &
+    'component "positions" value 1', &
+    'component "connections" value 2', &
+    'component "data" value 3', &
+    'end'
 end program Projected_band_structure
+
+subroutine projections(H,sam,oam)
+    use parameters
+    Implicit None
+    complex*16 H(nb,nb),chi(2,1)
+    real*8 sam(3),oam(3),sx(1,1),sy(1,1),sz(1,1)
+    complex*8 pauli_x(2, 2), pauli_y(2, 2), pauli_z(2, 2), Lx(3,3), Ly(3,3), Lz(3,3), Y_lm(3,1)
+    integer ib,jb
+!-----Spin projection
+   !-Define Pauli matrices
+   
+    data pauli_x / (0d0,0d0),(1d0, 0d0),(1d0,0d0),( 0d0,0d0)/
+    data pauli_y / (0d0,0d0),(0d0,-1d0),(0d0,1d0),( 0d0,0d0)/
+    data pauli_z / (1d0,0d0),(0d0, 0d0),(0d0,0d0),(-1d0,0d0)/
+
+    sam=0d0 
+    oam=0d0
+
+    do ib=nbmin,nbmax
+            do jb=1,nb/2
+                chi(1,1) = H(jb     ,ib) 
+                chi(2,1) = H(jb+nb/2,ib)
+
+              
+                sx = matmul(conjg(transpose(chi)),matmul(pauli_x, chi))
+                sy = matmul(conjg(transpose(chi)),matmul(pauli_y, chi))
+                sz = matmul(conjg(transpose(chi)),matmul(pauli_z, chi))
+                sam(1)=sam(1)+sx(1,1)
+                sam(2)=sam(2)+sy(1,1)
+                sam(3)=sam(3)+sz(1,1)
+           
+            enddo
+    enddo
+end subroutine projections
