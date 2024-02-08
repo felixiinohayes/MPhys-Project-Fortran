@@ -18,8 +18,8 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
-    real*8 phase,pi2,x1,y1,x2,y2,a
-    real*8 avec(3,3),bvec(3,3),kpoint(2,nkp3),rvec_data(3)
+    real*8 phase,pi2,x1,y1,x2,y2
+    real*8 avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
     real*8, allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
     integer*4,allocatable:: ndeg(:)
@@ -79,16 +79,14 @@ Program Projected_band_structure
       ik=0
     do ikx=-xmeshres,xmeshres
       do iky=-ymeshres,ymeshres
-        do ikz=-zmeshres,zmeshres
-          ik=ik+1
-          kpoint(1,ik)=ikx*dx + kxmax
-          kpoint(2,ik)=iky*dy + kymax
-        enddo
+		  ik=ik+1
+		  kpoint(1,ik)=ikx*dx + kxmax
+		  kpoint(2,ik)=iky*dy + kymax
       enddo
     enddo
 
-    kpool=nkp3/numprocs
-    if (mod(nkp3,numprocs).ne.0) kpool=kpool+1
+    kpool=nkp2/numprocs
+    if (mod(nkp2,numprocs).ne.0) kpool=kpool+1
 
     kpmin=1+myid*kpool
     kpmax=(myid+1)*kpool
@@ -100,7 +98,7 @@ Program Projected_band_structure
 	print *,'processor =',myid
 	count=count+1
 	ikp=0
-	do ik=kpmin,min(kpmax,nkp3)
+	do ik=kpmin,min(kpmax,nkp2)
 		ikp=ikp+1
 		Hk = 0d0
 		do ir=1,nr
