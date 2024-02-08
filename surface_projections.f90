@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,kxmax=0.03,kymax=0.03,a=0.79858
-    integer,parameter::xmeshres=30,ymeshres=30,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=12,nbmax=13,nkp2=nkxpoints*nkypoints
+    integer,parameter::xmeshres=5,ymeshres=5,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=12,nbmax=13,nkp2=nkxpoints*nkypoints,nblocks=10,nr3=11
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -12,20 +12,20 @@ end module parameters
 Program Projected_band_structure
     use parameters
     Implicit None
-    INCLUDE 'mpif.h'
+    !INCLUDE 'mpif.h'
 !------------------------------------------------------
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
+    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,ir3,jr3,ir12,nr12,r3
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2
     real*8 avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
     real*8, allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
     integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable:: Hk(:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:)
+    complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:,:)
 !------------------------------------------------------
-    call init_mpi
+    !call init_mpi
 
     write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
     write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
@@ -47,26 +47,26 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
     if(myid.eq.0) then
-        open(100,file='btp_symmetry_2fold.dx')
+        open(100,file='super_H.dat')
     endif
     read(99,*)
     read(99,*)nb,nr
-    allocate(rvec(3,nr),Hk(nb,nb),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
+    allocate(rvec(2,nr),Hk(nb,nb),Hkr3(nb,nb,nr3,nkp2),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks,nkp2))
     read(99,*)ndeg
 
     do i=1,80
       read(97,*)
     enddo
     do k=1,nr
-       do i=1,nb
-          do j=1,nb
-             read(99,*)rvec_data(1),rvec_data(2),rvec_data(3),i1,i2,x1,y1
-             top_Hr(i1,i2,k)=dcmplx(x1,y1)
-             read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
-             triv_Hr(j1,j2,k)=dcmplx(x2,y2)
-          enddo
-       enddo
-       rvec(:,k) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) + rvec_data(3)*avec(:,3)
+		do i=1,nb
+			do j=1,nb
+			   read(99,*)rvec_data(1),rvec_data(2),rvec_data(3),i1,i2,x1,y1
+			   top_Hr(i1,i2,k)=dcmplx(x1,y1)
+			   read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
+			   triv_Hr(j1,j2,k)=dcmplx(x2,y2)
+			enddo
+		enddo
+		rvec(:,k) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) !+ rvec_data(3)*avec(:,3)
     enddo
 
     lwork=max(1,2*nb-1)
@@ -85,45 +85,45 @@ Program Projected_band_structure
       enddo
     enddo
 
-    kpool=nkp2/numprocs
-    if (mod(nkp2,numprocs).ne.0) kpool=kpool+1
-
-    kpmin=1+myid*kpool
-    kpmax=(myid+1)*kpool
-
-    ecounts=kpool*2 ! to account for bands 12 and 13
-
-
 !----- Perform fourier transform
-	print *,'processor =',myid
-	count=count+1
+	nr12=nr/nr3
 	ikp=0
-	do ik=kpmin,min(kpmax,nkp2)
-		ikp=ikp+1
-		Hk = 0d0
-		do ir=1,nr
-			phase = dot_product(kpoint(:,ik),rvec(:,ir))
-			HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+	do ik=1,nkp2
+		do ir3=1,nr3	
+			Hk=0d0	
+			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
+				ir = ir3 + ir12*11 ! Calculate index of (R1,R2) vector in nr
+				phase = dot_product(kpoint(:,ik),rvec(:,ir))
+				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+			enddo
+			Hkr3(:,:,ir3,ik) = Hk
 		enddo
-		call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
-		ene(:,ikp)=k_ene(12:13)
+
+		do i=0,nblocks-1
+			do j=0,nblocks-1
+				r3 = i - j
+				do i2=1,nb
+					do j2=1,nb
+						super_H(18*i + i2, 18*j + j2, ik) = Hkr3(i2, j2, r3 + 6, ik)
+						write(100, '(i8,2(1x,f12.6))') ik, super_H(18*i + i2, 18*j + j2, ik)
+					enddo
+				enddo
+			enddo
+		enddo
 	enddo
 
-	CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &
-					 ENERGY,ECOUNTS,MPI_DOUBLE_PRECISION, &
-						  0,MPI_COMM_WORLD,IERR)
-	if(myid.eq.0)  write(100, '(2(1x,f12.6))') energy
+!----- Construct supercell Hamiltonian
 
-    deallocate(energy)
-    call MPI_FINALIZE( IERR )
+
+
 end Program Projected_band_structure
 
-SUBROUTINE INIT_MPI
-    USE PARAMETERS               ,             ONLY: IERR,MYID,NUMPROCS
-    IMPLICIT NONE
-    INCLUDE 'mpif.h'
-        Call MPI_INIT( IERR )
-        Call MPI_COMM_RANK( MPI_COMM_WORLD, MYID, IERR )
-        Call MPI_COMM_SIZE( MPI_COMM_WORLD, NUMPROCS , IERR )
-!        Write(*,*) ‘Process’, myid, ' of ’, NUMPROCS , ‘is alive.’
-END SUBROUTINE INIT_MPI
+! SUBROUTINE INIT_MPI
+!     USE PARAMETERS               ,             ONLY: IERR,MYID,NUMPROCS
+!     IMPLICIT NONE
+!     INCLUDE 'mpif.h'
+!         Call MPI_INIT( IERR )
+!         Call MPI_COMM_RANK( MPI_COMM_WORLD, MYID, IERR )
+!         Call MPI_COMM_SIZE( MPI_COMM_WORLD, NUMPROCS , IERR )
+! !        Write(*,*) ‘Process’, myid, ' of ’, NUMPROCS , ‘is alive.’
+! END SUBROUTINE INIT_MPI
