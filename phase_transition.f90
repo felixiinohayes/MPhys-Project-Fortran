@@ -38,7 +38,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='interpolate.dx')
+    open(100,file='phase_transition.dx')
     open(200,file='sam_pt.dx')
     read(99,*)
     read(99,*)nb,nr
