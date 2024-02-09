@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.03,kymax=0.03,a=0.79858
-    integer,parameter::xmeshres=5,ymeshres=5,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=12,nbmax=13,nkp2=nkxpoints*nkypoints,nblocks=10,nr3=11
+    real*8,parameter::ef= 4.18903772,kxmax=0.05,kymax=0.05,a=0
+    integer,parameter::xmeshres=15,ymeshres=15,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=9,nbmax=18,nkp2=nkxpoints*nkypoints,nblocks=10,nr3=11
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -18,12 +18,12 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,ir3,jr3,ir12,nr12,r3
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
-    real*8 phase,pi2,x1,y1,x2,y2
+    real*8 phase,pi2,x1,y1,x2,y2,sumtotal
     real*8 avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3)
-    real*8,allocatable:: rvec(:,:),rwork(:)
-    real*8, allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
-    integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:,:)
+    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:)
+    real*8, allocatable:: k_ene(:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
+	integer*4,allocatable:: ndeg(:),super_H_index(:,:)
+    complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:)
 !------------------------------------------------------
     !call init_mpi
 
@@ -43,78 +43,115 @@ Program Projected_band_structure
     read(98,'(a)')line
     read(98,*)bvec
 
+
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    if(myid.eq.0) then
-        open(100,file='super_H.dat')
-    endif
+    open(100,file='super_H.dat')
+    open(200,file='top_surface_ene.dx')
+    open(300,file='bottom_surface_ene.dx')
     read(99,*)
     read(99,*)nb,nr
-    allocate(rvec(2,nr),Hk(nb,nb),Hkr3(nb,nb,nr3,nkp2),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks,nkp2))
+    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),k_ene(nb*nblocks))
+	allocate(super_h_index(nblocks,nblocks))
     read(99,*)ndeg
 
     do i=1,80
       read(97,*)
     enddo
-    do k=1,nr
+    do ir=1,nr
 		do i=1,nb
 			do j=1,nb
 			   read(99,*)rvec_data(1),rvec_data(2),rvec_data(3),i1,i2,x1,y1
-			   top_Hr(i1,i2,k)=dcmplx(x1,y1)
+			   top_Hr(i1,i2,ir)=dcmplx(x1,y1)
 			   read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
-			   triv_Hr(j1,j2,k)=dcmplx(x2,y2)
+			   triv_Hr(j1,j2,ir)=dcmplx(x2,y2)
 			enddo
 		enddo
-		rvec(:,k) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) !+ rvec_data(3)*avec(:,3)
+		rvec_miller(1,ir)=rvec_data(1)
+		rvec_miller(2,ir)=rvec_data(2)
+		rvec_miller(3,ir)=rvec_data(3)
+		rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) !+ rvec_data(3)*avec(:,3)
     enddo
 
-    lwork=max(1,2*nb-1)
-    allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
+    lwork=max(1,2*(nb*nblocks)-1)
+    allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks)-2)))
 
     dx=kxmax/xmeshres
 	dy=kymax/ymeshres
 
+	write(200, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints,nkypoints
+    write(200, '(a,3(1x,f12.6))') 'origin',0d0,0d0
+    write(200, '(a,3(1x,f12.6))') 'delta',dx,0d0
+    write(200, '(a,3(1x,f12.6))') 'delta',0d0,dy
+    write(200, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkxpoints,nkypoints
+	write(200, '(a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape', nbmax-nbmin+1, &
+                                     ' item', nkp2,' data follows'
+	write(300, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints,nkypoints
+    write(300, '(a,3(1x,f12.6))') 'origin',0d0,0d0
+    write(300, '(a,3(1x,f12.6))') 'delta',dx,0d0
+    write(300, '(a,3(1x,f12.6))') 'delta',0d0,dy
+    write(300, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkxpoints,nkypoints
+	write(300, '(a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape', nbmax-nbmin+1, &
+                                    ' item', nkp2,' data follows'
+
   !----- Create a uniform k-mesh
-      ik=0
+    ik=0
     do ikx=-xmeshres,xmeshres
       do iky=-ymeshres,ymeshres
 		  ik=ik+1
-		  kpoint(1,ik)=ikx*dx + kxmax
-		  kpoint(2,ik)=iky*dy + kymax
+		  kpoint(1,ik)=ikx*dx
+		  kpoint(2,ik)=iky*dy
       enddo
     enddo
 
 !----- Perform fourier transform
 	nr12=nr/nr3
-	ikp=0
 	do ik=1,nkp2
-		do ir3=1,nr3	
+		do ir3=1,nr3 ! Loop over R3 vectors
 			Hk=0d0	
 			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
-				ir = ir3 + ir12*11 ! Calculate index of (R1,R2) vector in nr
+				ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
 				phase = dot_product(kpoint(:,ik),rvec(:,ir))
 				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 			enddo
-			Hkr3(:,:,ir3,ik) = Hk
+			Hkr3(:,:,ir3) = Hk
 		enddo
 
 		do i=0,nblocks-1
 			do j=0,nblocks-1
-				r3 = i - j
-				do i2=1,nb
-					do j2=1,nb
-						super_H(18*i + i2, 18*j + j2, ik) = Hkr3(i2, j2, r3 + 6, ik)
-						write(100, '(i8,2(1x,f12.6))') ik, super_H(18*i + i2, 18*j + j2, ik)
-					enddo
-				enddo
+				r3 = i-j
+				if (r3<6 .AND. r3>-6) then
+					super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
+				else
+					super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
+				endif
 			enddo
 		enddo
+		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene,work,lwork,rwork,info)
+		write(200, '(10(1x,f12.6))') k_ene(nbmin:nbmax) ! Top surface
+		write(300, '(10(1x,f12.6))') k_ene((nb*(nblocks-1))+nbmin:(nb*(nblocks-1))+nbmax) ! Bottom surface
 	enddo
 
-!----- Construct supercell Hamiltonian
+	! do i=1,nblocks
+	! 	do j=1,nblocks
+	! 		print *, super_H_index(i,j)
+	! 	enddo
+	! 	print *, "/"
+	! enddo
 
-
+	write(200,'(A,/,A,/,A,/,A)') &
+    'object "regular positions regular connections" class field', &
+    'component "positions" value 1', &
+    'component "connections" value 2', &
+    'component "data" value 3', &
+    'end'
+	write(300,'(A,/,A,/,A,/,A)') &
+    'object "regular positions regular connections" class field', &
+    'component "positions" value 1', &
+    'component "connections" value 2', &
+    'component "data" value 3', &
+    'end'
 
 end Program Projected_band_structure
 
