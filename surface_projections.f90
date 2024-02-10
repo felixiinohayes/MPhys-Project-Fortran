@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,kxmax=0.1,kymax=0.1,a=0
-    integer,parameter::xmeshres=20,ymeshres=20,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=9,nbmax=18,nkp2=nkxpoints*nkypoints,nblocks=2,nr3=11
+    integer,parameter::xmeshres=10,ymeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=28,nbmax=33,nkp2=nkxpoints*nkypoints,nblocks=10,nr3=11
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -16,7 +16,7 @@ Program Projected_band_structure
 !------------------------------------------------------
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,ir3,jr3,ir12,nr12,r3
+    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,ir3,jr3,ir12,nr12,r3,matching
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,sumtotal,cconj
     real*8 avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3)
@@ -110,20 +110,33 @@ Program Projected_band_structure
 	do ik=1,nkp2
 		count = count + 1
 		do ir3=1,nr3 ! Loop over R3 vectors
+
 			Hk=0d0	
 			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
 				ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
+				! if (count == 11) print *, rvec_miller(1:3,ir)
 				phase = dot_product(kpoint(:,ik),rvec(:,ir))
 				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 			enddo
 			Hkr3(:,:,ir3) = Hk
 		enddo
 
+		! if (count == 1) then
+		! 	do i=1,nb*nblocks
+		! 		do j=1,nb*nblocks
+		! 			if (abs(real(Hkr3(j,i,1)) - real(Hkr3(i,j,11))) > 0.01) then
+		! 				print*, "NOT MATCHING" 
+		! 			endif
+		! 			! print *,abs(real(Hkr3((i,j,2)) - real(super_H(i,j,11))) 
+		! 		enddo
+		! 	enddo
+		! endif
+
 
 		do i=0,nblocks-1
 			do j=0,nblocks-1
 				r3 = i-j
-				if (r3<6 .AND. r3>-6) then
+				if (r3<=5 .AND. r3>=-5) then
 					super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
 				else
 					super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
@@ -134,23 +147,14 @@ Program Projected_band_structure
 		! call zgeevx('N','N','V','N',nb*nblocks,super_H,nb*nblocks,k_ene,
 
 		! Write supercell Hamiltonian to file super_H.dat and check if Hermitian
-		if (count == 1) then
-			do i=1,nb*nblocks
-				do j=1,nb*nblocks
-					write(100, '(2(F10.5, " "))', advance='no') real(super_H(i, j)), aimag(super_H(i, j))
-					write(100, *) ! New line after each row
-					if (abs(conjg(super_H(j,i)) - super_H(i,j)) > 0.001) print*, "NOT MATCHING" 
-				enddo
-			enddo
-			write(100,*) "HERMITIAN CONJUGATE:"
-			do i=1,nb*nblocks
-				do j=1,nb*nblocks
-					write(100, '(2(F10.5, " "))', advance='no') real(conjg(super_H(j, i))), aimag(conjg(super_H(i, j)))
-					write(100, *) ! New line after each row
-					if (abs(conjg(super_H(j,i)) - super_H(i,j)) > 0.001) print*, "NOT MATCHING" 
-				enddo
-			enddo
-		endif
+		! if (count == 1) then
+		! 	do i=1,nb*nblocks
+		! 		do j=1,nb*nblocks
+		! 			! if (abs(real(super_H(j,i)) - real(super_H(i,j))) > 0.001) print*, "NOT MATCHING" 
+		! 			print *,abs(real(super_H(j,i)) - real(super_H(i,j))) 
+		! 		enddo
+		! 	enddo
+		! endif
 
 		! if (count .eq. 1) then
 		! 	do j = 1, nb*nblocks
@@ -161,9 +165,10 @@ Program Projected_band_structure
 		! 	print *, cconj
 		! endif
 
-
-		write(200, '(10(1x,f12.6))') k_ene(nbmin:nbmax) ! Top surface
-		write(300, '(10(1x,f12.6))') k_ene((nb*(nblocks-1))+nbmin:(nb*(nblocks-1))+nbmax) ! Bottom surface
+		do i=1,nb*nblocks,nblocks
+			write(200, '(1(1x,f12.6))',advance='no') k_ene(i) ! Top surface
+		enddo
+		write(200, *)
 	enddo
 
 	! do i=1,nblocks
