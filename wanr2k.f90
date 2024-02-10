@@ -47,13 +47,14 @@
               dk = (kpoints(:,j+1)-kpoints(:,j))/np
               kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
 
-              kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
-              xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
+              xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
+              !kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
+              !xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
 
-             if(ik==2*np) then
-                    kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
-                    xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
-             endif
+            !  if(ik==2*np) then
+            !         kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
+            !         xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
+            !  endif
           enddo
       enddo
 
@@ -88,10 +89,10 @@
          HK=(0d0,0d0)
          do j=1,nr
 
-            rvec(:,j) = rvec_data(1,j)*avec(:,1) + rvec_data(2,j)*avec(:,2) + rvec_data(3,j)*avec(:,3)
+            !rvec(:,j) = rvec_data(1,j)*avec(:,1) + rvec_data(2,j)*avec(:,2) + rvec_data(3,j)*avec(:,3)
             phase=0.0d0
             do i=1,3
-               phase=phase+kpath(i,k)*rvec(i,j)
+               phase=phase+kpath(i,k)*rvec(i,j)  * pi2
             enddo
 
             HK=HK+((1-alpha)*(triv_hr(:,:,j))+alpha*(top_hr(:,:,j)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(j))

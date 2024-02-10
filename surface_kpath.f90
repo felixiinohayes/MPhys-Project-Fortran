@@ -2,9 +2,10 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.1,kymax=0.1,a=0
-    integer,parameter::xmeshres=10,ymeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=28,nbmax=33,nkp2=nkxpoints*nkypoints,nblocks=10,nr3=11
-    integer nb
+    real*8,parameter::ef= 4.18903772,a=0
+    integer,parameter::xmeshres=10,ymeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkp2=nkxpoints*nkypoints
+    integer,parameter::nbmin=28,nbmax=33,nkpath=3,np=10,nblocks=10,nr3=11,nk=(nkpath-1)*np+1
+	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
 end module parameters
@@ -14,15 +15,13 @@ Program Projected_band_structure
     Implicit None
     !INCLUDE 'mpif.h'
 !------------------------------------------------------
-    real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,ir3,jr3,ir12,nr12,r3,matching
+    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,sumtotal,cconj
-    real*8 avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3)
-    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:)
-    real*8, allocatable:: k_ene(:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
-	integer*4,allocatable:: ndeg(:),super_H_index(:,:)
+    real*8 xk(nk),avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
+    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
+	integer*4,allocatable:: ndeg(:)
     complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:)
 !------------------------------------------------------
     !call init_mpi
@@ -52,7 +51,7 @@ Program Projected_band_structure
     open(300,file='bottom_surface_ene.dx')
     read(99,*)
     read(99,*)nb,nr
-    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),k_ene(nb*nblocks))
+    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),k_ene(nb*nblocks,nk))
     read(99,*)ndeg
 
     do i=1,80
@@ -61,61 +60,52 @@ Program Projected_band_structure
     do ir=1,nr
 		do i=1,nb
 			do j=1,nb
-			   read(99,*)rvec_data(1),rvec_data(2),rvec_data(3),i1,i2,x1,y1
+			   read(99,*)rvec(1,ir),rvec(2,ir),rvec(3,ir),i1,i2,x1,y1
 			   top_Hr(i1,i2,ir)=dcmplx(x1,y1)
 			   read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
 			   triv_Hr(j1,j2,ir)=dcmplx(x2,y2)
 			enddo
 		enddo
-		rvec_miller(1,ir)=rvec_data(1)
-		rvec_miller(2,ir)=rvec_data(2)
-		rvec_miller(3,ir)=rvec_data(3)
-		rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) !+ rvec_data(3)*avec(:,3)
     enddo
 
     lwork=max(1,2*(nb*nblocks)-1)
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks)-2)))
 
-    dx=kxmax/xmeshres
-	dy=kymax/ymeshres
+!-----kpath
+	data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
+	data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
+	data kpoints(:,3) /     third,      third,    0.5d0/  !H
 
-	write(200, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints,nkypoints
-    write(200, '(a,3(1x,f12.6))') 'origin',0d0,0d0
-    write(200, '(a,3(1x,f12.6))') 'delta',dx,0d0
-    write(200, '(a,3(1x,f12.6))') 'delta',0d0,dy
-    write(200, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkxpoints,nkypoints
-	write(200, '(a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape', nbmax-nbmin+1, &
-                                     ' item', nkp2,' data follows'
-	write(300, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints,nkypoints
-    write(300, '(a,3(1x,f12.6))') 'origin',0d0,0d0
-    write(300, '(a,3(1x,f12.6))') 'delta',dx,0d0
-    write(300, '(a,3(1x,f12.6))') 'delta',0d0,dy
-    write(300, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkxpoints,nkypoints
-	write(300, '(a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape', nbmax-nbmin+1, &
-                                    ' item', nkp2,' data follows'
+	do j = 1, nkpath-1
+		  sign = 1
+		  if(j ==1) sign = -1
+		do i = 1, np
+			ik = i + np*(j-1)
+			dk = (kpoints(:,j+1)-kpoints(:,j))/np
+			kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
+			xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
 
-  !----- Create a uniform k-mesh
-    ik=0
-    do ikx=-xmeshres,xmeshres
-      do iky=-ymeshres,ymeshres
-		  ik=ik+1
-		  kpoint(1,ik)=ikx*dx
-		  kpoint(2,ik)=iky*dy
-      enddo
-    enddo
+		! 	kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
+		! 	xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
+
+		!    if(ik==2*np) then
+		! 		  kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
+		! 		  xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
+		!    endif
+		enddo
+	enddo
 
 !----- Perform fourier transform
 	nr12=nr/nr3
-	count = 0
-	do ik=1,nkp2
-		count = count + 1
+	do ik=1,nk
 		do ir3=1,nr3 ! Loop over R3 vectors
-
 			Hk=0d0	
 			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
 				ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
-				! if (count == 11) print *, rvec_miller(1:3,ir)
-				phase = dot_product(kpoint(:,ik),rvec(:,ir))
+				phase = 0d0
+				do i = 1,2
+					phase = phase + kpath(i,ik)*rvec(i,ir)*pi2
+				enddo
 				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 			enddo
 			Hkr3(:,:,ir3) = Hk
@@ -143,7 +133,7 @@ Program Projected_band_structure
 				endif
 			enddo
 		enddo
-		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene,work,lwork,rwork,info)
+		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,nk),work,lwork,rwork,info)
 		! call zgeevx('N','N','V','N',nb*nblocks,super_H,nb*nblocks,k_ene,
 
 		! Write supercell Hamiltonian to file super_H.dat and check if Hermitian
@@ -165,33 +155,43 @@ Program Projected_band_structure
 		! 	print *, cconj
 		! endif
 
-		do i=1,nb*nblocks,nblocks
-			write(200, '(1(1x,f12.6))',advance='no') k_ene(i) ! Top surface
+		do j=1, nb*nblocks
+			do i=1,nk
+				write(100, '(2(1x,f12.6))') xk(i), k_ene(j,i) ! Top surface
+			enddo
+			write(100,*)
+			write(100,*)
 		enddo
-		write(200, *)
 	enddo
-
-	! do i=1,nblocks
-	! 	do j=1,nblocks
-	! 		print *, super_H_index(i,j)
-	! 	enddo
-	! 	print *, "/"
-	! enddo
-
-	write(200,'(A,/,A,/,A,/,A)') &
-    'object "regular positions regular connections" class field', &
-    'component "positions" value 1', &
-    'component "connections" value 2', &
-    'component "data" value 3', &
-    'end'
-	write(300,'(A,/,A,/,A,/,A)') &
-    'object "regular positions regular connections" class field', &
-    'component "positions" value 1', &
-    'component "connections" value 2', &
-    'component "data" value 3', &
-    'end'
-
+	call write_plt()
+	stop
 end Program Projected_band_structure
+
+subroutine write_plt()
+	open(99,file='band.plt')
+	write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -0.12 : 0.12]'
+	write(99,'(a)') &
+		 'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
+	write(99,'(a,f4.2,a)')'set output "band.pdf"'
+	write(99,'(14(a,/),a)') &
+		 'set border',&
+		 'unset xtics',&
+		 'unset ytics',&
+		 'set encoding iso_8859_1',&
+		 'set size ratio 0 1.0,1.0',&
+		 '#set yrange [-0.4: 0.4 ]',&
+		 'unset key',&
+		 'set mytics 2',&
+		 'set parametric',&
+		 'set trange [-10:10]',&
+		 'set multiplot',&
+		 '#plot "super_H.dat" every 4 u 1:($2-ef):(column(3)*4) with points pt 7 ps variable lc rgb "royalblue"',&
+		 '#plot "super_H.dat" every 4 u 1:($2-ef):(column(4)*4) with points pt 7 ps variable lc rgb "light-red"',&
+		 '#plot "super_H.dat" every 4 u 1:($2-ef):(column(5)*4) with points pt 7 ps variable lc rgb "forest-green"',&
+		 'plot "super_H.dat" u 1:2 with l lt 1 lw 3.5 lc rgb "black"',&
+		 'unset multiplot'
+
+   end subroutine write_plt
 
 ! SUBROUTINE INIT_MPI
 !     USE PARAMETERS               ,             ONLY: IERR,MYID,NUMPROCS
