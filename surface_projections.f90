@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.05,kymax=0.05,a=0
-    integer,parameter::xmeshres=15,ymeshres=15,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=9,nbmax=18,nkp2=nkxpoints*nkypoints,nblocks=10,nr3=11
+    real*8,parameter::ef= 4.18903772,kxmax=0.1,kymax=0.1,a=0
+    integer,parameter::xmeshres=20,ymeshres=20,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nbmin=9,nbmax=18,nkp2=nkxpoints*nkypoints,nblocks=2,nr3=11
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -18,7 +18,7 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,ir3,jr3,ir12,nr12,r3
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
-    real*8 phase,pi2,x1,y1,x2,y2,sumtotal
+    real*8 phase,pi2,x1,y1,x2,y2,sumtotal,cconj
     real*8 avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:)
     real*8, allocatable:: k_ene(:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
@@ -53,7 +53,6 @@ Program Projected_band_structure
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),k_ene(nb*nblocks))
-	allocate(super_h_index(nblocks,nblocks))
     read(99,*)ndeg
 
     do i=1,80
@@ -107,7 +106,9 @@ Program Projected_band_structure
 
 !----- Perform fourier transform
 	nr12=nr/nr3
+	count = 0
 	do ik=1,nkp2
+		count = count + 1
 		do ir3=1,nr3 ! Loop over R3 vectors
 			Hk=0d0	
 			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
@@ -117,6 +118,7 @@ Program Projected_band_structure
 			enddo
 			Hkr3(:,:,ir3) = Hk
 		enddo
+
 
 		do i=0,nblocks-1
 			do j=0,nblocks-1
@@ -129,6 +131,37 @@ Program Projected_band_structure
 			enddo
 		enddo
 		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene,work,lwork,rwork,info)
+		! call zgeevx('N','N','V','N',nb*nblocks,super_H,nb*nblocks,k_ene,
+
+		! Write supercell Hamiltonian to file super_H.dat and check if Hermitian
+		if (count == 1) then
+			do i=1,nb*nblocks
+				do j=1,nb*nblocks
+					write(100, '(2(F10.5, " "))', advance='no') real(super_H(i, j)), aimag(super_H(i, j))
+					write(100, *) ! New line after each row
+					if (abs(conjg(super_H(j,i)) - super_H(i,j)) > 0.001) print*, "NOT MATCHING" 
+				enddo
+			enddo
+			write(100,*) "HERMITIAN CONJUGATE:"
+			do i=1,nb*nblocks
+				do j=1,nb*nblocks
+					write(100, '(2(F10.5, " "))', advance='no') real(conjg(super_H(j, i))), aimag(conjg(super_H(i, j)))
+					write(100, *) ! New line after each row
+					if (abs(conjg(super_H(j,i)) - super_H(i,j)) > 0.001) print*, "NOT MATCHING" 
+				enddo
+			enddo
+		endif
+
+		! if (count .eq. 1) then
+		! 	do j = 1, nb*nblocks
+		! 		write(100, '(2(F10.5, " "))', advance='no') real(super_H(1, j)), aimag(super_H(1, j))
+		! 		write(100, *) ! New line after each row
+		! 	enddo
+		! 	cconj = dot_product(conjg(super_H(:,1)), super_H(:,1))
+		! 	print *, cconj
+		! endif
+
+
 		write(200, '(10(1x,f12.6))') k_ene(nbmin:nbmax) ! Top surface
 		write(300, '(10(1x,f12.6))') k_ene((nb*(nblocks-1))+nbmin:(nb*(nblocks-1))+nbmax) ! Bottom surface
 	enddo
