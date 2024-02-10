@@ -4,16 +4,16 @@
       character(len=80):: prefix="BiTeI"
       integer,parameter::nkpath=3,np=600
 !------------------------------------------------------
-      integer*4 ik,ikmax, skip
+      integer*4 ik,ikmax, skip,sign
       real*8 kz,ef 
       real*8 :: Te_sum, Bi_sum, I_sum
       character(len=30)::klabel(nkpath)
       character(len=80) nnkp,line,top_file,triv_file
       integer*4,parameter::nk=(nkpath-1)*np+1
       integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,j1,j2,nb,l
-      real*8,parameter::third=1d0/3d0, alpha = 0.77966
+      real*8,parameter::third=1d0/3d0, alpha = 1
       real*8 phase,pi2,jk,a,b,x1,y1
-      real*8 klist(3,1:nk),xk(nk),kpath(3,np),bvec(3,3),avec(3,3),ktemp1(3),ktemp2(3),xkl(nkpath)
+      real*8 xk(nk),bvec(3,3),avec(3,3),ktemp1(3),ktemp2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
       real*8,allocatable:: rvec(:,:),rvec_data(:,:),ene(:,:),rwork(:),od(:,:,:)
       integer*4,allocatable:: ndeg(:)
       complex*16,allocatable:: Hk(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),work(:),H_col(:)
@@ -33,45 +33,31 @@
           read(98,'(a)')line
           read(98,*)bvec
 !---------------kpath
-      data kpath(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
-      data kpath(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
-      data kpath(:,3) /     third,      third,    0.5d0/  !H
-
-!      open(77,file='tmp')
- !     read(77,*)ik,ikmax
- !     kz=float(ik)*0.5d0/float(ikmax)
- !     kpath(3,:)=kz
+      data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
+      data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
+      data kpoints(:,3) /     third,      third,    0.5d0/  !H
 
       data klabel     /'L','A','H'/
+  
+      do j = 1, nkpath-1
+            sign = 1
+            if(j ==1) sign = -1
+          do i = 1, np
+              ik = i + np*(j-1)
+              dk = (kpoints(:,j+1)-kpoints(:,j))/np
+              kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
 
-      ktemp1(:)=(kpath(1,1)-kpath(1,2))*bvec(:,1)+(kpath(2,1)-kpath(2,2))*bvec(:,2)+(kpath(3,1)-kpath(3,2))*bvec(:,3)
+              kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
+              xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
 
-!     xk(1)= 0d0 !-sqrt(dot_product(ktemp1,ktemp1))
-      xk(1)= -sqrt(dot_product(ktemp1,ktemp1))
-      xkl(1)=xk(1)
-      
-
-      k=0
-      ktemp1=0d0
-      do i=1,nkpath-1
-       do j=1,np
-        k=k+1
-        jk=dfloat(j-1)/dfloat(np)
-        klist(:,k)=kpath(:,i)+jk*(kpath(:,i+1)-kpath(:,i))
-        ktemp2=klist(1,k)*bvec(:,1)+klist(2,k)*bvec(:,2)+klist(3,k)*bvec(:,3)
-        if(k.gt.1) xk(k)=xk(k-1)+sqrt(dot_product(ktemp2-ktemp1,ktemp2-ktemp1))
-        if(j.eq.1) xkl(i)=xk(k)
-        ktemp1=ktemp2
-       enddo
+             if(ik==2*np) then
+                    kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
+                    xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
+             endif
+          enddo
       enddo
-      klist(:,nk)=kpath(:,nkpath)
-      ktemp2=klist(1,nk)*bvec(:,1)+klist(2,nk)*bvec(:,2)+klist(3,nk)*bvec(:,3)
-      xk(nk)=xk(nk-1)+sqrt(dot_product(ktemp2-ktemp1,ktemp2-ktemp1))
-      xkl(nkpath)=xk(nk)
-!      write(*,*)klist
-      klist=klist*pi2
 
-!------read H(R)
+!------read H(R) 
       open(99,file=trim(adjustl(top_file)))
       open(97,file=trim(adjustl(triv_file)))
       open(100,file='band.dat')
@@ -102,9 +88,10 @@
          HK=(0d0,0d0)
          do j=1,nr
 
+            rvec(:,j) = rvec_data(1,j)*avec(:,1) + rvec_data(2,j)*avec(:,2) + rvec_data(3,j)*avec(:,3)
             phase=0.0d0
             do i=1,3
-               phase=phase+klist(i,k)*rvec(i,j)
+               phase=phase+kpath(i,k)*rvec(i,j)
             enddo
 
             HK=HK+((1-alpha)*(triv_hr(:,:,j))+alpha*(top_hr(:,:,j)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(j))
@@ -141,8 +128,8 @@
       deallocate(HK,work)
       
       do i=1,nb
-         do k=1,nk
-           write(100,'(5(x,f12.6))') xk(k),ene(i,k),od(i,k,:)
+         do k=1,nk-1
+           write(100,'(5(x,f12.6))') xk(k), ene(i,k) 
          enddo
            write(100,*)
            write(100,*)
@@ -164,7 +151,7 @@
             
             open(99,file='band.plt')
             write(99,'(a,f12.8)')'ef=',ef
-            write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.12 : 0.12]'
+            write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -0.12 : 0.12]'
             write(99,'(a)') &
                  'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
             write(99,'(a,f4.2,a)')'set output "band.pdf"'
@@ -174,16 +161,16 @@
                  'unset ytics',&
                  'set encoding iso_8859_1',&
                  'set size ratio 0 1.0,1.0',&
-                 'set yrange [-0.4: 0.4 ]',&
+                 '#set yrange [-0.4: 0.4 ]',&
                  'unset key',&
                  'set mytics 2',&
                  'set parametric',&
                  'set trange [-10:10]',&
                  'set multiplot',&
-                 'plot "band.dat" every 4 u 1:($2-ef):(column(3)*4) with points pt 7 ps variable lc rgb "royalblue"',&
-                 'plot "band.dat" every 4 u 1:($2-ef):(column(4)*4) with points pt 7 ps variable lc rgb "light-red"',&
-                 'plot "band.dat" every 4 u 1:($2-ef):(column(5)*4) with points pt 7 ps variable lc rgb "forest-green"',&
-                 'plot "band.dat" u 1:($2-ef) with l lt 1 lw 3.5 lc rgb "yellow"',&
+                 '#plot "band.dat" every 4 u 1:($2-ef):(column(3)*4) with points pt 7 ps variable lc rgb "royalblue"',&
+                 '#plot "band.dat" every 4 u 1:($2-ef):(column(4)*4) with points pt 7 ps variable lc rgb "light-red"',&
+                 '#plot "band.dat" every 4 u 1:($2-ef):(column(5)*4) with points pt 7 ps variable lc rgb "forest-green"',&
+                 'plot "band.dat" u 1:($2-ef) with l lt 1 lw 3.5 lc rgb "black"',&
                  'unset multiplot'
        
            end subroutine write_plt
