@@ -65,6 +65,7 @@ Program Projected_band_structure
                rvec_data(1,ir)=r1
                rvec_data(2,ir)=r2
                rvec_data(3,ir)=r3
+               
 			   top_Hr(i1,i2,r1,r2,r3)=dcmplx(x1,y1)
 			   read(97,*)r1,r2,r3,j1,j2,x2,y2
 			   triv_Hr(j1,j2,r1,r2,r3)=dcmplx(x2,y2)
