@@ -2,9 +2,9 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=0
+    real*8,parameter::ef= 4.18903772,a=0.77966
     integer,parameter::xmeshres=10,ymeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkp2=nkxpoints*nkypoints
-    integer,parameter::nbmin=28,nbmax=33,nkpath=3,np=10,nblocks=10,nr3=11,nk=(nkpath-1)*np+1
+    integer,parameter::nkpath=3,np=30,nblocks=10,nr3=11,nk=(nkpath-1)*np+1
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -46,7 +46,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='super_H.dat')
+    open(100,file='super_H_top.dat')
     open(200,file='top_surface_ene.dx')
     open(300,file='bottom_surface_ene.dx')
     read(99,*)
@@ -60,12 +60,13 @@ Program Projected_band_structure
     do ir=1,nr
 		do i=1,nb
 			do j=1,nb
-			   read(99,*)rvec(1,ir),rvec(2,ir),rvec(3,ir),i1,i2,x1,y1
+			   read(99,*)rvec_data(1),rvec_data(2),rvec_data(3),i1,i2,x1,y1
 			   top_Hr(i1,i2,ir)=dcmplx(x1,y1)
 			   read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
 			   triv_Hr(j1,j2,ir)=dcmplx(x2,y2)
 			enddo
 		enddo
+		rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2)
     enddo
 
     lwork=max(1,2*(nb*nblocks)-1)
@@ -97,15 +98,19 @@ Program Projected_band_structure
 
 !----- Perform fourier transform
 	nr12=nr/nr3
+
 	do ik=1,nk
+
 		do ir3=1,nr3 ! Loop over R3 vectors
+
 			Hk=0d0	
 			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
 				ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
 				phase = 0d0
-				do i = 1,2
-					phase = phase + kpath(i,ik)*rvec(i,ir)*pi2
+				do j = 1,2
+					phase = phase + kpath(j,ik)*rvec(j,ir)
 				enddo
+				
 				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 			enddo
 			Hkr3(:,:,ir3) = Hk
@@ -122,7 +127,6 @@ Program Projected_band_structure
 		! 	enddo
 		! endif
 
-
 		do i=0,nblocks-1
 			do j=0,nblocks-1
 				r3 = i-j
@@ -133,7 +137,7 @@ Program Projected_band_structure
 				endif
 			enddo
 		enddo
-		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,nk),work,lwork,rwork,info)
+		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
 		! call zgeevx('N','N','V','N',nb*nblocks,super_H,nb*nblocks,k_ene,
 
 		! Write supercell Hamiltonian to file super_H.dat and check if Hermitian
@@ -156,8 +160,8 @@ Program Projected_band_structure
 		! endif
 
 		do j=1, nb*nblocks
-			do i=1,nk
-				write(100, '(2(1x,f12.6))') xk(i), k_ene(j,i) ! Top surface
+			do i=1, nk-1
+				if(k_ene(j,i).gt.0) write(100, '(2(1x,f12.6))') xk(i), k_ene(j,i) ! Top surface
 			enddo
 			write(100,*)
 			write(100,*)
@@ -173,7 +177,7 @@ subroutine write_plt()
 	write(99,'(a)') &
 		 'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
 	write(99,'(a,f4.2,a)')'set output "band.pdf"'
-	write(99,'(14(a,/),a)') &
+	write(99,'(11(a,/),a)') &
 		 'set border',&
 		 'unset xtics',&
 		 'unset ytics',&
@@ -185,10 +189,7 @@ subroutine write_plt()
 		 'set parametric',&
 		 'set trange [-10:10]',&
 		 'set multiplot',&
-		 '#plot "super_H.dat" every 4 u 1:($2-ef):(column(3)*4) with points pt 7 ps variable lc rgb "royalblue"',&
-		 '#plot "super_H.dat" every 4 u 1:($2-ef):(column(4)*4) with points pt 7 ps variable lc rgb "light-red"',&
-		 '#plot "super_H.dat" every 4 u 1:($2-ef):(column(5)*4) with points pt 7 ps variable lc rgb "forest-green"',&
-		 'plot "super_H.dat" u 1:2 with l lt 1 lw 3.5 lc rgb "black"',&
+		 'plot "super_H.dat" u 1:2 with l lt 1 lw 1 lc rgb "black"',&
 		 'unset multiplot'
 
    end subroutine write_plt
