@@ -4,7 +4,7 @@ module parameters
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,a=0.77966
     integer,parameter::xmeshres=10,ymeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkp2=nkxpoints*nkypoints
-    integer,parameter::nkpath=3,np=30,nblocks=10,nr3=11,nk=(nkpath-1)*np+1
+    integer,parameter::nkpath=3,np=10,nblocks=10,nr3=11,nk=(nkpath-1)*np+1
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -22,7 +22,7 @@ Program Projected_band_structure
     real*8 xk(nk),avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
 	integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:)
+    complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p(:,:),projection(:,:)
 !------------------------------------------------------
     !call init_mpi
 
@@ -46,12 +46,12 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='super_H_top.dat')
+    open(100,file='super_H.dat')
     open(200,file='top_surface_ene.dx')
     open(300,file='bottom_surface_ene.dx')
     read(99,*)
     read(99,*)nb,nr
-    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),k_ene(nb*nblocks,nk))
+    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),sH(nb,nb*nblocks),k_ene(nb*nblocks,nk),a_p(nb*nblocks,nk),projection(nb*nblocks,nb*nblocks))
     read(99,*)ndeg
 
     do i=1,80
@@ -137,7 +137,16 @@ Program Projected_band_structure
 				endif
 			enddo
 		enddo
+		sH = super_H
 		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
+		sumtotal = 0
+		do i=1,nb*nblocks
+			a_p(i,ik) = dot_product(super_H(1:18,i),super_H(1:18,i))
+			sumtotal = sumtotal + k_ene(i,ik) * a_p(i,ik)
+			k_ene(i,ik) = k_ene(i,ik) * a_p(i,ik)
+		enddo
+		print *, sum(a_p(:,ik))
+		
 		! call zgeevx('N','N','V','N',nb*nblocks,super_H,nb*nblocks,k_ene,
 
 		! Write supercell Hamiltonian to file super_H.dat and check if Hermitian
@@ -160,8 +169,8 @@ Program Projected_band_structure
 		! endif
 
 		do j=1, nb*nblocks
-			do i=1, nk-1
-				if(k_ene(j,i).gt.0) write(100, '(2(1x,f12.6))') xk(i), k_ene(j,i) ! Top surface
+			do i=1 ,nk-1
+			if(k_ene(j,i).gt.0)write(100, '(2(1x,f12.6))') xk(i), k_ene(j,i) ! Top surface
 			enddo
 			write(100,*)
 			write(100,*)
