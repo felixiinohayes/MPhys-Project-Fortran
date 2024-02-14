@@ -2,9 +2,9 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=0.77966
+    real*8,parameter::ef= 4.18903772,a=1
     integer,parameter::xmeshres=10,ymeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkp2=nkxpoints*nkypoints
-    integer,parameter::nkpath=3,np=50,nblocks=10,nr3=11,nk=(nkpath-1)*np+1
+    integer,parameter::nkpath=3,np=100,nblocks=50,nr3=11,nk=(nkpath-1)*np+1
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -20,9 +20,9 @@ Program Projected_band_structure
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,sumtotal,cconj
     real*8 xk(nk),avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
-    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
+    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:),a_p(:,:,:)
 	integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p(:,:,:),projection(:,:)
+    complex*16,allocatable:: Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:)
 !------------------------------------------------------
     !call init_mpi
 
@@ -51,7 +51,7 @@ Program Projected_band_structure
     open(300,file='bottom_surface_ene.dx')
     read(99,*)
     read(99,*)nb,nr
-    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),sH(nb,nb*nblocks),k_ene(nb*nblocks,nk),a_p(nb,nb*nblocks,nk),projection(nb*nblocks,nb*nblocks))
+    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr),super_H(nb*nblocks,nb*nblocks),k_ene(nb*nblocks,nk),a_p(nb,nb*nblocks,nk))
     read(99,*)ndeg
 
     do i=1,80
@@ -73,9 +73,13 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks)-2)))
 
 !-----kpath
-	data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
-	data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
-	data kpoints(:,3) /     third,      third,    0.5d0/  !H
+	data kpoints(:,1) /     0.5d0,      0.0d0,    0.0d0/  !L
+	data kpoints(:,2) /     0.0d0,      0.0d0,    0.0d0/  !A
+	data kpoints(:,3) /     third,      third,    0.0d0/  !H
+
+	do i = 1,3
+		kpoints(:,i) = kpoints(:,i)*0.3
+	enddo
 
 	do j = 1, nkpath-1
 		  sign = 1
@@ -85,47 +89,26 @@ Program Projected_band_structure
 			dk = (kpoints(:,j+1)-kpoints(:,j))/np
 			kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
 			xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
-
-		! 	kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
-		! 	xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
-
-		!    if(ik==2*np) then
-		! 		  kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
-		! 		  xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
-		!    endif
 		enddo
 	enddo
 
 !----- Perform fourier transform
 	nr12=nr/nr3
-
 	do ik=1,nk
-
 		do ir3=1,nr3 ! Loop over R3 vectors
-
 			Hk=0d0	
 			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
 				ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
+
 				phase = 0d0
 				do j = 1,2
 					phase = phase + kpath(j,ik)*rvec(j,ir)
 				enddo
-				
+
 				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 			enddo
 			Hkr3(:,:,ir3) = Hk
 		enddo
-
-		! if (count == 1) then
-		! 	do i=1,nb*nblocks
-		! 		do j=1,nb*nblocks
-		! 			if (abs(real(Hkr3(j,i,1)) - real(Hkr3(i,j,11))) > 0.01) then
-		! 				print*, "NOT MATCHING" 
-		! 			endif
-		! 			! print *,abs(real(Hkr3((i,j,2)) - real(super_H(i,j,11))) 
-		! 		enddo
-		! 	enddo
-		! endif
 
 		do i=0,nblocks-1
 			do j=0,nblocks-1
@@ -137,41 +120,15 @@ Program Projected_band_structure
 				endif
 			enddo
 		enddo
-		sH = super_H
+
 		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
-		do j=1,nb
-			sumtotal = 0
-			do i=1,nb*nblocks
-				a_p(j,i,ik) = conjg(super_H(j,i))*super_H(j,i)
-				sumtotal = sumtotal + k_ene(i,ik) * a_p(j,i,ik)
-			enddo
-			k_ene(j,ik)= sumtotal
+		do i=1,nb*nblocks
+			a_p(1,i,ik) = real(dot_product(super_H(1:18,i),super_H(1:18,i)))
 		enddo
-		
-		! call zgeevx('N','N','V','N',nb*nblocks,super_H,nb*nblocks,k_ene,
 
-		! Write supercell Hamiltonian to file super_H.dat and check if Hermitian
-		! if (count == 1) then
-		! 	do i=1,nb*nblocks
-		! 		do j=1,nb*nblocks
-		! 			! if (abs(real(super_H(j,i)) - real(super_H(i,j))) > 0.001) print*, "NOT MATCHING" 
-		! 			print *,abs(real(super_H(j,i)) - real(super_H(i,j))) 
-		! 		enddo
-		! 	enddo
-		! endif
-
-		! if (count .eq. 1) then
-		! 	do j = 1, nb*nblocks
-		! 		write(100, '(2(F10.5, " "))', advance='no') real(super_H(1, j)), aimag(super_H(1, j))
-		! 		write(100, *) ! New line after each row
-		! 	enddo
-		! 	cconj = dot_product(conjg(super_H(:,1)), super_H(:,1))
-		! 	print *, cconj
-		! endif
-
-		do j=1, nb
+		do j=1,nb*nblocks
 			do i=1 ,nk-1
-			if(k_ene(j,i).gt.0)write(100, '(2(1x,f12.6))') xk(i), k_ene(j,i) ! Top surface
+				if(k_ene(j,i).gt.0)write(100, '(3(1x,f12.6))') xk(i), k_ene(j,i), a_p(1,j,i) ! Top surface
 			enddo
 			write(100,*)
 			write(100,*)
@@ -183,7 +140,7 @@ end Program Projected_band_structure
 
 subroutine write_plt()
 	open(99,file='band.plt')
-	write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -0.12 : 0.12]'
+	write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.12 : 0.12]'
 	write(99,'(a)') &
 		 'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
 	write(99,'(a,f4.2,a)')'set output "band.pdf"'
@@ -193,13 +150,14 @@ subroutine write_plt()
 		 'unset ytics',&
 		 'set encoding iso_8859_1',&
 		 'set size ratio 0 1.0,1.0',&
-		 '#set yrange [-0.4: 0.4 ]',&
+		 'set yrange [5: 7]',&
 		 'unset key',&
 		 'set mytics 2',&
 		 'set parametric',&
+		 'set palette defined (0 "#deebf7", 1 "#c6dbef", 2 "#9ecae1", 3 "#6baed6", 4 "#4292c6", 5 "#2171b5", 6 "#084594")',&
 		 'set trange [-10:10]',&
 		 'set multiplot',&
-		 'plot "super_H.dat" u 1:2 with l lt 1 lw 1 lc rgb "black"',&
+		 'plot "super_H.dat" u 1:2:3 with l lt 1 lw 1 linecolor palette notitle',&
 		 'unset multiplot'
 
    end subroutine write_plt
