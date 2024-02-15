@@ -3,7 +3,6 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,a=1
-    integer,parameter::xmeshres=10,ymeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkp2=nkxpoints*nkypoints
     integer,parameter::nkpath=3,np=50,nblocks=50,nr3=11,nk=(nkpath-1)*np+1
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
@@ -18,11 +17,11 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
-    real*8 phase,pi2,x1,y1,x2,y2,sumtotal,cconj
-    real*8 xk(nk),avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
-    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:),a_p(:,:,:)
+    real*8 phase,pi2,x1,y1,x2,y2
+    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
+    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
 	integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),projection(:,:)
+    complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:)
 !------------------------------------------------------
     !call init_mpi
 
@@ -52,7 +51,7 @@ Program Projected_band_structure
     read(99,*)nb,nr
     allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
 	allocate(super_H(nb*nblocks,nb*nblocks),sH(nb,nb*nblocks),k_ene(nb*nblocks,nk))
-	allocate(a_p_top(nb*nblocks,nk),a_p_bottom(nb*nblocks,nk),projection(nb*nblocks,nb*nblocks))
+	allocate(a_p_top(nb*nblocks,nk),a_p_bottom(nb*nblocks,nk))
     read(99,*)ndeg
 
     do i=1,80
@@ -144,30 +143,27 @@ end Program Projected_band_structure
 
 subroutine write_plt()
 	open(99,file='band.plt')
-	write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.12 : 0.12]'
+	write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.09 : 0.09]'
 	write(99,'(a)') &
-		 'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
-	write(99,'(a,f4.2,a)')'set output "band.pdf"'
-	write(99,'(11(a,/),a)') &
+		 'set terminal pngcairo enhanced font "DejaVu,30" fontscale 1 size 2000, 2000'
+	write(99,'(a,f4.2,a)')'set output "band.png"'
+	write(99,'(13(a,/),a)') &
 		 'set border',&
 		 'unset xtics',&
 		 'unset ytics',&
-		 'set yrange [5:7]',&
 		 'set encoding iso_8859_1',&
 		 'set size ratio 0 1.0,1.0',&
-		 'set yrange [5: 7]',&
+		 'set yrange [5.5: 6.5]',&
 		 'unset key',&
 		 'set mytics 2',&
 		 'set parametric',&
 		 'set palette defined (0 "#deebf7", 1 "#c6dbef", 2 "#9ecae1", 3 "#6baed6", 4 "#4292c6", 5 "#2171b5", 6 "#084594")',&
 		 'set trange [-10:10]',&
-		 'set palette defined (0 "white", 1 "blue")',&
 		 'set multiplot',&
 		 'plot "super_H.dat" u 1:2:3 with l lt 1 lw 1 linecolor palette notitle',&
 		 'unset multiplot'
 
    end subroutine write_plt
-
 ! SUBROUTINE INIT_MPI
 !     USE PARAMETERS               ,             ONLY: IERR,MYID,NUMPROCS
 !     IMPLICIT NONE
