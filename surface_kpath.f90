@@ -20,7 +20,7 @@ Program Projected_band_structure
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,sumtotal,cconj
     real*8 xk(nk),avec(3,3),bvec(3,3),kpoint(2,nkp2),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
-    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
+    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:),a_p(:,:,:)
 	integer*4,allocatable:: ndeg(:)
     complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),projection(:,:)
 !------------------------------------------------------
@@ -86,14 +86,6 @@ Program Projected_band_structure
 			dk = (kpoints(:,j+1)-kpoints(:,j))/np
 			kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
 			xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
-
-		! 	kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
-		! 	xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
-
-		!    if(ik==2*np) then
-		! 		  kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
-		! 		  xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
-		!    endif
 		enddo
 	enddo
 
@@ -106,11 +98,12 @@ Program Projected_band_structure
 			Hk=0d0	
 			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
 				ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
+
 				phase = 0d0
 				do j = 1,2
 					phase = phase + kpath(j,ik)*rvec(j,ir)
 				enddo
-				
+
 				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 			enddo
 			Hkr3(:,:,ir3) = Hk
@@ -151,7 +144,7 @@ end Program Projected_band_structure
 
 subroutine write_plt()
 	open(99,file='band.plt')
-	write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -0.12 : 0.12]'
+	write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.12 : 0.12]'
 	write(99,'(a)') &
 		 'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
 	write(99,'(a,f4.2,a)')'set output "band.pdf"'
@@ -162,14 +155,15 @@ subroutine write_plt()
 		 'set yrange [5:7]',&
 		 'set encoding iso_8859_1',&
 		 'set size ratio 0 1.0,1.0',&
-		 '#set yrange [-0.4: 0.4 ]',&
+		 'set yrange [5: 7]',&
 		 'unset key',&
 		 'set mytics 2',&
 		 'set parametric',&
+		 'set palette defined (0 "#deebf7", 1 "#c6dbef", 2 "#9ecae1", 3 "#6baed6", 4 "#4292c6", 5 "#2171b5", 6 "#084594")',&
 		 'set trange [-10:10]',&
 		 'set palette defined (0 "white", 1 "blue")',&
 		 'set multiplot',&
-		 'plot "super_H.dat" using 1:2:3 with lines lw 1 lc palette',&
+		 'plot "super_H.dat" u 1:2:3 with l lt 1 lw 1 linecolor palette notitle',&
 		 'unset multiplot'
 
    end subroutine write_plt
