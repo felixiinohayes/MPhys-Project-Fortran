@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.005,a=0.77966
+    real*8,parameter::ef= 4.18903772,kmax=0.01,a=0.77966
     integer,parameter::meshres=5,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
@@ -71,7 +71,7 @@ Program Projected_band_structure
     lwork=max(1,2*nb-1)
     allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 
-    dk=kmax/meshres
+    dk=kmax/(nkpoints-1)
 
 !----- Create header of dx files
 
@@ -87,7 +87,7 @@ Program Projected_band_structure
   !----- Create a uniform k-mesh
 
 	! Front and back face
-	offset = (/-0.013d0,0.046d0,0.5d0*bvec(3,3)-0.01d0/)
+	offset = (/0.013d0-(kmax/2),-0.046d0-(kmax/2),0.5d0*bvec(3,3)-(kmax/2)/)
 	ik=0	
 	do ikx=1,nkpoints	
 		do iky=1,nkpoints
