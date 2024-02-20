@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.01,a=0.77966
-    integer,parameter::meshres=5,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints
+    real*8,parameter::ef= 4.18903772,kmax=0.36,a=0.79
+    integer,parameter::meshres=15,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -72,22 +72,22 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 
     dk=kmax/(nkpoints-1)
+	offset = (/-(kmax/2),0.049-(kmax/2),0.5d0*bvec(3,3)-(kmax/2)/)
 
 !----- Create header of dx files
 
-	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints,nkpoints
-	write(100, '(a,3(1x,f12.6))') 'origin',-kmax,-kmax,-kmax+0.5d0*bvec(3,3)
+	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-2,nkpoints-2,nkpoints-2
+	write(100, '(a,3(1x,f12.6))') 'origin',offset(1),offset(2),offset(3)
 	write(100, '(a,3(1x,f12.6))') 'delta',dk,0d0,0d0
 	write(100, '(a,3(1x,f12.6))') 'delta',0d0,dk,0d0
 	write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
-	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints,nkpoints
+	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-2,nkpoints-2,nkpoints-2
 	write(100, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
-								   ' item', nkp3, ' data follows'
+								   ' item', (nkpoints-2)*(nkpoints-2)*(nkpoints-2), ' data follows'
     
   !----- Create a uniform k-mesh
 
 	! Front and back face
-	offset = (/0.013d0-(kmax/2),-0.046d0-(kmax/2),0.5d0*bvec(3,3)-(kmax/2)/)
 	ik=0	
 	do ikx=1,nkpoints	
 		do iky=1,nkpoints
@@ -109,7 +109,7 @@ Program Projected_band_structure
 	do ikx=1,nkpoints
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
-				print *, ikp, "/", nkp3
+				print*, ikp, "/", nkp3
 				ikp=ikp+1
 				Hk = 0d0
 				do ir=1,nr
@@ -129,9 +129,9 @@ Program Projected_band_structure
 	allocate(connection(3,nkpoints,nkpoints,nkpoints),curvature(3,nkpoints,nkpoints,nkpoints))
 
 !-------Compute Berry connection
-	do ikx=1,nkpoints-1
-		do iky=1,nkpoints-1
-			do ikz=1,nkpoints-1
+	do ikx=1,nkpoints-2
+		do iky=1,nkpoints-2
+			do ikz=1,nkpoints-2
 				eigenvector = eigenvec_data(:,ikx,iky,ikz)
 
 				dn(:,1) = eigenvec_data(:,ikx+1,iky,ikz) - eigenvector
@@ -141,7 +141,9 @@ Program Projected_band_structure
 				connection(1,ikx,iky,ikz) = dot_product(eigenvector,dn(:,1))
 				connection(2,ikx,iky,ikz) = dot_product(eigenvector,dn(:,2))
 				connection(3,ikx,iky,ikz) = dot_product(eigenvector,dn(:,3))
-				connection(:,ikx,iky,ikz) = connection(:,ikx,iky,ikz) / dk
+				connection(:,ikx,iky,ikz) = connection(:,ikx,iky,ikz) /dk
+				! write(100, '(3(1x,f12.2))') real(connection(1,ikx,iky,ikz)),real(connection(2,ikx,iky,ikz)),real(connection(3,ikx,iky,ikz))
+
 				! print *, ikx,iky,ikz
 			enddo	
 		enddo
@@ -160,7 +162,9 @@ Program Projected_band_structure
 				curvature(1,ikx,iky,ikz) = (dAdy(3) - dAdz(2)) ! Compute curl
 				curvature(2,ikx,iky,ikz) = (dAdz(1) - dAdx(3))
 				curvature(3,ikx,iky,ikz) = (dAdx(2) - dAdy(1))
-				curvature(:,ikx,iky,ikz) = curvature(:,ikx,iky,ikz) / dk
+				curvature(:,ikx,iky,ikz) = curvature(:,ikx,iky,ikz) /dk
+				print*,real(curvature(3,ikx,iky,ikz))
+				write(100, '(3(1x,f12.2))') real(curvature(1,ikx,iky,ikz)),real(curvature(2,ikx,iky,ikz)),real(curvature(3,ikx,iky,ikz))
 			enddo	
 		enddo
 	enddo
