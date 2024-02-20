@@ -13,7 +13,6 @@ end module parameters
 Program Projected_band_structure
     use parameters
     Implicit None
-    INCLUDE 'mpif.h'
 !------------------------------------------------------
     real*8 dxy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
@@ -124,7 +123,7 @@ Program Projected_band_structure
       endif
       count=count+1
       ikp=0
-      do ik=kpmin,min(kpmax,nkp3)
+      do ik=1,nkp3
          ikp=ikp+1
         Hk = 0d0
         do ir=1,nr

@@ -1,3 +1,5 @@
 .vscode/*
 Makefile
 parameters.mod
+super_H_top.dat
+super_H_bottom.dat
