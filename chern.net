@@ -1,5 +1,5 @@
 //
-// time: Tue Feb 20 13:53:03 2024
+// time: Tue Feb 20 18:15:36 2024
 //
 // version: 3.2.0 (format), 4.4.4 (DX)
 //
@@ -16,7 +16,7 @@ macro main(
 ) -> (
 ) {
     // 
-    // node Arrow3D[1]: x = 309, y = 303, inputs = 0, label = Arrow3D
+    // node Arrow3D[1]: x = 282, y = 262, inputs = 0, label = Arrow3D
     //
 main_Arrow3D_1_out_1 = 
     Arrow3D(
@@ -28,7 +28,7 @@ main_Arrow3D_1_out_1 =
     // output[2]: visible = 1, type = 32, value = "berrycurvature.dx"
     //
     // 
-    // node Import[1]: x = 41, y = 121, inputs = 6, label = Import
+    // node Import[1]: x = 40, y = 121, inputs = 6, label = Import
     //
 main_Import_1_out_1 = 
     Import(
@@ -40,9 +40,9 @@ main_Import_1_out_1 =
     main_Import_1_in_6
     ) [instance: 1, cache: 1];
     // 
-    // node Compute[1]: x = 44, y = 188, inputs = 3, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "[$0.0,$0.1,$0.2]"
-    // expression: value = [a.0,a.1,a.2]
+    // node Compute[1]: x = 43, y = 188, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "sqrt($0.0**2+$0.1**2+$0.2**2)>1.5*10**0?[$0.0,$0.1,$0.2]:[0,0,0]"
+    // expression: value = sqrt(a.0**2+a.1**2+a.2**2)>1.5*10**0?[a.0,a.1,a.2]:[0,0,0]
     // name[2]: value = a
     // name[3]: value = b
     //
@@ -53,7 +53,7 @@ main_Compute_1_out_1 =
     main_Compute_1_in_3
     ) [instance: 1, cache: 1];
     // 
-    // node Mark[1]: x = 56, y = 277, inputs = 2, label = Mark
+    // node Mark[1]: x = 55, y = 277, inputs = 2, label = Mark
     // input[2]: defaulting = 0, visible = 1, type = 32, value = "positions"
     //
 main_Mark_1_out_1 = 
@@ -83,19 +83,22 @@ main_Unmark_1_out_1 =
     main_Unmark_1_in_2
     ) [instance: 1, cache: 1];
     // 
-    // node Sample[1]: x = 214, y = 255, inputs = 2, label = Sample
+    // node Reduce[1]: x = 160, y = 307, inputs = 2, label = Reduce
+    // input[2]: defaulting = 0, visible = 1, type = 16777221, value = { 3.0 }
     //
-main_Sample_1_out_1 = 
-    Sample(
+main_Reduce_1_out_1 = 
+    Reduce(
     main_Unmark_1_out_1,
-    main_Sample_1_in_2
+    main_Reduce_1_in_2
     ) [instance: 1, cache: 1];
     // 
-    // node AutoGlyph[1]: x = 175, y = 425, inputs = 7, label = AutoGlyph
+    // node AutoGlyph[1]: x = 177, y = 427, inputs = 7, label = AutoGlyph
+    // input[3]: defaulting = 0, visible = 1, type = 5, value = 3.0
+    // input[4]: defaulting = 0, visible = 1, type = 5, value = 3.0
     //
 main_AutoGlyph_1_out_1 = 
     AutoGlyph(
-    main_Sample_1_out_1,
+    main_Reduce_1_out_1,
     main_Arrow3D_1_out_1,
     main_AutoGlyph_1_in_3,
     main_AutoGlyph_1_in_4,
@@ -105,15 +108,15 @@ main_AutoGlyph_1_out_1 =
     ) [instance: 1, cache: 1];
     // 
     // node Image[1]: x = 318, y = 525, inputs = 49, label = Image
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "Image_1"
+    // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.0643904 -0.064786 0.390487]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-0.0643904 -0.064786 0.842855]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 0.242424
-    // input[8]: defaulting = 0, visible = 0, type = 1, value = 640
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.75
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 1 0]
-    // input[11]: defaulting = 0, visible = 0, type = 5, value = 30.0001
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.00967387 0.0477511 0.446876]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-0.0145803 0.108133 0.438995]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 0.0327385
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 877
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.801
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.712095 0.147454 0.686424]
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 29.9998
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -121,11 +124,13 @@ main_AutoGlyph_1_out_1 =
     // input[17]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
-    // input[29]: defaulting = 1, visible = 0, type = 3, value = 0
+    // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[33]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[36]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
     // depth: value = 24
-    // window: position = (0.0068,0.0326), size = 0.4449x0.5674, screen = 0
+    // window: position = (0.3612,0.0489), size = 0.6061x0.8087, screen = 0
     // internal caching: 1
-    // interaction mode = NONE
     //
 main_Image_1_out_1,
 main_Image_1_out_2,
@@ -192,7 +197,7 @@ main_Import_1_in_4 = NULL;
 main_Import_1_in_5 = NULL;
 main_Import_1_in_6 = NULL;
 main_Import_1_out_1 = NULL;
-main_Compute_1_in_1 = "[$0.0,$0.1,$0.2]";
+main_Compute_1_in_1 = "sqrt($0.0**2+$0.1**2+$0.2**2)>1.5*10**0?[$0.0,$0.1,$0.2]:[0,0,0]";
 main_Compute_1_in_3 = NULL;
 main_Compute_1_out_1 = NULL;
 main_Mark_1_in_2 = "positions";
@@ -202,10 +207,10 @@ main_Compute_2_in_3 = NULL;
 main_Compute_2_out_1 = NULL;
 main_Unmark_1_in_2 = NULL;
 main_Unmark_1_out_1 = NULL;
-main_Sample_1_in_2 = NULL;
-main_Sample_1_out_1 = NULL;
-main_AutoGlyph_1_in_3 = NULL;
-main_AutoGlyph_1_in_4 = NULL;
+main_Reduce_1_in_2 = { 3.0 };
+main_Reduce_1_out_1 = NULL;
+main_AutoGlyph_1_in_3 = 3.0;
+main_AutoGlyph_1_in_4 = 3.0;
 main_AutoGlyph_1_in_5 = NULL;
 main_AutoGlyph_1_in_6 = NULL;
 main_AutoGlyph_1_in_7 = NULL;
@@ -525,13 +530,13 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-0.0643904 -0.064786 0.390487];
-main_Image_1_in_6 = [-0.0643904 -0.064786 0.842855];
-main_Image_1_in_7 = 0.242424;
-main_Image_1_in_8 = 640;
-main_Image_1_in_9 = 0.75;
-main_Image_1_in_10 = [0 1 0];
-main_Image_1_in_11 = 30.0001;
+main_Image_1_in_5 = [-0.00967387 0.0477511 0.446876];
+main_Image_1_in_6 = [-0.0145803 0.108133 0.438995];
+main_Image_1_in_7 = 0.0327385;
+main_Image_1_in_8 = 877;
+main_Image_1_in_9 = 0.801;
+main_Image_1_in_10 = [0.712095 0.147454 0.686424];
+main_Image_1_in_11 = NULL;
 main_Image_1_in_12 = 0;
 main_Image_1_in_13 = NULL;
 main_Image_1_in_14 = 1;
@@ -548,19 +553,19 @@ main_Image_1_in_25 = NULL;
 main_Image_1_in_26 = NULL;
 main_Image_1_in_27 = NULL;
 main_Image_1_in_28 = NULL;
-main_Image_1_in_29 = NULL;
+main_Image_1_in_29 = 1;
 main_Image_1_in_30 = NULL;
 main_Image_1_in_31 = NULL;
 main_Image_1_in_32 = NULL;
-main_Image_1_in_33 = NULL;
+main_Image_1_in_33 = 1;
 main_Image_1_in_34 = NULL;
 main_Image_1_in_35 = NULL;
-main_Image_1_in_36 = NULL;
+main_Image_1_in_36 = 1;
 main_Image_1_in_37 = NULL;
 main_Image_1_in_38 = NULL;
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
-main_Image_1_in_41 = NULL;
+main_Image_1_in_41 = "rotate";
 main_Image_1_in_42 = NULL;
 main_Image_1_in_43 = NULL;
 main_Image_1_in_44 = NULL;
