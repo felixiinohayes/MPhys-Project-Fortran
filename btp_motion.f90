@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,kmax=0.06,kzmax=0.035,amax=0.05,acritical=0.77966
-    integer,parameter::meshres=10,zmeshres=10,ares=2,nkpoints=(2*meshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,&
+    integer,parameter::meshres=10,zmeshres=10,ares=4,nkpoints=(2*meshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,&
                                                    nkp3=nkpoints*nkpoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
@@ -13,6 +13,7 @@ end module parameters
 Program Projected_band_structure
     use parameters
     Implicit None
+	INCLUDE "mpif.h"
 !------------------------------------------------------
     real*8 dxy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
@@ -94,7 +95,7 @@ Program Projected_band_structure
         do ikz=-zmeshres,zmeshres
           ik=ik+1
           kpoint(1,ik)=ikx*dxy
-          kpoint(2,ik)=iky*dxy
+          kpoint(2,ik)=iky*dxy + 0.048d0
           kpoint(3,ik)=ikz*dz + 0.5d0*bvec(3,3)
         enddo
       enddo
@@ -134,6 +135,7 @@ Program Projected_band_structure
         enddo
         call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
         ene(:,ikp)=k_ene(12:13)
+		if (abs(k_ene(13)-k_ene(12)) < 0.003) print *, a
       enddo
 
         CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &

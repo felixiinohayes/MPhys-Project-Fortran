@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.018,kymax=0.01,kzmax=0.035,amax=0.002,acritical=0.7807
-    integer,parameter::xmeshres=15,ymeshres=15,zmeshres=10,ares=7,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
+    real*8,parameter::ef= 4.18903772,kxmax=0.0d0,kymax=0.000001,kzmax=0.005,a=0.791
+    integer,parameter::xmeshres=15,ymeshres=15,zmeshres=15,ares=7,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -18,7 +18,7 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
-    real*8 phase,pi2,x1,y1,x2,y2,a,minbandgap
+    real*8 phase,pi2,x1,y1,x2,y2,minbandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
     real*8, allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
@@ -75,7 +75,6 @@ Program Projected_band_structure
     dx=kxmax/xmeshres
 	dy=kymax/ymeshres
     dz=kzmax/zmeshres
-    da=amax/ares
 
 !----- Create header of dx files
 
@@ -89,14 +88,14 @@ Program Projected_band_structure
     endif
     
   !----- Create a uniform k-mesh
-      ik=0
+	ik=0
     do ikx=-xmeshres,xmeshres
       do iky=-ymeshres,ymeshres
         do ikz=-zmeshres,zmeshres
           ik=ik+1
-          kpoint(1,ik)=ikx*dx !+ kxmax
-          kpoint(2,ik)=iky*dy + 0.049
-          kpoint(3,ik)=ikz*dz + 0.5d0*bvec(3,3)
+          kpoint(1,ik)=ikx*dx + 0.01702d0
+          kpoint(2,ik)=iky*dy + 0.046831d0
+          kpoint(3,ik)=ikz*dz + 0.4747d0
         enddo
       enddo
     enddo
@@ -114,55 +113,32 @@ Program Projected_band_structure
     allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), ene(2,kpool),k_ene(nb),energy(2,nkp3))
 
     count=3
-    do ia=-ares,ares
-        print *,'interpolation =',ia+ares,'processor =',myid
-      a=ia*da + acritical
+    if(myid.eq.0) then
+        write(100, '(a,i8,a,i8,a,i10,a)') 'object',count,' class array type float rank 1 shape',2,&
+                                     ' item', nkp3, ' data follows'
+    endif
+    count=count+1
 
-      if(myid.eq.0) then
-          write(100, '(a,i8,a,i8,a,i10,a)') 'object',count,' class array type float rank 1 shape',2,&
-                                       ' item', nkp3, ' data follows'
-      endif
-      count=count+1
-      ikp=0
-	  minbandgap=0d0
-      do ik=kpmin,min(kpmax,nkp3)
-         ikp=ikp+1
-        Hk = 0d0
-        do ir=1,nr
-          !phase = kpoint(1,ik)*rvec(1,ir)+kpoint(2,ik)*rvec(2,ir)+kpoint(3,ik)*rvec(3,ir)
-          phase = dot_product(kpoint(:,ik),rvec(:,ir))
-          HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
-          !HK=HK+(top_Hr(:,:,i)*dcmplx(cos(phase),-sin(phase))/float(ndeg(i)))
-        enddo
-        call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
-        ene(:,ikp)=k_ene(12:13)
-		! if (abs(k_ene(13)-k_ene(12)) < minbandgap) minbandgap = abs(k_ene(13)-k_ene(12))
-		if (abs(k_ene(13)-k_ene(12)) < 0.001) print *, a,kpoint(:,ik)
+    ikp=0
+    minbandgap=0d0
+    do ik=kpmin,min(kpmax,nkp3)
+       ikp=ikp+1
+      Hk = 0d0
+      do ir=1,nr
+        !phase = kpoint(1,ik)*rvec(1,ir)+kpoint(2,ik)*rvec(2,ir)+kpoint(3,ik)*rvec(3,ir)
+        phase = dot_product(kpoint(:,ik),rvec(:,ir))
+        HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+        !HK=HK+(top_Hr(:,:,i)*dcmplx(cos(phase),-sin(phase))/float(ndeg(i)))
       enddo
-
-        CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &
-                         ENERGY,ECOUNTS,MPI_DOUBLE_PRECISION, &
-                              0,MPI_COMM_WORLD,IERR)
-        if(myid.eq.0)  write(100, '(2(1x,f12.6))') energy
-        if(myid.eq.0)  write(100, '(a)') 'attribute "dep" string "positions"'
+      call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
+      ene(:,ikp)=k_ene(12:13)
+  	! if (abs(k_ene(13)-k_ene(12)) < minbandgap) minbandgap = abs(k_ene(13)-k_ene(12))
+  	if (abs(k_ene(13)-k_ene(12)) < 0.00032d0) print *,abs(k_ene(13)-k_ene(12)), a,kpoint(:,ik)
     enddo
 
-    if(myid.eq.0) then
-        do i=0,napoints-1
-            write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-            'object',napoints+3+i,' class field', &
-            'component "positions" value 1', &
-            'component "connections" value 2', &
-            'component "data" value ',3+i
-        enddo
-        write(100, '(a)') 'object "series" class series'
-        do i=0,napoints-1
-            write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+napoints+3), ' position', i
-        enddo
-
-        write(100, '(A)') 'end'
-    endif
-    
+	CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &
+				   ENERGY,ECOUNTS,MPI_DOUBLE_PRECISION, &
+						0,MPI_COMM_WORLD,IERR)
     deallocate(energy)
     call MPI_FINALIZE( IERR )
 end Program Projected_band_structure
