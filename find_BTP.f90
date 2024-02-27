@@ -133,7 +133,7 @@ Program Projected_band_structure
       call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
       ene(:,ikp)=k_ene(12:13)
   	! if (abs(k_ene(13)-k_ene(12)) < minbandgap) minbandgap = abs(k_ene(13)-k_ene(12))
-  	if (abs(k_ene(13)-k_ene(12)) < 0.00032d0) print *,abs(k_ene(13)-k_ene(12)), a,kpoint(:,ik)
+  	if (abs(k_ene(13)-k_ene(12)) < 0.00035d0) print *,abs(k_ene(13)-k_ene(12)), a,kpoint(:,ik)
     enddo
 
 	CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &
