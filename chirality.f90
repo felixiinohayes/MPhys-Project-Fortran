@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.0000000001,a=0.791
+    real*8,parameter::ef= 4.18903772,kmax=0.001,a=0.791
     integer,parameter::meshres=1,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
@@ -72,11 +72,13 @@ Program Projected_band_structure
 
     dk=kmax/(nkpoints-1)
 
-	choice = 2
+	choice = 1
 
 	offset(:,1) = (/0.017665681958398235,0.046638430945586576,0.47514974714462382/)
 	offset(:,2) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798 /)
-	!offset(:,2) = (/0.0493647897886,-0.00683297710,0.43887604172172545/) 
+
+	!offset(:,1) = (/0.049353657200408851,0.0069912476907357081,0.43897293203235604/)
+	!offset(:,2) = (/0.0493647897886,-0.00683297710,0.43887604172172545/)  
     
   !----- Create a uniform k-mesh
 
@@ -119,7 +121,7 @@ Program Projected_band_structure
 
 	allocate(H_eff(2,2,4),dHdK(2,2,3))
 
-	!Constructing effective Hamiltonian and finite difference in each direction
+	!Constructing effective Hamiltonian and finite difference in each direct
 	do k = 1,3
 		do i=1,2
 			do j=1,2
@@ -129,11 +131,12 @@ Program Projected_band_structure
 				H_eff(i,j,2) = dot_product(eig_v(:,i,1,1,1),matmul(Hamk(:,:,2,1,1),eig_v(:,j,1,1,1)))
 				H_eff(i,j,3) = dot_product(eig_v(:,i,1,1,1),matmul(Hamk(:,:,1,2,1),eig_v(:,j,1,1,1)))
 				H_eff(i,j,4) = dot_product(eig_v(:,i,1,1,1),matmul(Hamk(:,:,1,1,2),eig_v(:,j,1,1,1)))
+				!write(*, '(a,3(1x,i8),a,2(1x,f12.4))') 'Element: ',i,j,k,' = ', H_eff(i,j,k+1)
 
 				dHdK(i,j,1) = (H_eff(i,j,2) - H_eff(i,j,1))/dk
 				dHdK(i,j,2) = (H_eff(i,j,3) - H_eff(i,j,1))/dk
 				dHdK(i,j,3) = (H_eff(i,j,4) - H_eff(i,j,1))/dk
-				write(*, '(a,3(1x,i8),a,2(1x,f12.4))') 'Element: ',i,j,k,' = ', dHdK(i,j,k)
+				write(*, '(a,2(1x,i8),a,2(1x,f12.4))') 'Element: ',i,j,' = ', dHdK(i,j,k)
 			enddo
 		enddo
 		print*,''
@@ -152,7 +155,6 @@ Program Projected_band_structure
 	v2xv3(3) = v(1,2)*v(2,3) - v(2,2)*v(1,3)
 
 	chern= dot_product(v(:,1),v2xv3)
-
 	print *, 'Chirality =', chern
 
 	deallocate(Hamk,Hk,eig_v)
@@ -160,9 +162,5 @@ Program Projected_band_structure
 	! CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &
 	!                  ENERGY,ECOUNTS,MPI_DOUBLE_PRECISION, &
 	!                       0,MPI_COMM_WORLD,IERR)
-	! write(100, '(2(1x,f12.6))') energy
-
-	! write(100, '(A)') 'end'
     
 end Program Projected_band_structure
-

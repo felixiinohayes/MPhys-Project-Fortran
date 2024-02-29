@@ -15,8 +15,8 @@ Program Projected_band_structure
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), kmax=0.005d0,minbandgap=0.5d0
-    real*8 phase,pi2,x1,y1,x2,y2,bandgap
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), kmax=0.008d0
+    real*8 phase,pi2,x1,y1,x2,y2,bandgap,minbandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3),minkpoint(3),kmiddle_initial(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
     real*8, allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
@@ -62,11 +62,12 @@ Program Projected_band_structure
        rvec(:,k) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) + rvec_data(3)*avec(:,3)
     enddo
 
-	kmiddle_initial = (/0.013049,0.043729,0.47159/)
+	kmiddle_initial = (/-0.017,-0.05,0.435/)
 	lwork=max(1,2*nb-1)
 	allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 	allocate(k_ene(nb))
 
+	minbandgap=0.5d0
 	call find_minbandgap(kmax,kmiddle_initial,triv_Hr,top_Hr,rvec,ndeg,minbandgap)
 
 
@@ -81,8 +82,7 @@ contains
 		complex*16 top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr)
 	  !----- Create a uniform k-mesh
 		if (kmax < 0.0000000001) then
-			print*, kmiddle
-			print*, minbandgap
+			write(*,'(3(1x,f24.17))') kmiddle
 			return
 		endif
 
@@ -114,15 +114,15 @@ contains
 			call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
 
 			bandgap = abs(k_ene(13)-k_ene(12))	
-			print *, "test"
 			if (bandgap < minbandgap) then
-				! minbandgap = bandgap
+				minbandgap = bandgap
 				kmiddle = kpoint(:,ik)	
 			endif
 		enddo
-		call find_minbandgap(kmax/2,kmiddle,triv_Hr,top_Hr,rvec,ndeg,minbandgap)
+		call find_minbandgap(kmax/1.5,kmiddle,triv_Hr,top_Hr,rvec,ndeg,minbandgap)
 
 
 	END SUBROUTINE find_minbandgap
 
 end Program Projected_band_structure
+!1.7665681958398235E-002   4.6638430945586576E-002  0.47514974714462382  
