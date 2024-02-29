@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.000001,a=0.791
-    integer,parameter::meshres=1,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints
+    real*8,parameter::ef= 4.18903772,kmax=0.021,a=0.791
+    integer,parameter::meshres=20,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -15,10 +15,10 @@ Program Projected_band_structure
 !------------------------------------------------------
     real*8 dk
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
+    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,choice
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
-    real*8 phase,pi2,x1,y1,x2,y2,chern,div_F
-    real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3),normal(3),v(3,3),v2xv3(3)
+    real*8 phase,pi2,x1,y1,x2,y2,chern,div_F,diff_z
+    real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2),normal(3),v(3,3,nkpoints,nkpoints,nkpoints),v2xv3(3),sum(3)
 	real*8 dAdx(3),dAdy(3),dAdz(3)
 	complex*16 dn(18,3)
 	real*8,allocatable:: rvec(:,:),rwork(:)
@@ -47,7 +47,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='berrycurvature.dx')
+    open(100,file='curvature.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(3,nr),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -72,18 +72,24 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 
     dk=kmax/(nkpoints-1)
-	offset = (/0.01704126,0.04683,0.474759/)
+
+	choice = 1
+
+	offset(:,1) = (/0.017665681958398235 -(kmax/2),0.046638430945586576-(kmax/2),0.47514974714462382-(kmax/2)/)
+	offset(:,2) = (/-0.017659606952654991-(kmax/2),0.046513917396043679-(kmax/2),0.43965460613976798-(kmax/2)/)
+	!offset(:,2) = (/0.0493647897886,-0.00683297710,0.43887604172172545/) 
+
 
 !----- Create header of dx files
 
-	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-2,nkpoints-2,nkpoints-2
-	write(100, '(a,3(1x,f12.6))') 'origin',offset(1),offset(2),offset(3)
+	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-1,nkpoints-1,nkpoints-1
+	write(100, '(a,3(1x,f12.6))') 'origin',offset(1,choice),offset(2,choice),offset(3,choice)
 	write(100, '(a,3(1x,f12.6))') 'delta',dk,0d0,0d0
 	write(100, '(a,3(1x,f12.6))') 'delta',0d0,dk,0d0
 	write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
-	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-2,nkpoints-2,nkpoints-2
+	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-1,nkpoints-1,nkpoints-1
 	write(100, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
-								   ' item', (nkpoints-2)*(nkpoints-2)*(nkpoints-2), ' data follows'
+								   ' item', (nkpoints-1)*(nkpoints-1)*(nkpoints-1), ' data follows'
     
   !----- Create a uniform k-mesh
 
@@ -92,9 +98,9 @@ Program Projected_band_structure
 	do ikx=1,nkpoints	
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
-				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1)
-				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2)
-				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3)
+				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,choice)
+				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,choice)
+				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,choice)
 			enddo
 		enddo
 	enddo
@@ -109,8 +115,8 @@ Program Projected_band_structure
 	do ikx=1,nkpoints
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
-				print*, ikp, "/", nkp3
 				ikp=ikp+1
+				print*, ikp, "/", nkp3
 				Hk = 0d0
 				do ir=1,nr
 					phase = dot_product(kpoint(:,ikx,iky,ikz),rvec(:,ir))
@@ -127,31 +133,35 @@ Program Projected_band_structure
 	allocate(H_eff(2,2),dHdK(2,2,3))
 
 	!Constructing effective Hamiltonian and finite difference in each direction
-	do i=1,2
-		do j=1,2
-			H_eff(i,j) = dot_product(eig_v(:,i,1,1,1),matmul(Hamk(:,:,1,1,1),eig_v(:,j,1,1,1)))
-			print*, 'Element: ',i,j,' = ', H_eff(i,j)
+	do ikx=1,nkpoints-1
+		do iky=1,nkpoints-1
+			do ikz=1,nkpoints-1
 
-			dHdK(i,j,1) = (dot_product(eig_v(:,i,1,1,1),matmul(Hamk(:,:,2,1,1),eig_v(:,j,1,1,1))) - H_eff(i,j))/dk
-			dHdK(i,j,2) = (dot_product(eig_v(:,i,1,1,1),matmul(Hamk(:,:,1,2,1),eig_v(:,j,1,1,1))) - H_eff(i,j))/dk
-			dHdK(i,j,3) = (dot_product(eig_v(:,i,1,1,1),matmul(Hamk(:,:,1,1,2),eig_v(:,j,1,1,1))) - H_eff(i,j))/dk
+				do i=1,2
+					do j=1,2
+						H_eff(i,j) = dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,iky,ikz),eig_v(:,j,ikx,iky,ikz)))
+						print*, 'Element: ',i,j,' = ', H_eff(i,j)
+
+						dHdK(i,j,1) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx+1,iky,   ikz  ),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
+						dHdK(i,j,2) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,  iky+1, ikz  ),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
+						dHdK(i,j,3) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,  iky,   ikz+1),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
+					enddo
+				enddo
+
+				!Constructing the V_i indices
+				do k=1,3
+					v(k,1,ikx,iky,ikz) =	real(dHdK(1,2,k))   
+					v(k,2,ikx,iky,ikz) =  -aimag(dHdK(1,2,k))
+					v(k,3,ikx,iky,ikz) =   		 dHdK(1,1,k)
+
+					sum(k) = v(k,1,ikx,iky,ikz) + v(k,2,ikx,iky,ikz) + v(k,3,ikx,iky,ikz)
+				enddo 
+
+				
+				write(100, '(3(1x,f12.2))') sum(1),sum(2),sum(3)
+			enddo
 		enddo
 	enddo
-
-	!Constructing the V_i indices
-	do k=1,3
-		v(k,1) =         dHdK(1,1,k)
-		v(k,2) =    real(dHdK(1,2,k))
-		v(k,3) =  -aimag(dHdK(1,2,k))
-	enddo 
-
-	v2xv3(1) = v(2,2)*v(3,3) - v(3,2)*v(2,3)
-	v2xv3(2) = v(1,2)*v(3,3) - v(3,2)*v(1,3)
-	v2xv3(3) = v(1,2)*v(2,3) - v(2,2)*v(1,3)
-
-	chern= dot_product(v(:,1),v2xv3)
-
-	print *, 'Chern: ',chern
 
 	deallocate(Hamk,Hk,eig_v)
 
