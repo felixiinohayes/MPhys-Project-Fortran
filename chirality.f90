@@ -15,10 +15,10 @@ Program Projected_band_structure
 !------------------------------------------------------
     real*8 dk
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,choice
+    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,node,pair
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,chern,div_F,diff_z
-    real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2),normal(3),v(3,3),v2xv3(3)
+    real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2,4),normal(3),v(3,3),v2xv3(3)
 	real*8 dAdx(3),dAdy(3),dAdz(3)
 	complex*16 dn(18,3)
 	real*8,allocatable:: rvec(:,:),rwork(:)
@@ -72,13 +72,20 @@ Program Projected_band_structure
 
     dk=kmax/(nkpoints-1)
 
-	choice = 1
+	node = 1
+	pair = 1
 
-	offset(:,1) = (/0.017665681958398235,0.046638430945586576,0.47514974714462382/)
-	offset(:,2) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798 /)
+	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve
+	offset(:,2,1) = (/ 0.017665681958398235,0.046638430945586576,0.47514974714462382/) !-ve
 
-	!offset(:,1) = (/0.049353657200408851,0.0069912476907357081,0.43897293203235604/)
-	!offset(:,2) = (/0.0493647897886,-0.00683297710,0.43887604172172545/)  
+	offset(:,1,2) = (/ 0.04938161634772854, -0.00675093566736830,0.43883900501076140/) !+ve
+	offset(:,2,2) = (/ 0.049353657200408851,0.0069912476907357081,0.43897293203235604/) !-ve
+	
+	offset(:,1,3) = (/ 0.01766767357940942,-0.04650968222518360,0.47482330199264761/) !+ve
+	offset(:,2,3) = (/-0.01765908461242609,-0.04663940372172213,0.43932749486813732/) !-ve
+
+	offset(:,1,4) = (/-0.04936478978846845,0.006832977105296199,0.47559337269211072/) !+ve
+	offset(:,2,4) = (/-0.04933437400371396,-0.00708356750361176,0.47545289372516780/) !-ve
     
   !----- Create a uniform k-mesh
 
@@ -87,9 +94,9 @@ Program Projected_band_structure
 	do ikx=1,nkpoints	
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
-				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,choice)
-				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,choice)
-				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,choice)
+				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,node,pair)
+				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,node,pair)
+				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,node,pair)
 			enddo
 		enddo
 	enddo

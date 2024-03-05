@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.021,a=0.791
-    integer,parameter::meshres=20,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints
+    real*8,parameter::ef= 4.18903772,kmax=0.0005,a=0.791
+    integer,parameter::meshres=10,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,mid=meshres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -73,10 +73,10 @@ Program Projected_band_structure
 
     dk=kmax/(nkpoints-1)
 
-	choice = 1
+	choice = 2
 
-	offset(:,1) = (/0.017665681958398235 -(kmax/2),0.046638430945586576-(kmax/2),0.47514974714462382-(kmax/2)/)
-	offset(:,2) = (/-0.017659606952654991-(kmax/2),0.046513917396043679-(kmax/2),0.43965460613976798-(kmax/2)/)
+	offset(:,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve
+	offset(:,2) = (/ 0.017665681958398235,0.046638430945586576,0.47514974714462382/) !-ve
 	!offset(:,2) = (/0.0493647897886,-0.00683297710,0.43887604172172545/) 
 
 
@@ -98,9 +98,9 @@ Program Projected_band_structure
 	do ikx=1,nkpoints	
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
-				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,choice)
-				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,choice)
-				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,choice)
+				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,choice) - (kmax/2)
+				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,choice) - (kmax/2)
+				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,choice) - (kmax/2)
 			enddo
 		enddo
 	enddo
@@ -133,6 +133,8 @@ Program Projected_band_structure
 	allocate(H_eff(2,2),dHdK(2,2,3))
 
 	!Constructing effective Hamiltonian and finite difference in each direction
+	sum = 0
+
 	do ikx=1,nkpoints-1
 		do iky=1,nkpoints-1
 			do ikz=1,nkpoints-1
@@ -140,11 +142,10 @@ Program Projected_band_structure
 				do i=1,2
 					do j=1,2
 						H_eff(i,j) = dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,iky,ikz),eig_v(:,j,ikx,iky,ikz)))
-						print*, 'Element: ',i,j,' = ', H_eff(i,j)
 
-						dHdK(i,j,1) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx+1,iky,   ikz  ),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
-						dHdK(i,j,2) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,  iky+1, ikz  ),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
-						dHdK(i,j,3) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,  iky,   ikz+1),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
+						dHdK(i,j,1) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx+1,iky   ,ikz  ),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
+						dHdK(i,j,2) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx  ,iky+1 ,ikz  ),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
+						dHdK(i,j,3) = (dot_product(eig_v(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx  ,iky   ,ikz+1),eig_v(:,j,ikx,iky,ikz))) - H_eff(i,j))/dk
 					enddo
 				enddo
 
@@ -156,12 +157,19 @@ Program Projected_band_structure
 
 					sum(k) = v(k,1,ikx,iky,ikz) + v(k,2,ikx,iky,ikz) + v(k,3,ikx,iky,ikz)
 				enddo 
-
-				
+			
+				!Cross product v2 x v3
+				v2xv3(1) = v(2,2,mid,mid,mid)*v(3,3,mid,mid,mid) - v(3,2,mid,mid,mid)*v(2,3,mid,mid,mid)
+				v2xv3(2) = v(1,2,mid,mid,mid)*v(3,3,mid,mid,mid) - v(3,2,mid,mid,mid)*v(1,3,mid,mid,mid)
+				v2xv3(3) = v(1,2,mid,mid,mid)*v(2,3,mid,mid,mid) - v(2,2,mid,mid,mid)*v(1,3,mid,mid,mid)
+			
+				chern= dot_product(v(:,1,mid,mid,mid),v2xv3)
 				write(100, '(3(1x,f12.2))') sum(1),sum(2),sum(3)
 			enddo
 		enddo
 	enddo
+
+	print *, 'Chirality =', chern
 
 	deallocate(Hamk,Hk,eig_v)
 
@@ -179,4 +187,5 @@ Program Projected_band_structure
 	! write(100, '(A)') 'end'
     
 end Program Projected_band_structure
+
 

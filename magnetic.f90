@@ -11,7 +11,7 @@
      character(len=80) nnkp,line,top_file,triv_file
      integer*4,parameter::nk=(nkpath-1)*np+1
      integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,j1,j2,nb,l
-     real*8,parameter::third=1d0/3d0, alpha = 1, Bx = 0.2d0
+     real*8,parameter::third=1d0/3d0, alpha = 1, Bx = 0.06d0
      real*8 phase,pi2,jk,a,b,x1,y1
      real*8 xk(nk),bvec(3,3),avec(3,3),ktemp1(3),ktemp2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
      real*8,allocatable:: rvec(:,:),rvec_data(:,:),ene(:,:),rwork(:),od(:,:,:)
@@ -33,28 +33,35 @@
          read(98,'(a)')line
          read(98,*)bvec
 !--------------kpath
-     data kpoints(:,1) /     0.22d0,      0.0d0,    0.5d0/  !L
-     data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
-     data kpoints(:,3) /     0.22d0,      0.0d0,    0.5d0/  !H
+
+     ! ky -> -ky 
+     kpoints(:,1) = [ 0.25d0,  -0.5d0,   0.5d0 ]  !H
+     kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
+     kpoints(:,3) = [ -0.25d0,   0.5d0,   0.5d0 ]  !-H
+
+
+     ! kx -> -kx
+     ! kpoints(:,1) = [ -0.5d0,   0.0d0,   0.5d0 ]  !L
+     ! kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
+     ! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.5d0 ]  !-L
 
      data klabel     /'L','A','H'/
   
      do j = 1, nkpath-1
-           sign = 1
-           if(j ==1) sign = -1
-         do i = 1, np
-             ik = i + np*(j-1)
-             dk = (kpoints(:,j+1)-kpoints(:,j))/np
-             kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
+          sign = 1
+          if(j ==1) sign = -1
+          do i = 1, np
+               ik = i + np*(j-1)
+               dk = (kpoints(:,j+1)-kpoints(:,j))/np
+               kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
 
-             xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
-             !kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
-             !xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
+               kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
+               xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
 
-           !  if(ik==2*np) then
-           !         kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
-           !         xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
-           !  endif
+               if(ik==2*np) then
+                    kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
+                    xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
+               endif
          enddo
      enddo
 
@@ -84,8 +91,12 @@
     allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 
 !------- Construct B perturbation
-	allocate(B_pt(nb,nb))
-	data B_sigma /0d0,Bx,Bx,0d0/
+	allocate(B_pt(nb, nb))
+
+     !B along Y axis
+	B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
+     B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
+
 	B_pt=0d0
 	do i=1,nb
 		do j=1,nb
@@ -103,14 +114,20 @@
 		enddo
 	enddo
 
+     ! do i = 1,nb
+     !      write(*, '(18(1x,f12.4))') real(B_pt(i,:))
+     ! enddo
 !---- Fourier transform H(R) to H(k)
     ene=0d0
     do k=1,nk
        HK=(0d0,0d0)
        do j=1,nr
           phase=0.0d0
+
+          rvec(:,j) = rvec_data(1,j)*avec(:,1) + rvec_data(2,j)*avec(:,2) + rvec_data(3,j)*avec(:,3)
+
           do i=1,3
-             phase=phase+kpath(i,k)*rvec(i,j)  * pi2
+             phase=phase+kpath(i,k)*rvec(i,j)  
           enddo
           HK=HK+((1-alpha)*(triv_hr(:,:,j))+alpha*(top_hr(:,:,j)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(j))
        enddo
@@ -120,7 +137,7 @@
 
 !---Fermi level:
     ef = (MAXVAL(ene(12, :)) + MINVAL(ene(13, :)))/2.0d0
-    print * , ef
+    print * ,"E_F: ", ef
 
 !---Orbital probability:
 
@@ -134,7 +151,7 @@
          write(100,*)
          write(100,*)
     enddo
-    call write_plt(nkpath,xkl,klabel,ef)
+    call write_plt(nkpath,xkl,klabel,ef,Bx)
     stop
 333 write(*,'(3a)')'ERROR: input file "',trim(adjustl(nnkp)),' not found'
     stop
@@ -143,33 +160,37 @@
 
     end
 
-    subroutine write_plt(nkp,xkl,kl,ef)
+    subroutine write_plt(nkp,xkl,kl,ef,Bx)
           implicit none
           integer nkp,i
-          real*8 xkl(nkp),ef
+          real*8 xkl(nkp),ef,Bx
           character(len=30)kl(nkp)
           
           open(99,file='band.plt')
           write(99,'(a,f12.8)')'ef=',ef
           write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -0.12 : 0.12]'
           write(99,'(a)') &
-               'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
+               'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 0.5 size 5.00in, 5.00in'
           write(99,'(a,f4.2,a)')'set output "band.pdf"'
-          write(99,'(14(a,/),a)') &
+          write(99, '(a,f12.3,a)') 'set title "B =',Bx,'T (along y-axis)"'
+          write(99,'(17(a,/),a)') &
                'set border',&
-               'unset xtics',&
-               'unset ytics',&
+               'set xtics',&
+               'set ytics',&
                'set encoding iso_8859_1',&
+               'set xlabel "k_y"',&
+               'set ylabel "E"',&
                'set size ratio 0 1.0,1.0',&
-               'set yrange [-0.6: 0.6 ]',&
-               'set xrange [-0.2: 0.2 ]',&
+               'set yrange [-0.4: 0.4 ]',&
+               'set xrange [-0.12: 0.12 ]',&
                'unset key',&
                'set mytics 2',&
                'set parametric',&
                'set trange [-10:10]',&
                'set multiplot',&
-			   'set arrow from 0,10 to 0, -10 nohead lc rgb "red"',&
-               'plot "band.dat" u 1:($2-ef) with l lt 1 lw 3.5 lc rgb "black"',&
+			   'set arrow from 0,-0.4 to 0, 0.4 nohead lc rgb "red"',&
+                  'set arrow from -0.12,0 to 0.12, 0  nohead lc rgb "red"',&
+               'plot "band.dat" u 1:($2-ef) with l lt 1 lw 1 lc rgb "black"',&
                'unset multiplot'
      
          end subroutine write_plt

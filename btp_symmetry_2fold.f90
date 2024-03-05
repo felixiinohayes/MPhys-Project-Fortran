@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.018,kymax=0.01,kzmax=0.035,amax=0.002,acritical=0.7807
-    integer,parameter::xmeshres=15,ymeshres=15,zmeshres=10,ares=7,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
+    real*8,parameter::ef= 4.18903772,kxmax=0.03,kymax=0.03,kzmax=0.035,amax=0.01892,acritical=0.79858
+    integer,parameter::xmeshres=30,ymeshres=30,zmeshres=20,ares=5,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,13 +17,13 @@ Program Projected_band_structure
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 1.0d0
     real*8 phase,pi2,x1,y1,x2,y2,a,minbandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
     real*8, allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
     integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable:: Hk(:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:)
+    complex*16,allocatable:: Hk(:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),B_pt(:,:),B_sigma(:,:)
 !------------------------------------------------------
     call init_mpi
 
@@ -73,7 +73,7 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 
     dx=kxmax/xmeshres
-	dy=kymax/ymeshres
+    dy=kymax/ymeshres
     dz=kzmax/zmeshres
     da=amax/ares
 
@@ -94,8 +94,8 @@ Program Projected_band_structure
       do iky=-ymeshres,ymeshres
         do ikz=-zmeshres,zmeshres
           ik=ik+1
-          kpoint(1,ik)=ikx*dx !+ kxmax
-          kpoint(2,ik)=iky*dy + 0.049
+          kpoint(1,ik)=ikx*dx + kxmax
+          kpoint(2,ik)=iky*dy + kymax
           kpoint(3,ik)=ikz*dz + 0.5d0*bvec(3,3)
         enddo
       enddo
@@ -109,6 +109,26 @@ Program Projected_band_structure
 
     ecounts=kpool*2 ! to account for bands 12 and 13
 
+!------- Construct B perturbation
+    allocate(B_pt(nb, nb),B_sigma(2,2))
+    B_sigma(1,:) = [0d0,  B]
+    B_sigma(2,:) = [B,  0d0]
+    B_pt=0d0
+    do i=1,nb
+	    do j=1,nb
+		    if (i==j) then
+			    if (i<10) then
+					B_pt(i,j) = B_sigma(1,1)
+				else
+					B_pt(i,j) = B_sigma(2,2)
+				endif
+			else if (i==j+9) then
+				B_pt(i,j) = B_sigma(2,1)
+			else if (j==i+9) then
+				B_pt(i,j) = B_sigma(1,2)
+			endif
+		enddo
+	enddo
 
 !----- Perform fourier transform
     allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), ene(2,kpool),k_ene(nb),energy(2,nkp3))
@@ -129,15 +149,12 @@ Program Projected_band_structure
          ikp=ikp+1
         Hk = 0d0
         do ir=1,nr
-          !phase = kpoint(1,ik)*rvec(1,ir)+kpoint(2,ik)*rvec(2,ir)+kpoint(3,ik)*rvec(3,ir)
           phase = dot_product(kpoint(:,ik),rvec(:,ir))
           HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
-          !HK=HK+(top_Hr(:,:,i)*dcmplx(cos(phase),-sin(phase))/float(ndeg(i)))
         enddo
+         HK = HK+B_pt
         call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
         ene(:,ikp)=k_ene(12:13)
-		! if (abs(k_ene(13)-k_ene(12)) < minbandgap) minbandgap = abs(k_ene(13)-k_ene(12))
-		if (abs(k_ene(13)-k_ene(12)) < 0.001) print *, a,kpoint(:,ik)
       enddo
 
         CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &
