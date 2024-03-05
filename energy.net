@@ -1,11 +1,11 @@
 //
-// time: Tue Nov 28 22:04:28 2023
+// time: Tue Mar  5 13:46:07 2024
 //
 // version: 3.2.0 (format), 4.4.4 (DX)
 //
 //
 // MODULE main
-// workspace: width = 751, height = 721
+// workspace: width = 1346, height = 721
 // layout: snap = 0, width = 50, height = 50, align = NN
 //
 macro main(
@@ -13,11 +13,11 @@ macro main(
 ) {
     // 
     // node FileSelector[2]: x = 101, y = 47, inputs = 0, label = FileSelector
-    // output[1]: visible = 1, type = 32, value = "/home/felix/Desktop/MPhys-Project-Fortran/energy.dx"
+    // output[1]: visible = 1, type = 32, value = "/home/felix/Documents/MPhys-Project-Fortran/energy.dx"
     // output[2]: visible = 1, type = 32, value = "energy.dx"
     //
     // 
-    // node Import[1]: x = 110, y = 170, inputs = 6, label = Import
+    // node Import[1]: x = 129, y = 121, inputs = 6, label = Import
     //
 main_Import_1_out_1 = 
     Import(
@@ -29,6 +29,19 @@ main_Import_1_out_1 =
     main_Import_1_in_6
     ) [instance: 1, cache: 1];
     // 
+    // node Compute[10]: x = 257, y = 169, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0*0.6"
+    // expression: value = a*0.6
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_10_out_1 = 
+    Compute(
+    main_Compute_10_in_1,
+    main_Import_1_out_1,
+    main_Compute_10_in_3
+    ) [instance: 10, cache: 1];
+    // 
     // node Compute[1]: x = 146, y = 276, inputs = 3, label = Compute
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,0)"
     // expression: value = select(a,0)
@@ -38,11 +51,12 @@ main_Import_1_out_1 =
 main_Compute_1_out_1 = 
     Compute(
     main_Compute_1_in_1,
-    main_Import_1_out_1,
+    main_Compute_10_out_1,
     main_Compute_1_in_3
     ) [instance: 1, cache: 1];
     // 
     // node AutoColor[1]: x = 164, y = 387, inputs = 10, label = AutoColor
+    // input[2]: defaulting = 0, visible = 0, type = 5, value = 0.8
     //
 main_AutoColor_1_out_1,
 main_AutoColor_1_out_2 = 
@@ -68,11 +82,12 @@ main_AutoColor_1_out_2 =
 main_Compute_3_out_1 = 
     Compute(
     main_Compute_3_in_1,
-    main_Import_1_out_1,
+    main_Compute_10_out_1,
     main_Compute_3_in_3
     ) [instance: 3, cache: 1];
     // 
     // node AutoColor[2]: x = 507, y = 385, inputs = 10, label = AutoColor
+    // input[2]: defaulting = 0, visible = 0, type = 5, value = 0.8
     //
 main_AutoColor_2_out_1,
 main_AutoColor_2_out_2 = 
@@ -88,6 +103,68 @@ main_AutoColor_2_out_2 =
     main_AutoColor_2_in_9,
     main_AutoColor_2_in_10
     ) [instance: 2, cache: 1];
+    // 
+    // node Compute[5]: x = 782, y = 284, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,2)"
+    // expression: value = select(a,2)
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_5_out_1 = 
+    Compute(
+    main_Compute_5_in_1,
+    main_Compute_10_out_1,
+    main_Compute_5_in_3
+    ) [instance: 5, cache: 1];
+    // 
+    // node AutoColor[3]: x = 800, y = 395, inputs = 10, label = AutoColor
+    // input[2]: defaulting = 0, visible = 0, type = 5, value = 0.7
+    //
+main_AutoColor_3_out_1,
+main_AutoColor_3_out_2 = 
+    AutoColor(
+    main_Compute_5_out_1,
+    main_AutoColor_3_in_2,
+    main_AutoColor_3_in_3,
+    main_AutoColor_3_in_4,
+    main_AutoColor_3_in_5,
+    main_AutoColor_3_in_6,
+    main_AutoColor_3_in_7,
+    main_AutoColor_3_in_8,
+    main_AutoColor_3_in_9,
+    main_AutoColor_3_in_10
+    ) [instance: 3, cache: 1];
+    // 
+    // node Compute[7]: x = 1084, y = 292, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,3)"
+    // expression: value = select(a,3)
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_7_out_1 = 
+    Compute(
+    main_Compute_7_in_1,
+    main_Compute_10_out_1,
+    main_Compute_7_in_3
+    ) [instance: 7, cache: 1];
+    // 
+    // node AutoColor[4]: x = 1102, y = 403, inputs = 10, label = AutoColor
+    // input[2]: defaulting = 0, visible = 0, type = 5, value = 0.7
+    //
+main_AutoColor_4_out_1,
+main_AutoColor_4_out_2 = 
+    AutoColor(
+    main_Compute_7_out_1,
+    main_AutoColor_4_in_2,
+    main_AutoColor_4_in_3,
+    main_AutoColor_4_in_4,
+    main_AutoColor_4_in_5,
+    main_AutoColor_4_in_6,
+    main_AutoColor_4_in_7,
+    main_AutoColor_4_in_8,
+    main_AutoColor_4_in_9,
+    main_AutoColor_4_in_10
+    ) [instance: 4, cache: 1];
     // 
     // node Mark[1]: x = 304, y = 346, inputs = 2, label = Mark
     // input[2]: defaulting = 0, visible = 1, type = 32, value = "positions"
@@ -149,12 +226,74 @@ main_Unmark_2_out_1 =
     main_Unmark_2_in_2
     ) [instance: 2, cache: 1];
     // 
-    // node Collect[1]: x = 478, y = 648, inputs = 2, label = Collect
+    // node Mark[3]: x = 940, y = 354, inputs = 2, label = Mark
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "positions"
+    //
+main_Mark_3_out_1 = 
+    Mark(
+    main_AutoColor_3_out_1,
+    main_Mark_3_in_2
+    ) [instance: 3, cache: 1];
+    // 
+    // node Compute[6]: x = 960, y = 473, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "[$0.0,$0.1,$1]"
+    // expression: value = [a.0,a.1,b]
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_6_out_1 = 
+    Compute(
+    main_Compute_6_in_1,
+    main_Mark_3_out_1,
+    main_Compute_5_out_1
+    ) [instance: 6, cache: 1];
+    // 
+    // node Unmark[3]: x = 984, y = 568, inputs = 2, label = Unmark
+    //
+main_Unmark_3_out_1 = 
+    Unmark(
+    main_Compute_6_out_1,
+    main_Unmark_3_in_2
+    ) [instance: 3, cache: 1];
+    // 
+    // node Mark[4]: x = 1242, y = 362, inputs = 2, label = Mark
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "positions"
+    //
+main_Mark_4_out_1 = 
+    Mark(
+    main_AutoColor_4_out_1,
+    main_Mark_4_in_2
+    ) [instance: 4, cache: 1];
+    // 
+    // node Compute[8]: x = 1262, y = 481, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "[$0.0,$0.1,$1]"
+    // expression: value = [a.0,a.1,b]
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_8_out_1 = 
+    Compute(
+    main_Compute_8_in_1,
+    main_Mark_4_out_1,
+    main_Compute_7_out_1
+    ) [instance: 8, cache: 1];
+    // 
+    // node Unmark[4]: x = 1286, y = 576, inputs = 2, label = Unmark
+    //
+main_Unmark_4_out_1 = 
+    Unmark(
+    main_Compute_8_out_1,
+    main_Unmark_4_in_2
+    ) [instance: 4, cache: 1];
+    // 
+    // node Collect[1]: x = 478, y = 648, inputs = 4, label = Collect
     //
 main_Collect_1_out_1 = 
     Collect(
     main_Unmark_1_out_1,
-    main_Unmark_2_out_1
+    main_Unmark_2_out_1,
+    main_Unmark_3_out_1,
+    main_Unmark_4_out_1
     ) [instance: 1, cache: 1];
     // 
     // node Shade[1]: x = 185, y = 526, inputs = 8, label = Shade
@@ -174,27 +313,36 @@ main_Shade_1_out_1 =
     // node Image[1]: x = 139, y = 659, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-1.49012e-08 -1.49012e-08 4.2528]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [3.95863 -4.07916 6.52339]
-    // input[7]: defaulting = 1, visible = 0, type = 5, value = 3.2802
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0 0 2.59967]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [3.25403 -2.96333 4.87465]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 3.07443
     // input[8]: defaulting = 0, visible = 0, type = 1, value = 1906
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.507
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [-0.212736 0.309446 0.926815]
-    // input[11]: defaulting = 0, visible = 0, type = 5, value = 30.0
-    // input[12]: defaulting = 0, visible = 0, type = 1, value = 1
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.476
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [-0.33039 0.319124 0.888258]
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 34.4757
+    // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
     // input[16]: defaulting = 1, visible = 0, type = 32, value = "none"
     // input[17]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
-    // input[19]: defaulting = 0, visible = 0, type = 3, value = 0
-    // input[25]: defaulting = 0, visible = 0, type = 32, value = "/home/felix/Desktop/MPhys-Project-Fortran/2dmeshenergytrivial"
+    // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
+    // input[22]: defaulting = 0, visible = 0, type = 32, value = "white"
+    // input[25]: defaulting = 0, visible = 0, type = 32, value = "/home/felix/Documents/MPhys-Project-Fortran/Bx2dmeshenergygridless.tiff"
     // input[26]: defaulting = 0, visible = 0, type = 32, value = "tiff"
+    // input[27]: defaulting = 0, visible = 0, type = 1, value = 2000
+    // input[28]: defaulting = 0, visible = 0, type = 5, value = 1.0
     // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[30]: defaulting = 0, visible = 0, type = 16777248, value = {"kx", "ky", "E / eV"}
-    // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
+    // input[31]: defaulting = 0, visible = 0, type = 16777217, value = { -2 -2 -10 }
+    // input[32]: defaulting = 1, visible = 0, type = 16777224, value = {[-0.2 -0.2 3.4] [0.2 0.2 4.8]}
+    // input[33]: defaulting = 0, visible = 0, type = 3, value = 0
+    // input[34]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"clear", "grey5", "white", "black"}
+    // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background","grid","ticks","labels"}
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "zoom"
     // depth: value = 24
-    // window: position = (0.0000,0.0324), size = 1.0000x0.9333
+    // window: position = (0.0000,0.0315), size = 1.0000x0.8778
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -254,17 +402,20 @@ main_Image_1_out_3 =
 // network: end of macro body
 CacheScene(main_Image_1_in_1, main_Image_1_out_1, main_Image_1_out_2);
 }
-main_FileSelector_2_out_1 = "/home/felix/Desktop/MPhys-Project-Fortran/energy.dx";
+main_FileSelector_2_out_1 = "/home/felix/Documents/MPhys-Project-Fortran/energy.dx";
 main_Import_1_in_2 = NULL;
 main_Import_1_in_3 = NULL;
 main_Import_1_in_4 = NULL;
 main_Import_1_in_5 = NULL;
 main_Import_1_in_6 = NULL;
 main_Import_1_out_1 = NULL;
+main_Compute_10_in_1 = "$0*0.6";
+main_Compute_10_in_3 = NULL;
+main_Compute_10_out_1 = NULL;
 main_Compute_1_in_1 = "select($0,0)";
 main_Compute_1_in_3 = NULL;
 main_Compute_1_out_1 = NULL;
-main_AutoColor_1_in_2 = NULL;
+main_AutoColor_1_in_2 = 0.8;
 main_AutoColor_1_in_3 = NULL;
 main_AutoColor_1_in_4 = NULL;
 main_AutoColor_1_in_5 = NULL;
@@ -277,7 +428,7 @@ main_AutoColor_1_out_1 = NULL;
 main_Compute_3_in_1 = "select($0,1)";
 main_Compute_3_in_3 = NULL;
 main_Compute_3_out_1 = NULL;
-main_AutoColor_2_in_2 = NULL;
+main_AutoColor_2_in_2 = 0.8;
 main_AutoColor_2_in_3 = NULL;
 main_AutoColor_2_in_4 = NULL;
 main_AutoColor_2_in_5 = NULL;
@@ -287,6 +438,32 @@ main_AutoColor_2_in_8 = NULL;
 main_AutoColor_2_in_9 = NULL;
 main_AutoColor_2_in_10 = NULL;
 main_AutoColor_2_out_1 = NULL;
+main_Compute_5_in_1 = "select($0,2)";
+main_Compute_5_in_3 = NULL;
+main_Compute_5_out_1 = NULL;
+main_AutoColor_3_in_2 = 0.7;
+main_AutoColor_3_in_3 = NULL;
+main_AutoColor_3_in_4 = NULL;
+main_AutoColor_3_in_5 = NULL;
+main_AutoColor_3_in_6 = NULL;
+main_AutoColor_3_in_7 = NULL;
+main_AutoColor_3_in_8 = NULL;
+main_AutoColor_3_in_9 = NULL;
+main_AutoColor_3_in_10 = NULL;
+main_AutoColor_3_out_1 = NULL;
+main_Compute_7_in_1 = "select($0,3)";
+main_Compute_7_in_3 = NULL;
+main_Compute_7_out_1 = NULL;
+main_AutoColor_4_in_2 = 0.7;
+main_AutoColor_4_in_3 = NULL;
+main_AutoColor_4_in_4 = NULL;
+main_AutoColor_4_in_5 = NULL;
+main_AutoColor_4_in_6 = NULL;
+main_AutoColor_4_in_7 = NULL;
+main_AutoColor_4_in_8 = NULL;
+main_AutoColor_4_in_9 = NULL;
+main_AutoColor_4_in_10 = NULL;
+main_AutoColor_4_out_1 = NULL;
 main_Mark_1_in_2 = "positions";
 main_Mark_1_out_1 = NULL;
 main_Compute_2_in_1 = "[$0.0,$0.1,$1]";
@@ -299,6 +476,18 @@ main_Compute_4_in_1 = "[$0.0,$0.1,$1]";
 main_Compute_4_out_1 = NULL;
 main_Unmark_2_in_2 = NULL;
 main_Unmark_2_out_1 = NULL;
+main_Mark_3_in_2 = "positions";
+main_Mark_3_out_1 = NULL;
+main_Compute_6_in_1 = "[$0.0,$0.1,$1]";
+main_Compute_6_out_1 = NULL;
+main_Unmark_3_in_2 = NULL;
+main_Unmark_3_out_1 = NULL;
+main_Mark_4_in_2 = "positions";
+main_Mark_4_out_1 = NULL;
+main_Compute_8_in_1 = "[$0.0,$0.1,$1]";
+main_Compute_8_out_1 = NULL;
+main_Unmark_4_in_2 = NULL;
+main_Unmark_4_out_1 = NULL;
 main_Collect_1_out_1 = NULL;
 main_Shade_1_in_2 = NULL;
 main_Shade_1_in_3 = NULL;
@@ -623,14 +812,14 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-1.49012e-08 -1.49012e-08 4.2528];
-main_Image_1_in_6 = [3.95863 -4.07916 6.52339];
-main_Image_1_in_7 = NULL;
+main_Image_1_in_5 = [0 0 2.59967];
+main_Image_1_in_6 = [3.25403 -2.96333 4.87465];
+main_Image_1_in_7 = 3.07443;
 main_Image_1_in_8 = 1906;
-main_Image_1_in_9 = 0.507;
-main_Image_1_in_10 = [-0.212736 0.309446 0.926815];
-main_Image_1_in_11 = 30.0;
-main_Image_1_in_12 = 1;
+main_Image_1_in_9 = 0.476;
+main_Image_1_in_10 = [-0.33039 0.319124 0.888258];
+main_Image_1_in_11 = NULL;
+main_Image_1_in_12 = 0;
 main_Image_1_in_13 = NULL;
 main_Image_1_in_14 = 1;
 main_Image_1_in_15 = NULL;
@@ -640,25 +829,25 @@ main_Image_1_in_18 = NULL;
 main_Image_1_in_19 = 0;
 main_Image_1_in_20 = NULL;
 main_Image_1_in_21 = NULL;
-main_Image_1_in_22 = NULL;
+main_Image_1_in_22 = "white";
 main_Image_1_in_23 = NULL;
-main_Image_1_in_25 = "/home/felix/Desktop/MPhys-Project-Fortran/2dmeshenergytrivial";
+main_Image_1_in_25 = "/home/felix/Documents/MPhys-Project-Fortran/Bx2dmeshenergygridless.tiff";
 main_Image_1_in_26 = "tiff";
-main_Image_1_in_27 = NULL;
-main_Image_1_in_28 = NULL;
+main_Image_1_in_27 = 2000;
+main_Image_1_in_28 = 1.0;
 main_Image_1_in_29 = 1;
 main_Image_1_in_30 = {"kx", "ky", "E / eV"};
-main_Image_1_in_31 = NULL;
+main_Image_1_in_31 = { -2 -2 -10 };
 main_Image_1_in_32 = NULL;
-main_Image_1_in_33 = NULL;
-main_Image_1_in_34 = NULL;
+main_Image_1_in_33 = 0;
+main_Image_1_in_34 = 1;
 main_Image_1_in_35 = NULL;
 main_Image_1_in_36 = NULL;
-main_Image_1_in_37 = NULL;
-main_Image_1_in_38 = NULL;
+main_Image_1_in_37 = {"clear", "grey5", "white", "black"};
+main_Image_1_in_38 = {"background","grid","ticks","labels"};
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
-main_Image_1_in_41 = "rotate";
+main_Image_1_in_41 = "zoom";
 main_Image_1_in_42 = NULL;
 main_Image_1_in_43 = NULL;
 main_Image_1_in_44 = NULL;
