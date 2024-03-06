@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be midified by the usere
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.2,two=2.0d0,sqrt2=sqrt(two),Bx=0.05d0
+    real*8,parameter::ef= 4.18903772,kmax=0.2,two=2.0d0,sqrt2=sqrt(two),Bx=0.06d0
     integer,parameter::meshres=100, nkpoints=(2*meshres+1),nbmin=11,nbmax=14
     integer nb
 end module parameters
@@ -13,7 +13,7 @@ Program Projected_band_structure
 !------------------------------------------------------
     real*8 dx, dy
     character(len=80) hamil_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky
+    integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,ikp
     real*8,parameter::third=1d0/3d0
     real*8 phase,pi2,a,b
     real*8 avec(3,3),bvec(3,3),rvec(3),kpoint(3),B_sigma(2,2)
@@ -108,9 +108,11 @@ Program Projected_band_structure
 		enddo
 	enddo
 
-                           
+    ikp = 1
     do ikx=-meshres,meshres
         do iky=-meshres,meshres
+            print*, ikp,'/',nkpoints**2 
+            ikp = ikp + 1
             kpoint(1)= ikx*dx
             kpoint(2)= iky*dy
             kpoint(3)= 0.5d0*bvec(3,3)

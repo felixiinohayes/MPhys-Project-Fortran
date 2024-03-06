@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.1,kymax=0.05,kzmax=0.035,amax=0.01892,acritical=0.79858
-    integer,parameter::xmeshres=15,ymeshres=15,zmeshres=10,ares=5,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
+    real*8,parameter::ef= 4.18903772,kxmax=0.1,kymax=0.05,kzmax=0.1,amax=0.01892,acritical=0.79858
+    integer,parameter::xmeshres=30,ymeshres=20,zmeshres=20,ares=7,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,8 +17,8 @@ Program Projected_band_structure
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.06d0
-    real*8 phase,pi2,x1,y1,x2,y2,a,minbandgap
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.0d0
+    real*8 phase,pi2,x1,y1,x2,y2,a,bandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
     real*8, allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:)
@@ -47,7 +47,7 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
     if(myid.eq.0) then
-        open(100,file='btp_symmetry_2fold.dx')
+        open(100,file='1fold_B0.dx')
     endif
     read(99,*)
     read(99,*)nb,nr
@@ -81,7 +81,7 @@ Program Projected_band_structure
 
     if(myid.eq.0) then
         write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints,nkypoints,nkzpoints
-        write(100, '(a,3(1x,f12.6))') 'origin',0d0,0d0,-kzmax+0.5d0*bvec(3,3)
+        write(100, '(a,3(1x,f12.6))') 'origin',-kxmax,0d0,-kzmax+0.5d0*bvec(3,3)
         write(100, '(a,3(1x,f12.6))') 'delta',dx,0d0,0d0
         write(100, '(a,3(1x,f12.6))') 'delta',0d0,dy,0d0
         write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dz
@@ -95,7 +95,7 @@ Program Projected_band_structure
         do ikz=-zmeshres,zmeshres
           ik=ik+1
           kpoint(1,ik)=ikx*dx
-          kpoint(2,ik)=iky*dy + kymax
+          kpoint(2,ik)=iky*dy + kymax 
           kpoint(3,ik)=ikz*dz + 0.5d0*bvec(3,3)
         enddo
       enddo
@@ -107,12 +107,16 @@ Program Projected_band_structure
     kpmin=1+myid*kpool
     kpmax=(myid+1)*kpool
 
-    ecounts=kpool*2 ! to account for bands 12 and 13
+    ecounts=kpool*3 ! to account for bands 12 and 13 AND the bandgap output (dx isosurface)
 
 !------- Construct B perturbation
     allocate(B_pt(nb, nb),B_sigma(2,2))
-    B_sigma(1,:) = [0d0,  B]
-    B_sigma(2,:) = [B,  0d0]
+    ! B_sigma(1,:) = [0d0,  B]
+    ! B_sigma(2,:) = [B,  0d0]
+
+    !B along Y axis
+	B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
+    B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
     B_pt=0d0
     do i=1,nb
 	    do j=1,nb
@@ -131,36 +135,38 @@ Program Projected_band_structure
 	enddo
 
 !----- Perform fourier transform
-    allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), ene(2,kpool),k_ene(nb),energy(2,nkp3))
+    allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), ene(3,kpool),k_ene(nb),energy(3,nkp3))
 
     count=3
     do ia=-ares,ares
-        print *,'interpolation =',ia+ares,'processor =',myid
-      a=ia*da + acritical
+        print *,'interpolation =',ia + ares,'processor =',myid
+        a=ia*da + acritical
 
-      if(myid.eq.0) then
-          write(100, '(a,i8,a,i8,a,i10,a)') 'object',count,' class array type float rank 1 shape',2,&
-                                       ' item', nkp3, ' data follows'
-      endif
-      count=count+1
-      ikp=0
-	  minbandgap=0d0
-      do ik=kpmin,min(kpmax,nkp3)
-         ikp=ikp+1
-        Hk = 0d0
-        do ir=1,nr
-          phase = dot_product(kpoint(:,ik),rvec(:,ir))
-          HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+        if(myid.eq.0) then
+            write(100, '(a,i8,a,i8,a,i10,a)') 'object',count,' class array type float rank 1 shape',3,&
+                                        ' item', nkp3, ' data follows'
+        endif
+        count=count+1
+        ikp=0
+        bandgap=0d0
+        do ik=kpmin,min(kpmax,nkp3)
+            ikp=ikp+1
+            Hk = 0d0
+            do ir=1,nr
+            phase = dot_product(kpoint(:,ik),rvec(:,ir))
+            HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+            enddo
+            HK = HK+B_pt
+            call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
+            ene(1:2,ikp)=k_ene(12:13)
+            bandgap = k_ene(13)-k_ene(12)
+            ene(3 ,ikp)= bandgap
         enddo
-         HK = HK+B_pt
-        call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
-        ene(:,ikp)=k_ene(12:13)
-      enddo
 
         CALL MPI_GATHER( ENE   ,ECOUNTS,MPI_DOUBLE_PRECISION,   &
                          ENERGY,ECOUNTS,MPI_DOUBLE_PRECISION, &
-                              0,MPI_COMM_WORLD,IERR)
-        if(myid.eq.0)  write(100, '(2(1x,f12.6))') energy
+                            0,MPI_COMM_WORLD,IERR)
+        if(myid.eq.0)  write(100, '(3(1x,f12.6))') energy
         if(myid.eq.0)  write(100, '(a)') 'attribute "dep" string "positions"'
     enddo
 
