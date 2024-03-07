@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,kxmax=0.1,kymax=0.05,kzmax=0.1,amax=0.01892,acritical=0.79858
-    integer,parameter::xmeshres=30,ymeshres=20,zmeshres=20,ares=7,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
+    integer,parameter::xmeshres=42,ymeshres=42,zmeshres=42,ares=5,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -150,6 +150,9 @@ Program Projected_band_structure
         ikp=0
         bandgap=0d0
         do ik=kpmin,min(kpmax,nkp3)
+			if(myid.eq.0) then
+				print*, ikp, "/", nkp3/6
+			endif
             ikp=ikp+1
             Hk = 0d0
             do ir=1,nr
