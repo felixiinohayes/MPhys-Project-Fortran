@@ -1,36 +1,29 @@
-	module parameters
-		Implicit None
-	!--------to be modified by the user
-		real*8,parameter::ef= 4.18903772,alpha=1,kmax=0.1,beta0=1d0,Bx=0.00d0
-		INTEGER IERR,MYID,NUMPROCS
-		
-	end module parameters
+module parameters
+    Implicit None
+!--------to be midified by the usere
+    character(len=80):: prefix="BiTeI"
+    real*8,parameter::ef= 4.18903772,kmax=0.2,two=2.0d0,sqrt2=sqrt(two),Bx=0.05d0,beta0=1d0
+    integer,parameter::meshres=20, nkpoints=(2*meshres+1),nbmin=11,nbmax=14,nkp2=nkpoints*nkpoints
+    integer nb
+end module parameters
 
-     Program Projected_band_structure
-	 use parameters
-     Implicit None
-!-------to be midified by the usere
-     character(len=80):: prefix="BiTeI"
-     integer,parameter::nkpath=3,np=600,nbmin=12,nbmax=13,meshres=20
-!-----------------------------------------------------
-     integer*4 ik,ikmax, skip,sign
-     real*8 kz 
-     real*8 :: Te_sum, Bi_sum, I_sum
-     character(len=30)::klabel(nkpath)
-     character(len=80) nnkp,line,top_file,triv_file
-     integer*4,parameter::nkpoints=(2*meshres+1),nkp2=nkpoints*nkpoints
-     integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,j1,j2,nb,l,ikp,ir
-     real*8,parameter::third=1d0/3d0,pi_8=4*atan(1.0_8),cos60=cos(pi_8/3),tan30=tan(pi_8/6),sin30=sin(pi_8/6),sqrt2=sqrt(2d0)
-     real*8 phase,pi2,jk,a,b,x1,y1,dx,dy,theta_r,beta
-     real*8 xk(nkp2),bvec(3,3),avec(3,3),ktemp1(3),ktemp2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nkp2),dk(3),kpoint(3),rvec_3(3)
-     real*8,allocatable:: rvec(:,:),rvec_data(:,:),rvec_cart(:,:),ene(:,:),rwork(:),od(:,:,:)
-     integer*4,allocatable:: ndeg(:)
-     complex*16,allocatable:: Hk(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),work(:),H_col(:),B_pt(:,:)
-     complex*16 temp1,temp2,B_sigma(2,2)
+Program Projected_band_structure
+    use parameters
+    Implicit None
 !------------------------------------------------------
-     write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
-     write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
-     write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
+    real*8 dx, dy
+    character(len=80) hamil_file,nnkp,line
+    integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,ikp,ir
+    real*8,parameter::third=1d0/3d0,pi_8=4*atan(1.0_8),cos60=cos(pi_8/3),tan30=tan(pi_8/6),sin30=sin(pi_8/6)
+    real*8 phase,pi2,a,b,theta_r,beta
+    real*8 avec(3,3),bvec(3,3),rvec(3),kpoint(3),B_sigma(2,2)
+    real*8,allocatable:: rvec_data(:,:),ene(:),rwork(:),k_ene(:),kpoints(:,:), sam(:,:), oam(:,:),rvec_cart(:,:),betamatrix(:,:)
+    integer*4,allocatable:: ndeg(:)
+    complex*16,allocatable:: Hk(:,:),Hamr(:,:,:),work(:),B_pt(:,:)
+    complex*8, parameter:: one = complex(1.d0,0.d0),im = complex(0.d0,1.d0), zero = complex(0.d0,0.d0)
+!------------------------------------------------------
+    write(hamil_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
+	 write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
@@ -44,71 +37,31 @@
     read(98,'(a)')line
     read(98,*)bvec
 
-!-----read H(R) 
-     open(99,file=trim(adjustl(top_file)))
-     open(97,file=trim(adjustl(triv_file)))
-     open(100,file='energy.dx')
-     read(99,*)
-     read(99,*)nb,nr
-     allocate(rvec(3,nr),rvec_data(3,nr),rvec_cart(3,nr),Hk(nb,nb),triv_hr(nb,nb,nr),Top_hr(nb,nb,nr),ndeg(nr),ene(nb,nkp2))
-     read(99,*)ndeg
-     do i = 1, 80
-            read(97, *)! Read and discard 80 lines
-     enddo
-     do k=1,nr
-        do i=1,nb
-           do j=1,nb
-              read(99,*)rvec(1,k),rvec(2,k),rvec(3,k),i1,i2,a,b
-              top_hr(i1,i2,k)=dcmplx(a,b)
-              read(97,*)rvec_data(1,k),rvec_data(2,k),rvec_data(3,k),j1,j2,x1,y1
-              triv_hr(j1,j2,k)=dcmplx(x1,y1)
-           enddo
-        enddo
-     enddo
+!------read H(R)
+    open(99,file=trim(adjustl(hamil_file)))
+    open(100,file='energy.dx')
+    open(200,file='sam.dx')
+    open(300,file='oam.dx')
+    read(99,*)
+    read(99,*)nb,nr
+    allocate(rvec_data(3,nr),rvec_cart(3,nr),Hk(nb,nb),Hamr(nb,nb,nr),ndeg(nr),ene(nb),betamatrix(nb,nb))
+    read(99,*)ndeg
+    do k=1,nr
+       do i=1,nb
+          do j=1,nb
+             read(99,*)rvec_data(1,k),rvec_data(2,k),rvec_data(3,k),i1,i2,a,b
+             hamr(i1,i2,k)=dcmplx(a,b)
+          enddo
+       enddo
+    enddo
 
    lwork=max(1,2*nb-1)
    allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
-	! do ir=1,nr
-    	! do i=1,6
-        	! do j=1,6
-	! 			rvec_cart(:,ir) = rvec_data(1,ir)*avec(:,1) + rvec_data(2,ir)*avec(:,2)
-
-	! 			if(modulo(i,3)==modulo(j,3)) then ! Bi-I
-	! 				continue
-	! 			else if((modulo(i,3)==0 .and. modulo(j,3)==2) .or. (modulo(i,3)==2 .and. modulo(j,3)==0)) then ! 
-	! 				rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.5d0*tan30/sin30
-	! 				rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-	! 			else if((modulo(i,3)==0 .and. modulo(j,3)==1) .or. (modulo(i,3)==1 .and. modulo(j,3)==0)) then ! Te-I
-	! 				rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.5d0*tan30/sin30
-	! 			else if((modulo(i,3)==1 .and. modulo(j,3)==2) .or. (modulo(i,3)==2 .and. modulo(j,3)==1)) then ! Te-I
-	! 				rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.5d0*tan30
-	! 				rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-	! 			endif
-
-	! 			if(rvec_cart(2,ir)==0) then ! To stop divide by zero error
-	! 				theta_R = 0
-	! 			else
-	! 				theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir))
-	! 			endif
-	! 			beta=beta0*abs(cos(theta_R))
-
-	! 			do i1=1,3
-	! 				do i2=1,3
-	! 					top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) = top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
-	! 					triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) = triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
-	! 				enddo
-	! 			enddo
-	! 			print *, "test"
-	! 		enddo
-	! 	enddo
-	! enddo
-	print *, "test"
-
 
 !----- Create K-mesh
     dx = kmax / meshres
     dy = kmax / meshres
-      !----- Create a uniform k-mesh
+
 !----- Create header of dx files
     write(100, '(a,2(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints
     write(200, '(a,2(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints
@@ -131,9 +84,44 @@
                                     ' item', nkpoints*nkpoints,' data follows'
     write(300, '(a,a,i10,a)') 'object 3 class array type float rank 1 shape 6',&
                                     ' item', nkpoints*nkpoints,' data follows'
+	print *, "i	","j	","Miller indices			","Cartesian indices	","theta" 
+	do ir=1,nr
+    	do i=1,6
+        	do j=1,6
+				rvec_cart(:,ir) = rvec_data(1,ir)*avec(:,1) + rvec_data(2,ir)*avec(:,2) + rvec_data(3,ir)*avec(:,3)
+
+				if(modulo(i,3)==modulo(j,3)) then
+					continue
+				else if((modulo(i,3)==1 .and. modulo(j,3)==2) .or. (modulo(i,3)==2 .and. modulo(j,3)==1)) then ! Bi-Te
+					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.5d0*tan30/sin30
+				else if((modulo(i,3)==1 .and. modulo(j,3)==0) .or. (modulo(i,3)==0 .and. modulo(j,3)==1)) then ! Te-I
+					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
+					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
+				else if((modulo(i,3)==0 .and. modulo(j,3)==2) .or. (modulo(i,3)==2 .and. modulo(j,3)==0)) then ! Bi-I
+					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
+					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
+				endif
+				! if(ir==1) print *, rvec_data(:,ir),rvec_cart(:,ir)
+				if(rvec_cart(2,ir)==0) then ! To stop divide by zero error
+					theta_R = 0
+				else
+					theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir))
+					! if(ir==590) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R
+				endif
+				beta=beta0*abs(cos(theta_R))
+				do i1=1,3
+					do i2=1,3
+						Hamr(3*(i-1)+i1, 3*(j-1)+i2, ir) = Hamr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
+					enddo
+				enddo
+			enddo
+		enddo
+	enddo
+
 
                             
 !----- Perform Fourier transform
+    allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), k_ene(nb))
 
 	allocate(B_pt(nb,nb))
 	data B_sigma /0d0,Bx,Bx,0d0/
@@ -153,26 +141,31 @@
 			endif
 		enddo
 	enddo
-	print *, "test"
 
-    ikp = 0
+    ikp=0                
     do ikx=-meshres,meshres
         do iky=-meshres,meshres
-            ikp = ikp + 1
+			ikp = ikp+1		
 			print *, ikp, "/", nkp2
             kpoint(1)= ikx*dx
             kpoint(2)= iky*dy
             kpoint(3)= 0.5d0*bvec(3,3)
+
             HK=(0d0,0d0)
+
             do i=1,nr
-                rvec_3 = rvec_data(1,i)*avec(:,1) + rvec_data(2,i)*avec(:,2) + rvec_data(3,i)*avec(:,3)
-                phase = dot_product(kpoint,rvec_3)
-                ! HK=HK+Hamr(:,:,i)*dcmplx(cos(phase),-sin(phase))/float(ndeg(i))
-	            HK=HK+((1-alpha)*(triv_hr(:,:,j))+alpha*(top_hr(:,:,j)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(j))
+                rvec = rvec_data(1,i)*avec(:,1) + rvec_data(2,i)*avec(:,2) + rvec_data(3,i)*avec(:,3)
+
+                phase = dot_product(kpoint,rvec)
+
+                HK=HK+Hamr(:,:,i)*dcmplx(cos(phase),-sin(phase))/float(ndeg(i))
             enddo
 			HK=HK+B_pt
-            call zheev('V','U',nb,HK,nb,ene(:,ikp),work,lwork,rwork,info)
-            write(100, '(4(1x,f12.6))') ene(nbmin,ikp), ene(nbmin+1,ikp),ene(nbmin+2,ikp),ene(nbmin+3,ikp)
+            call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
+            call projections(HK,sam,oam)
+            write(100, '(4(1x,f12.6))') k_ene(nbmin), k_ene(nbmin+1),k_ene(nbmin+2),k_ene(nbmin+3)
+
+            write(300, '(6(1x,f12.6))') oam(:,nbmin), oam(:,nbmax)
         enddo
     enddo
     write(100,'(A,/,A,/,A,/,A)') &
@@ -194,4 +187,58 @@
     'component "data" value 3', &
     'end'
 end program Projected_band_structure
+subroutine projections(H,sam,oam)
+    use parameters
+    Implicit None
+    complex*16 H(nb,nb),chi(2,1),phi(3)
+    real*8 sam(3,nbmin:nbmax),oam(3,nbmin:nbmax),sx(1,1),sy(1,1),sz(1,1),lx(1,1),ly(1,1),lz(1,1)
+    complex*8 pauli_x(2, 2), pauli_y(2, 2), pauli_z(2, 2), Lhat_x(3,3), Lhat_y(3,3), Lhat_z(3,3), Y_lm(3,1)
+    integer ib,jb,orbital_index
+!-----Spin projection
+   !-Define Pauli matrices
+   
+    data pauli_x / (0d0,0d0),(1d0,0d0),(1d0, 0d0),( 0d0, 0d0)/
+    data pauli_y / (0d0,0d0),(0d0,1d0),(0d0,-1d0),( 0d0, 0d0)/
+    data pauli_z / (1d0,0d0),(0d0,0d0),(0d0, 0d0),(-1d0, 0d0)/
+    data Lhat_x /  (0d0,0d0),(1d0,0d0),(0d0, 0d0),( 1d0, 0d0),(0d0,0d0),(1d0,0d0),(0d0,0d0),(1d0, 0d0),( 0d0,0d0)/     
+    data Lhat_y /  (0d0,0d0),(0d0,1d0),(0d0, 0d0),( 0d0,-1d0),(0d0,0d0),(0d0,1d0),(0d0,0d0),(0d0,-1d0),( 0d0,0d0)/     
+    data Lhat_z /  (1d0,0d0),(0d0,0d0),(0d0, 0d0),( 0d0, 0d0),(0d0,0d0),(0d0,0d0),(0d0,0d0),(0d0, 0d0),(-1d0,0d0)/     
+
+	Lhat_x = Lhat_x * 1/sqrt2
+	Lhat_y = Lhat_y * 1/sqrt2
+
+    sam=0d0 
+    oam=0d0
+
+    do ib=nbmin,nbmax
+            do jb=1,nb/2
+                chi(1,1) = H(jb     ,ib) 
+                chi(2,1) = H(jb+nb/2,ib)
+
+                sx = matmul(conjg(transpose(chi)),matmul(pauli_x, chi))
+                sy = matmul(conjg(transpose(chi)),matmul(pauli_y, chi))
+                sz = matmul(conjg(transpose(chi)),matmul(pauli_z, chi))
+                sam(1,ib)=sam(1,ib)+sx(1,1)
+                sam(2,ib)=sam(2,ib)+sy(1,1)
+                sam(3,ib)=sam(3,ib)+sz(1,1)
+           
+            enddo
+            do jb=1,nb,3
+                phi(1) = H(jb  ,ib) 
+                phi(2) = H(jb+1,ib)
+                phi(3) = H(jb+2,ib)                               
+                Y_lm(3,1) = (-1/sqrt2) * (phi(1) + dcmplx(0,1)*phi(2))
+                Y_lm(1,1) = ( 1/sqrt2) * (phi(1) - dcmplx(0,1)*phi(2))
+                Y_lm(2,1) = phi(3)
+                
+                lx = matmul(conjg(transpose(Y_lm)),matmul(Lhat_x, Y_lm))
+                ly = matmul(conjg(transpose(Y_lm)),matmul(Lhat_y, Y_lm))
+                lz = matmul(conjg(transpose(Y_lm)),matmul(Lhat_z, Y_lm))
+                oam(1,ib)=oam(1,ib)+lx(1,1)
+                oam(2,ib)=oam(2,ib)+ly(1,1)
+                oam(3,ib)=oam(3,ib)+lz(1,1)
+                                                                        
+            enddo
+    enddo
+end subroutine projections
 

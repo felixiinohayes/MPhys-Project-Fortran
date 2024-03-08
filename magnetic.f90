@@ -133,6 +133,7 @@
        enddo
 	   HK=HK+B_pt
        call zheev('V','U',nb,HK,nb,ene(:,k),work,lwork,rwork,info) 
+	   print *, ene(:,k)
     enddo
 
 !---Fermi level:
