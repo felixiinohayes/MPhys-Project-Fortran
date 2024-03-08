@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,a=1
-    integer,parameter::nkpath=3,np=50,nblocks=50,nr3=11,nk=(nkpath-1)*np+1
+    integer,parameter::nkpath=3,np=200,nblocks=40,nr3=11,nk=(nkpath-1)*np+1
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -16,12 +16,13 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.1d0
     real*8 phase,pi2,x1,y1,x2,y2
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
 	integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:)
+    complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:)
+	complex*16 B_sigma(2,2)
 !------------------------------------------------------
     !call init_mpi
 
@@ -73,9 +74,16 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks)-2)))
 
 !-----kpath
-	data kpoints(:,1) /     0.18d0,      0.0d0,    0.0d0/  !L
-	data kpoints(:,2) /     0.0d0,      0.0d0,    0.0d0/  !A
-	data kpoints(:,3) /     0.18d0,      0.0d0,    0.0d0/  !H
+    ! ky -> -ky 
+	kpoints(:,1) = [ 0.125d0,  -0.25d0,   0.5d0]  !H
+	kpoints(:,2) = [ 0.0d0,   0.0d0,    0.5d0]  !A
+	kpoints(:,3) = [ -0.125d0,   0.25d0,  0.5d0]  !-H
+
+
+	! kx -> -kx
+	! kpoints(:,1) = [ -0.5d0,   0.0d0,   0.5d0 ]  !L
+	! kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
+	! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.5d0 ]  !-L
 
 	do j = 1, nkpath-1
 		  sign = 1
@@ -88,6 +96,29 @@ Program Projected_band_structure
 		enddo
 	enddo
 
+!----Construct magnetic perturbation
+	allocate(B_pt(nb, nb))
+
+     !B along Y axis
+	B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
+    B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
+
+	B_pt=0d0
+	do i=1,nb
+		do j=1,nb
+			if (i==j) then
+				if (i<10) then
+					B_pt(i,j) = B_sigma(1,1)
+				else
+					B_pt(i,j) = B_sigma(2,2)
+				endif
+			else if (i==j+9) then
+				B_pt(i,j) = B_sigma(2,1)
+			else if (j==i+9) then
+				B_pt(i,j) = B_sigma(1,2)
+			endif
+		enddo
+	enddo
 !----- Perform fourier transform
 	nr12=nr/nr3
 	count = 0
@@ -105,6 +136,7 @@ Program Projected_band_structure
 
 				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 			enddo
+			Hk = Hk + B_pt
 			Hkr3(:,:,ir3) = Hk
 		enddo
 
@@ -122,7 +154,7 @@ Program Projected_band_structure
 
 		do i=1,nb*nblocks
 			a_p_top(i,ik) = dot_product(super_H(1:18,i),super_H(1:18,i))
-			a_p_bottom(i,ik) = dot_product(super_H(162:180,i),super_H(162:180,i))
+			a_p_bottom(i,ik) = dot_product(super_H(nb*(nblocks-1):nb*nblocks,i),super_H(nb*(nblocks-1):nb*nblocks,i))
 		enddo
 		
 		do j=1, nb*nblocks
@@ -160,7 +192,7 @@ subroutine write_plt()
 		 'set palette defined (0 "#deebf7", 1 "#c6dbef", 2 "#9ecae1", 3 "#6baed6", 4 "#4292c6", 5 "#2171b5", 6 "#084594")',&
 		 'set trange [-10:10]',&
 		 'set multiplot',&
-		 'plot "super_H.dat" u 1:2:3 with l lt 1 lw 1 linecolor palette notitle',&
+		 'plot "super_H_top.dat" u 1:2:3 with l lt 1 lw 1 linecolor palette notitle',&
 		 'unset multiplot'
 
    end subroutine write_plt
