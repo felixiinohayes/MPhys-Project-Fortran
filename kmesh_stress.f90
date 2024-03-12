@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be midified by the usere
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.2,two=2.0d0,sqrt2=sqrt(two),Bx=0.05d0,beta0=1d0
+    real*8,parameter::ef= 4.18903772,kmax=0.1,two=2.0d0,sqrt2=sqrt(two),Bx=1d0,beta0=4d0,alpha=0.77966
     integer,parameter::meshres=20, nkpoints=(2*meshres+1),nbmin=11,nbmax=14,nkp2=nkpoints*nkpoints
     integer nb
 end module parameters
@@ -11,22 +11,22 @@ Program Projected_band_structure
     use parameters
     Implicit None
 !------------------------------------------------------
-    real*8 dx, dy
-    character(len=80) hamil_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,ikp,ir
+    real*8 dk
+    character(len=80) top_file,triv_file,nnkp,line
+    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikp,ir,ik
     real*8,parameter::third=1d0/3d0,pi_8=4*atan(1.0_8),cos60=cos(pi_8/3),tan30=tan(pi_8/6),sin30=sin(pi_8/6)
-    real*8 phase,pi2,a,b,theta_r,beta
-    real*8 avec(3,3),bvec(3,3),rvec(3),kpoint(3),B_sigma(2,2)
-    real*8,allocatable:: rvec_data(:,:),ene(:),rwork(:),k_ene(:),kpoints(:,:), sam(:,:), oam(:,:),rvec_cart(:,:),betamatrix(:,:)
+    real*8 phase,pi2,a,b,x1,y1,theta_r,beta
+    real*8 avec(3,3),bvec(3,3),B_sigma(2,2)
+    real*8,allocatable:: rvec_data(:,:),ene(:),rwork(:),k_ene(:), sam(:,:), oam(:,:),rvec_cart(:,:),kpoint(:,:),rvec(:,:)
     integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable:: Hk(:,:),Hamr(:,:,:),work(:),B_pt(:,:)
+    complex*16,allocatable:: Hk(:,:),Hamr(:,:,:),work(:),B_pt(:,:),Top_hr(:,:,:),Triv_hr(:,:,:)
     complex*8, parameter:: one = complex(1.d0,0.d0),im = complex(0.d0,1.d0), zero = complex(0.d0,0.d0)
 !------------------------------------------------------
-    write(hamil_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
-	 write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
+    write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
+    write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
+    write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
-
 !---------------  reciprocal vectors
     open(98,file=trim(adjustl(nnkp)))
 111 read(98,'(a)')line
@@ -36,32 +36,34 @@ Program Projected_band_structure
     read(98,'(a)')line
     read(98,'(a)')line
     read(98,*)bvec
-
 !------read H(R)
-    open(99,file=trim(adjustl(hamil_file)))
+    open(99,file=trim(adjustl(top_file)))
+    open(97,file=trim(adjustl(triv_file)))
     open(100,file='energy.dx')
     open(200,file='sam.dx')
     open(300,file='oam.dx')
     read(99,*)
     read(99,*)nb,nr
-    allocate(rvec_data(3,nr),rvec_cart(3,nr),Hk(nb,nb),Hamr(nb,nb,nr),ndeg(nr),ene(nb),betamatrix(nb,nb))
+    allocate(rvec_data(3,nr),Hk(nb,nb),Top_hr(nb,nb,nr),Triv_hr(nb,nb,nr),ndeg(nr),ene(nb),rvec(3,nr),rvec_cart(3,nr),Hamr(nb,nb,nr))
     read(99,*)ndeg
+    do i = 1, 80
+        read(97, *)! Read and discard 80 lines
+    end do
     do k=1,nr
        do i=1,nb
           do j=1,nb
              read(99,*)rvec_data(1,k),rvec_data(2,k),rvec_data(3,k),i1,i2,a,b
-             hamr(i1,i2,k)=dcmplx(a,b)
+             top_hr(i1,i2,k)=dcmplx(a,b)
+             read(97,*)rvec_data(1,k),rvec_data(2,k),rvec_data(3,k),j1,j2,x1,y1
+             triv_hr(j1,j2,k)=dcmplx(x1,y1)
           enddo
        enddo
+       rvec(:,k) = rvec_data(1,k)*avec(:,1) + rvec_data(2,k)*avec(:,2) + rvec_data(3,k)*avec(:,3)
     enddo
-
    lwork=max(1,2*nb-1)
    allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 
-!----- Create K-mesh
-    dx = kmax / meshres
-    dy = kmax / meshres
-
+   dk=kmax/meshres
 !----- Create header of dx files
     write(100, '(a,2(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints
     write(200, '(a,2(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints
@@ -69,12 +71,12 @@ Program Projected_band_structure
     write(100, '(a,2(1x,f12.6))') 'origin',-kmax,-kmax
     write(200, '(a,2(1x,f12.6))') 'origin',-kmax,-kmax
     write(300, '(a,2(1x,f12.6))') 'origin',-kmax,-kmax
-    write(100, '(a,2(1x,f12.6))') 'delta',dx,0d0
-    write(100, '(a,2(1x,f12.6))') 'delta',0d0,dy
-    write(200, '(a,2(1x,f12.6))') 'delta',dx,0d0
-    write(200, '(a,2(1x,f12.6))') 'delta',0d0,dy
-    write(300, '(a,2(1x,f12.6))') 'delta',dx,0d0
-    write(300, '(a,2(1x,f12.6))') 'delta',0d0,dy
+    write(100, '(a,2(1x,f12.6))') 'delta',dk,0d0
+    write(100, '(a,2(1x,f12.6))') 'delta',0d0,dk
+    write(200, '(a,2(1x,f12.6))') 'delta',dk,0d0
+    write(200, '(a,2(1x,f12.6))') 'delta',0d0,dk
+    write(300, '(a,2(1x,f12.6))') 'delta',dk,0d0
+    write(300, '(a,2(1x,f12.6))') 'delta',0d0,dk
     write(100, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints
     write(200, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints
     write(300, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints
@@ -84,6 +86,8 @@ Program Projected_band_structure
                                     ' item', nkpoints*nkpoints,' data follows'
     write(300, '(a,a,i10,a)') 'object 3 class array type float rank 1 shape 6',&
                                     ' item', nkpoints*nkpoints,' data follows'
+
+!----- Mechanical stress
 	print *, "i	","j	","Miller indices			","Cartesian indices	","theta" 
 	do ir=1,nr
     	do i=1,6
@@ -92,47 +96,58 @@ Program Projected_band_structure
 
 				if(modulo(i,3)==modulo(j,3)) then
 					continue
-				else if((modulo(i,3)==1 .and. modulo(j,3)==2) then ! Bi-Te
+				else if(modulo(i,3)==1 .and. modulo(j,3)==2) then ! Bi-Te
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.5d0*tan30/sin30
-				else if(modulo(i,3)==2 .and. modulo(j,3)==1)) then ! Te-Bi
+
+				else if(modulo(i,3)==2 .and. modulo(j,3)==1) then ! Te-Bi
 					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.5d0*tan30/sin30
-				else if((modulo(i,3)==1 .and. modulo(j,3)==0)) then ! Te-I
-					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
-					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-				else if((modulo(i,3)==0 .and. modulo(j,3)==1)) then ! I-Te
+
+				else if(modulo(i,3)==1 .and. modulo(j,3)==0) then ! I-Te
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
-				else if((modulo(i,3)==0 .and. modulo(j,3)==2)) then ! Bi-I
+
+				else if(modulo(i,3)==0 .and. modulo(j,3)==1) then ! Te-I
+					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
+					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
+
+				else if(modulo(i,3)==0 .and. modulo(j,3)==2) then ! Bi-I
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-				else if((modulo(i,3)==2 .and. modulo(j,3)==0)) then ! I-Bi
+                    
+				else if(modulo(i,3)==2 .and. modulo(j,3)==0) then ! I-Bi
 					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
 				endif
-				! if(ir==1) print *, rvec_data(:,ir),rvec_cart(:,ir)
-				if(rvec_cart(2,ir)==0) then ! To stop divide by zero error
-					theta_R = 0
+
+                if(rvec_cart(2,ir)==0) then ! To stop divide by zero error
+					theta_R = pi_8/6
 				else
-					theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir))
-					if(ir==590) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R
+					theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir)) + pi_8/6
+					!if(ir==350) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R*180/pi_8
 				endif
-				beta=beta0*abs(cos(theta_R))
+				!beta=beta0*abs(cos(theta_R))
+                beta = 2-(1-beta0*abs(cos(theta_R)))
 				do i1=1,3
 					do i2=1,3
-						Hamr(3*(i-1)+i1, 3*(j-1)+i2, ir) = Hamr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
+						top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir)  = top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
+                        triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) = triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
 					enddo
 				enddo
 			enddo
 		enddo
 	enddo
-
-
-                            
-!----- Perform Fourier transform
-    allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), k_ene(nb))
+                    
+!----Magnetic Perturbation
+    allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), k_ene(nb),kpoint(3,nkp2))
 
 	allocate(B_pt(nb,nb))
-	data B_sigma /0d0,Bx,Bx,0d0/
+
+    !B along X-axis
+	!data B_sigma /0d0,Bx,Bx,0d0/
+
+    !B along Y axis
+	B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
+    B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 	B_pt=0d0
 	do i=1,nb
 		do j=1,nb
@@ -150,32 +165,37 @@ Program Projected_band_structure
 		enddo
 	enddo
 
+!----- Create a uniform k-mesh
+    ik=0
+    do ikx=-meshres,meshres
+      do iky=-meshres,meshres
+          ik=ik+1
+          kpoint(1,ik)=ikx*dk
+          kpoint(2,ik)=iky*dk 
+          kpoint(3,ik)= 0.5d0*bvec(3,3)
+      enddo
+    enddo
+
+!----- Perform Fourier transform
     ikp=0                
     do ikx=-meshres,meshres
         do iky=-meshres,meshres
 			ikp = ikp+1		
 			print *, ikp, "/", nkp2
-            kpoint(1)= ikx*dx
-            kpoint(2)= iky*dy
-            kpoint(3)= 0.5d0*bvec(3,3)
-
             HK=(0d0,0d0)
-
             do i=1,nr
-                rvec = rvec_data(1,i)*avec(:,1) + rvec_data(2,i)*avec(:,2) + rvec_data(3,i)*avec(:,3)
-
-                phase = dot_product(kpoint,rvec)
-
-                HK=HK+Hamr(:,:,i)*dcmplx(cos(phase),-sin(phase))/float(ndeg(i))
+                phase = dot_product(kpoint(:,ikp),rvec(:,i))
+                HK=HK+((1-alpha)*(triv_hr(:,:,i))+alpha*(top_hr(:,:,i)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(i))
             enddo
 			HK=HK+B_pt
             call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
             call projections(HK,sam,oam)
             write(100, '(4(1x,f12.6))') k_ene(nbmin), k_ene(nbmin+1),k_ene(nbmin+2),k_ene(nbmin+3)
 
-            write(300, '(6(1x,f12.6))') oam(:,nbmin), oam(:,nbmax)
+            write(200, '(6(1x,f12.6))') sam(:,nbmin), sam(:,nbmax)
         enddo
     enddo
+    print*,'beta(0)=',2-(1-beta0*abs(cos(0d0)))
     write(100,'(A,/,A,/,A,/,A)') &
     'object "regular positions regular connections" class field', &
     'component "positions" value 1', &
