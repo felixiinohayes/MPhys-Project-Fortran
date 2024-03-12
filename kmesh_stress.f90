@@ -92,21 +92,29 @@ Program Projected_band_structure
 
 				if(modulo(i,3)==modulo(j,3)) then
 					continue
-				else if((modulo(i,3)==1 .and. modulo(j,3)==2) .or. (modulo(i,3)==2 .and. modulo(j,3)==1)) then ! Bi-Te
+				else if((modulo(i,3)==1 .and. modulo(j,3)==2) then ! Bi-Te
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.5d0*tan30/sin30
-				else if((modulo(i,3)==1 .and. modulo(j,3)==0) .or. (modulo(i,3)==0 .and. modulo(j,3)==1)) then ! Te-I
+				else if(modulo(i,3)==2 .and. modulo(j,3)==1)) then ! Te-Bi
+					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.5d0*tan30/sin30
+				else if((modulo(i,3)==1 .and. modulo(j,3)==0)) then ! Te-I
 					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-				else if((modulo(i,3)==0 .and. modulo(j,3)==2) .or. (modulo(i,3)==2 .and. modulo(j,3)==0)) then ! Bi-I
+				else if((modulo(i,3)==0 .and. modulo(j,3)==1)) then ! I-Te
+					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
+					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
+				else if((modulo(i,3)==0 .and. modulo(j,3)==2)) then ! Bi-I
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
+				else if((modulo(i,3)==2 .and. modulo(j,3)==0)) then ! I-Bi
+					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
+					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
 				endif
 				! if(ir==1) print *, rvec_data(:,ir),rvec_cart(:,ir)
 				if(rvec_cart(2,ir)==0) then ! To stop divide by zero error
 					theta_R = 0
 				else
 					theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir))
-					! if(ir==590) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R
+					if(ir==590) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R
 				endif
 				beta=beta0*abs(cos(theta_R))
 				do i1=1,3
