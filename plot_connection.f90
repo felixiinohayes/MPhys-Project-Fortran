@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.005,a=0.791
-    integer,parameter::meshres=10,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,mid=meshres+1
+    real*8,parameter::ef= 4.18903772,kmax=0.0005,a=0.791
+    integer,parameter::meshres=5,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,mid=meshres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -21,6 +21,7 @@ Program Projected_band_structure
     real*8 phase,pi2,x1,y1,x2,y2,chern,div_F,diff_z
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2,4),normal(3),v(3,3,nkpoints,nkpoints,nkpoints),v2xv3(3),sum(3)
 	real*8 dAdx(3,2),dAdy(3,2),dAdz(3,2)
+	complex*8 spinor(2,2),H_2(2,2,2)
 	real*8,allocatable:: rvec(:,:),rwork(:)
     real*8,allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:),eff(:)
     integer*4,allocatable:: ndeg(:)
@@ -135,7 +136,7 @@ Program Projected_band_structure
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
 				ikp=ikp+1
-				print*, ikp, "/", nkp3
+				! print*, ikp, "/", nkp3
 				Hk = 0d0
 				do ir=1,nr
 					phase = dot_product(kpoint(:,ikx,iky,ikz),rvec(:,ir))
@@ -149,13 +150,26 @@ Program Projected_band_structure
 
 				eig(:,1,ikx,iky,ikz) = HK(:,12)
 				eig(:,2,ikx,iky,ikz) = HK(:,13)
-
+				! write(*, '(f10.5,3I5)') real(eig(1,1,ikx,iky,ikz)), ikx, iky, ikz
+				! write(*, '(2f10.5,3I5)') aimag(eig(1,2,ikx,iky,ikz)), aimag(eig(2,2,ikx,iky,ikz)), ikx, iky, ikz
+				! write(*, '(f10.7,3I5)') real(dot_product(eig(:,2,ikx,iky,ikz),matmul(Hamk(:,:,ikx,iky,ikz),eig(:,1,ikx,iky,ikz)))),ikx,iky,ikz
 
 !----Constructing effective Hamiltonian and diagonalizing
+				spinor(1,1) = eig(1,1,ikx,iky,ikz)
+				spinor(2,1) = eig(10,1,ikx,iky,ikz)
+				spinor(1,2) = eig(1,2,ikx,iky,ikz)
+				spinor(2,2) = eig(10,2,ikx,iky,ikz)
+				H_2(1,1,1) = Hamk(1,1,ikx,iky,ikz)
+				H_2(2,1,1) = Hamk(10,1,ikx,iky,ikz)
+				H_2(1,2,1) = Hamk(1,10,ikx,iky,ikz)
+				H_2(2,2,1) = Hamk(10,10,ikx,iky,ikz)
 
 				do i=1,2
 					do j=1,2
-						H_eff(i,j) = dot_product(eig(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,iky,ikz),eig(:,j,ikx,iky,ikz)))
+						H_eff(i,j) = dot_product(spinor(:,i),matmul(H_2(:,:,1),spinor(:,j)))
+						! write(*, '(f10.7,2I5)') real(H_eff(i,j)),i,j
+						! if(ikp==1) write(*, '(f10.7)') dot_product(eig(:,i,ikx,iky,ikz),matmul(Hamk(:,:,ikx,iky,ikz),eig(:,j,ikx,iky,ikz)))
+						! if(ikp==1) print *, i,j
 					enddo
 				enddo
 
@@ -163,6 +177,9 @@ Program Projected_band_structure
 
 				eig_eff(:,1,ikx,iky,ikz) = H_eff(:,1)
 				eig_eff(:,2,ikx,iky,ikz) = H_eff(:,2)
+				! print *, eig_eff(1,1,ikx,iky,ikz), ikx, iky, ikz
+				write(*, '(2f10.5,3I5)') real(eig_eff(1,1,ikx,iky,ikz)),aimag(eig_eff(1,1,ikx,iky,ikz)), ikx, iky, ikz
+				! write(*, '(2f10.5,3I5)') aimag(eig_eff(1,1,ikx,iky,ikz)), aimag(eig_eff(1,2,ikx,iky,ikz)), ikx, iky, ikz
 
 			enddo
 		enddo
@@ -184,6 +201,7 @@ Program Projected_band_structure
 					connection(3,i,ikx,iky,ikz) = dot_product(eig_eff(:,i,ikx,iky,ikz),du(:,i,3))
 				enddo
 				connection(:,:,ikx,iky,ikz) = dcmplx(0,1.0d0)*connection(:,:,ikx,iky,ikz)
+				write(100, '(3(1x,f20.2))') connection(1,i,ikx,iky,ikz),connection(2,i,ikx,iky,ikz),connection(3,i,ikx,iky,ikz)
 			enddo
 		enddo
 	enddo
