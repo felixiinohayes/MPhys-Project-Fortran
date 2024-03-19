@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be midified by the usere
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.1,two=2.0d0,sqrt2=sqrt(two),Bx=1d0,beta0=4d0,alpha=0.77966
+    real*8,parameter::ef= 4.18903772,kmax=0.2,two=2.0d0,sqrt2=sqrt(two),Bx=0.0d0,beta0=1d0,alpha=0
     integer,parameter::meshres=20, nkpoints=(2*meshres+1),nbmin=11,nbmax=14,nkp2=nkpoints*nkpoints
     integer nb
 end module parameters
@@ -15,11 +15,11 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikp,ir,ik
     real*8,parameter::third=1d0/3d0,pi_8=4*atan(1.0_8),cos60=cos(pi_8/3),tan30=tan(pi_8/6),sin30=sin(pi_8/6)
-    real*8 phase,pi2,a,b,x1,y1,theta_r,beta
-    real*8 avec(3,3),bvec(3,3),B_sigma(2,2)
+    real*8 phase,pi2,a,b,x1,y1,theta_r,beta,ratio
+    real*8 avec(3,3),bvec(3,3)
     real*8,allocatable:: rvec_data(:,:),ene(:),rwork(:),k_ene(:), sam(:,:), oam(:,:),rvec_cart(:,:),kpoint(:,:),rvec(:,:)
     integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable:: Hk(:,:),Hamr(:,:,:),work(:),B_pt(:,:),Top_hr(:,:,:),Triv_hr(:,:,:)
+    complex*16,allocatable:: Hk(:,:),Hamr(:,:,:),work(:),B_pt(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),B_sigma(:,:)
     complex*8, parameter:: one = complex(1.d0,0.d0),im = complex(0.d0,1.d0), zero = complex(0.d0,0.d0)
 !------------------------------------------------------
     write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
@@ -88,7 +88,7 @@ Program Projected_band_structure
                                     ' item', nkpoints*nkpoints,' data follows'
 
 !----- Mechanical stress
-	print *, "i	","j	","Miller indices			","Cartesian indices	","theta" 
+	!print *, "i	","j	","Miller indices			","Cartesian indices	","theta" 
 	do ir=1,nr
     	do i=1,6
         	do j=1,6
@@ -98,39 +98,35 @@ Program Projected_band_structure
 					continue
 				else if(modulo(i,3)==1 .and. modulo(j,3)==2) then ! Bi-Te
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.5d0*tan30/sin30
-
 				else if(modulo(i,3)==2 .and. modulo(j,3)==1) then ! Te-Bi
 					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.5d0*tan30/sin30
-
 				else if(modulo(i,3)==1 .and. modulo(j,3)==0) then ! I-Te
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
-
 				else if(modulo(i,3)==0 .and. modulo(j,3)==1) then ! Te-I
 					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-
 				else if(modulo(i,3)==0 .and. modulo(j,3)==2) then ! Bi-I
 					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-                    
 				else if(modulo(i,3)==2 .and. modulo(j,3)==0) then ! I-Bi
 					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
 					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
 				endif
 
                 if(rvec_cart(2,ir)==0) then ! To stop divide by zero error
-					theta_R = pi_8/6
+					theta_R = 0
 				else
-					theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir)) + pi_8/6
+					theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir))
+                    ratio = rvec_cart(2,ir)/sqrt(rvec_cart(1,ir)**2+rvec_cart(2,ir)**2)*beta0
 					!if(ir==350) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R*180/pi_8
 				endif
-				!beta=beta0*abs(cos(theta_R))
-                beta = 2-(1-beta0*abs(cos(theta_R)))
+				!beta=beta0*cos(theta_R/3)
+                !beta = 2-(1-beta0*abs(cos(theta_R)))
 				do i1=1,3
 					do i2=1,3
-						top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir)  = top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
-                        triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) = triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
+						top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir)  = top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * ratio
+                        triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) = triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * ratio
 					enddo
 				enddo
 			enddo
@@ -140,14 +136,15 @@ Program Projected_band_structure
 !----Magnetic Perturbation
     allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), k_ene(nb),kpoint(3,nkp2))
 
-	allocate(B_pt(nb,nb))
+	allocate(B_pt(nb,nb),B_sigma(2,2))
 
     !B along X-axis
-	!data B_sigma /0d0,Bx,Bx,0d0/
+    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
+    B_sigma(2,:) = [dcmplx(Bx,0d0) ,  dcmplx(0d0,0d0)]
 
-    !B along Y axis
-	B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
-    B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
+    ! !B along Y axis
+	! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
+    ! B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 	B_pt=0d0
 	do i=1,nb
 		do j=1,nb

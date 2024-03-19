@@ -72,7 +72,7 @@ Program Projected_band_structure
 
     dk=kmax/(nkpoints-1)
 
-	node = 1
+	node = 2
 	pair = 1
 
 	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve

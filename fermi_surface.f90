@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.05,kymax=0.05,kzmax=0.1,amax=0.01892,acritical=0.79858
-    integer,parameter::xmeshres=5,ymeshres=5,zmeshres=5,ares=0,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
+    real*8,parameter::ef= 4.18903772,kxmax=0.063,kymax=0.0315,kzmax=0.1,amax=0.01892,acritical=0.79858
+    integer,parameter::xmeshres=15,ymeshres=15,zmeshres=15,ares=0,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,7 +17,7 @@ Program Projected_band_structure
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.06d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.015d0
     real*8 phase,pi2,x1,y1,x2,y2,a,minbandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
@@ -153,6 +153,9 @@ Program Projected_band_structure
         minbandgap=0d0
         do ik=kpmin,min(kpmax,nkp3)
             ikp=ikp+1
+            if(myid.eq.0) then
+				print*, ikp, "/", nkp3/NUMPROCS
+			endif
             Hk = 0d0
             do ir=1,nr
             phase = dot_product(kpoint(:,ik),rvec(:,ir))
