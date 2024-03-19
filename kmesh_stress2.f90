@@ -16,7 +16,7 @@ Program Projected_band_structure
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikp,ir,ik
     real*8,parameter::third=1d0/3d0,pi_8=4*atan(1.0_8),cos60=cos(pi_8/3),tan30=tan(pi_8/6),sin30=sin(pi_8/6)
     real*8 phase,pi2,a,b,x1,y1,theta_r,beta,ratio
-    real*8 avec(3,3),bvec(3,3)
+    real*8 avec(3,3),bvec(3,3),r_frac(3,3)
     real*8,allocatable:: rvec_data(:,:),ene(:),rwork(:),k_ene(:), sam(:,:), oam(:,:),rvec_cart(:,:),kpoint(:,:),rvec(:,:)
     integer*4,allocatable:: ndeg(:)
     complex*16,allocatable:: Hk(:,:),Hamr(:,:,:),work(:),B_pt(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),B_sigma(:,:)
@@ -87,52 +87,38 @@ Program Projected_band_structure
     write(300, '(a,a,i10,a)') 'object 3 class array type float rank 1 shape 6',&
                                     ' item', nkpoints*nkpoints,' data follows'
 
+	r_frac(1,:) = (/third  ,third*2,0d0/)
+	r_frac(2,:) = (/third*2,third  ,0d0/)
+	r_frac(3,:) = (/0d0    ,0d0    ,0d0/)
+
 !----- Mechanical stress
-	!print *, "i	","j	","Miller indices			","Cartesian indices	","theta" 
+	print *, avec(:,1)
+	print *, "i	","j	","Miller indices			","Cartesian indices	","theta" 
 	do ir=1,nr
     	do i=1,6
         	do j=1,6
-				rvec_cart(:,ir) = rvec_data(1,ir)*avec(:,1) + rvec_data(2,ir)*avec(:,2) + rvec_data(3,ir)*avec(:,3)
-
-				if(modulo(i,3)==modulo(j,3)) then
-					continue
-				else if(modulo(i,3)==1 .and. modulo(j,3)==2) then ! Bi-Te
-					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.5d0*tan30/sin30
-				else if(modulo(i,3)==2 .and. modulo(j,3)==1) then ! Te-Bi
-					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.5d0*tan30/sin30
-				else if(modulo(i,3)==1 .and. modulo(j,3)==0) then ! I-Te
-					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
-					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
-				else if(modulo(i,3)==0 .and. modulo(j,3)==1) then ! Te-I
-					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
-					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-				else if(modulo(i,3)==0 .and. modulo(j,3)==2) then ! Bi-I
-					rvec_cart(1,ir) = rvec_cart(1,ir) + avec(2,2)*0.25d0*tan30/sin30
-					rvec_cart(2,ir) = rvec_cart(2,ir) + avec(2,2)*0.5d0
-				else if(modulo(i,3)==2 .and. modulo(j,3)==0) then ! I-Bi
-					rvec_cart(1,ir) = rvec_cart(1,ir) - avec(2,2)*0.25d0*tan30/sin30
-					rvec_cart(2,ir) = rvec_cart(2,ir) - avec(2,2)*0.5d0
-				endif
+				rvec_cart(:,ir) = rvec_data(:,ir) + r_frac(modulo(i,3)+1,:) - r_frac(modulo(j,3)+1,:)
+				rvec_cart(:,ir) = rvec_cart(1,ir)*avec(:,1) + rvec_cart(2,ir)*avec(:,2) + rvec_cart(3,ir)*avec(:,3)
 
                 if(rvec_cart(2,ir)==0) then ! To stop divide by zero error
 					theta_R = 0
 				else
 					theta_R = atan(rvec_cart(1,ir)/rvec_cart(2,ir))
-                    ratio = rvec_cart(2,ir)/sqrt(rvec_cart(1,ir)**2+rvec_cart(2,ir)**2)*beta0
-					!if(ir==350) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R*180/pi_8
+                    ! ratio = rvec_cart(2,ir)/sqrt(rvec_cart(1,ir)**2+rvec_cart(2,ir)**2)*beta0
 				endif
+				if(ir==879) write(*, '(2I5, 7F10.4)') i, j, rvec_data(:,ir), rvec_cart(:,ir), theta_R*180/pi_8
 				!beta=beta0*cos(theta_R/3)
-                !beta = 2-(1-beta0*abs(cos(theta_R)))
+                beta = 2-(1-beta0*abs(cos(theta_R)))
 				do i1=1,3
 					do i2=1,3
-						top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir)  = top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * ratio
-                        triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) = triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * ratio
+						top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir)  = top_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
+                        triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) = triv_hr(3*(i-1)+i1, 3*(j-1)+i2, ir) * beta
 					enddo
 				enddo
 			enddo
 		enddo
 	enddo
-                    
+
 !----Magnetic Perturbation
     allocate(sam(3,nbmin:nbmax), oam(3,nbmin:nbmax), k_ene(nb),kpoint(3,nkp2))
 
