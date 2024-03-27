@@ -10,7 +10,7 @@ with open(file, 'r') as input_file:
     # Read all lines from the file
     lines = input_file.readlines()
 
-kmax = 0.0005
+kmax = 0.005
 kres = 10
 
 nkp=2*kres

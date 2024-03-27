@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.0005,a=0.791
+    real*8,parameter::ef= 4.18903772,kmax=0.005,a=0.791
     integer,parameter::meshres=10,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
@@ -16,9 +16,9 @@ Program Projected_band_structure
 !------------------------------------------------------
     real*8 dk
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,node,pair
+    integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,ikp,ir,node,pair
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
-    real*8 phase,pi2,x1,y1,x2,y2,chern,div_F,diff_z
+    real*8 phase,pi2,x1,y1,x2,y2
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2,4),normal(3),v(3,3,nkpoints,nkpoints,nkpoints),v2xv3(3),sum(3)
 	real*8 dAdx(3,2),dAdy(3,2),dAdz(3,2)
 	complex*8 spinor(2,2),H_2(2,2,2)
@@ -136,28 +136,23 @@ Program Projected_band_structure
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
 				ikp=ikp+1
-				print*, ikp, "/", nkp3
 				Hk = 0d0
 				do ir=1,nr
 					phase = dot_product(kpoint(:,ikx,iky,ikz),rvec(:,ir))
 					HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 				enddo
 				H_k(:,:,ikx,iky,ikz) = HK(:,:) ! Store Hamiltonian
-
 				call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
 
 !----12th and 13th bands' eigenvectors
 				eig(:,1,ikx,iky,ikz) = HK(:,12)
 				eig(:,2,ikx,iky,ikz) = HK(:,13)
-
 !----Constructing effective Hamiltonian and diagonalizing
-	
 				do i=1,2
 					do j=1,2
 						H_eff(i,j) = dot_product(eig(:,i,ikx,iky,ikz),matmul(H_k(:,:,ikx,iky,ikz),eig(:,j,ikx,iky,ikz)))
 					enddo
 				enddo
-
 				call zheev('V','U',2,H_eff,2,eff,work,lwork,rwork,info)
 
 				eig_eff(:,1,ikx,iky,ikz) = H_eff(:,1)
@@ -181,7 +176,6 @@ Program Projected_band_structure
 					connection(2,i,ikx,iky,ikz) = dot_product(eig_eff(:,i,ikx,iky,ikz),du(:,i,2))
 					connection(3,i,ikx,iky,ikz) = dot_product(eig_eff(:,i,ikx,iky,ikz),du(:,i,3))
 				enddo
-				connection(:,:,ikx,iky,ikz) = connection(:,:,ikx,iky,ikz)
 			enddo
 		enddo
 	enddo
