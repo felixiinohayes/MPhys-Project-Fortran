@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=0.791
+    real*8,parameter::ef= 4.18903772,a=0.77966
     integer,parameter::meshres=3,nkp=(2*meshres+1),nkp3=nkp*nkp*nkp
     integer nb,nr
     
@@ -15,7 +15,7 @@ Program Projected_band_structure
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), kmax=0.008d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), kmax=0.01d0
     real*8 phase,pi2,x1,y1,x2,y2,bandgap,minbandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3),minkpoint(3),kmiddle_initial(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
@@ -62,7 +62,7 @@ Program Projected_band_structure
        rvec(:,k) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) + rvec_data(3)*avec(:,3)
     enddo
 
-	kmiddle_initial = (/-0.017,-0.05,0.435/)
+	kmiddle_initial = (/0.0d0,0.05d0,0.46d0/)
 	lwork=max(1,2*nb-1)
 	allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 	allocate(k_ene(nb))

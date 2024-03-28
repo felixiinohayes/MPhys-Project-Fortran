@@ -18,7 +18,7 @@ Program Projected_band_structure
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir,node,pair
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,chern,div_F,diff_z
-    real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2,4),normal(3),v(3,3),v2xv3(3)
+    real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2,5),normal(3),v(3,3),v2xv3(3)
 	real*8 dAdx(3),dAdy(3),dAdz(3)
 	complex*16 dn(18,3)
 	real*8,allocatable:: rvec(:,:),rwork(:)
@@ -72,8 +72,8 @@ Program Projected_band_structure
 
     dk=kmax/(nkpoints-1)
 
-	node = 2
-	pair = 1
+	node = 1
+	pair = 5
 
 	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve
 	offset(:,2,1) = (/ 0.017665681958398235,0.046638430945586576,0.47514974714462382/) !-ve
@@ -85,6 +85,8 @@ Program Projected_band_structure
 
 	offset(:,1,4) = (/-0.04936478978846845,0.006832977105296199,0.47559337269211072/) !+ve
 	offset(:,2,4) = (/-0.04933437400371396,-0.00708356750361176,0.47545289372516780/) !-ve
+
+	offset(:,1,5) = (/-0.00879804124970561,0.04855142510428899,0.44745395357167184/)  !Dirac Point
     
   !----- Create a uniform k-mesh
 

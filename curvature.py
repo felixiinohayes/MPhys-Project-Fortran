@@ -30,7 +30,7 @@ c_y = []
 c_z = []
 
 magnitude= []
-tolerance = (1/(kmax*0.2))**2
+#tolerance = (1/(kmax*0.2))**2
 
 
 #       2 000 000 at 0.005 
@@ -43,7 +43,7 @@ for line in lines:
 
     length = (float(split_line[3])**2+float(split_line[4])**2+float(split_line[5])**2)**0.5
     magnitude.append(length)
-    if length > tolerance*80:
+    if length > 1*10**3:
         k_x.append(float(split_line[0]))
         k_y.append(float(split_line[1]))
         k_z.append(float(split_line[2]))
@@ -63,7 +63,7 @@ ax.set_proj_type('ortho')
 max_mag = max(magnitude)
 min_mag = min(magnitude)
 
-print(max_mag, tolerance)
+print(max_mag)
 
 for i in range(len(c_x)):
     c_x[i] /= max_mag
