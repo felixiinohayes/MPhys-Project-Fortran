@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=1,emin=0.0,emax=6.5,bfactor=1
-    integer,parameter::nkpath=3,np=50,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,eres=80
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.008
+    integer,parameter::nkpath=3,np=30,nblocks=30,nr3=11,nk=(nkpath-1)*np+1,eres=200
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -15,7 +15,7 @@ Program Projected_band_structure
     !INCLUDE 'mpif.h'
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign
+    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.0d0
     real*8 phase,pi2,x1,y1,x2,y2,de,spectral_A,exp_factor,p_l
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3),epoints(eres)
@@ -115,7 +115,6 @@ Program Projected_band_structure
 	write(100, '(a,2(1x,f12.6))') 'delta',sqrt(dot_product(dk,dk)),0d0
 	write(100, '(a,2(1x,f12.6))') 'delta',0d0,de
 	write(100, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nk,eres
-	write(100, '(a,i10,a)') 'object 3 class array type float rank 1 shape 3 item',nk*eres,' data follows'
 	allocate(B_pt(nb, nb))
 
      !B along Y axis
@@ -141,67 +140,68 @@ Program Projected_band_structure
 !----- Perform fourier transform
 	nr12=nr/nr3
 	count = 0
-	do ik=1,nk
-		count = count + 1
-		do ir3=1,nr3 ! Loop over R3 vectors
-			Hk=0d0	
-			do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
-				ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
+	do il=0,nblocks-1
+		write(100, '(a,i8,a,i10,a)') 'object',il+3,' class array type float rank 1 shape 3 item',nk*eres,' data follows'
+		do ik=1,nk
+			count = count + 1
+			do ir3=1,nr3 ! Loop over R3 vectors
+				Hk=0d0	
+				do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
+					ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
 
-				phase = 0d0
-				do j = 1,2
-					phase = phase + kpath(j,ik)*rvec(j,ir)
+					phase = 0d0
+					do j = 1,2
+						phase = phase + kpath(j,ik)*rvec(j,ir)
+					enddo
+
+					Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 				enddo
-
-				Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+				Hk = Hk + B_pt
+				Hkr3(:,:,ir3) = Hk
 			enddo
-			Hk = Hk + B_pt
-			Hkr3(:,:,ir3) = Hk
-		enddo
 
-		do i=0,nblocks-1
-			do j=0,nblocks-1
-				r3 = i-j
-				if (r3<=5 .AND. r3>=-5) then
-					super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
-				else
-					super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
-				endif
+			do i=0,nblocks-1
+				do j=0,nblocks-1
+					r3 = i-j
+					if (r3<=5 .AND. r3>=-5) then
+						super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
+					else
+						super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
+					endif
+				enddo
 			enddo
-		enddo
-		call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
+			call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
 
-		do ie=1,eres
-			spectral_A = 0d0
-			do i=1,nb*nblocks
-				p_l = dot_product(super_H(1:18,i),super_H(1:18,i))
-				! a_p_top(i,ik) = dot_product(super_H(1:18,i),super_H(1:18,i))
-				! a_p_bottom(i,ik) = dot_product(super_H(nb*(nblocks-1):nb*nblocks,i),super_H(nb*(nblocks-1):nb*nblocks,i))
-				exp_factor = epoints(ie) - k_ene(i,ik)/bfactor
-				! print *, exp_factor
-				spectral_A = spectral_A + exp(-0.5d0 * exp_factor * exp_factor)
-				spectral_A = spectral_A * p_l
+			do ie=1,eres
+				spectral_A = 0d0
+				do i=1,nb*nblocks
+					p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
+					! a_p_top(i,ik) = dot_product(super_H(1:18,i),super_H(1:18,i))
+					! a_p_bottom(i,ik) = dot_product(super_H(nb*(nblocks-1):nb*nblocks,i),super_H(nb*(nblocks-1):nb*nblocks,i))
+					exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
+					! print *, exp_factor
+					spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))
+				enddo
+				write(100, '(f12.6,f12.6,a,f12.10)') xk(ik), epoints(ie), " ", real(spectral_A)! Top surface
 			enddo
-			write(100, '(f12.6,f12.6,a,f12.10)') xk(ik), epoints(ie), " ", real(spectral_A)! Top surface
+			print *, count, "/", nk * nblocks
 		enddo
-
-		
-		! do j=1, nb*nblocks
-		! 	do i=1 ,nk-1
-		! 	write(100, '(f12.6,a,f12.6,a,f12.6)') xk(i),",", k_ene(j,i),",", real(a_p_top(j,i))! Top surface
-		! 	write(200, '(f12.6,a,f12.6,a,f12.6)') xk(i),",", k_ene(j,i),",", real(a_p_bottom(j,i))! Bottom surface
-		! 	enddo
-		! enddo
-		print *, count
+        write(100, '(a)') 'attribute "dep" string "positions"'
 	enddo
-	write(100,'(A,/,A,/,A,/,A)') &
-    'object "regular positions regular connections" class field', &
-    'component "positions" value 1', &
-    'component "connections" value 2', &
-    'component "data" value 3', &
-    'end'
 
-	stop
+	do i=0,nblocks-1
+		write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
+		'object',nblocks+3+i,' class field', &
+		'component "positions" value 1', &
+		'component "connections" value 2', &
+		'component "data" value ',3+i
+	enddo
+	write(100, '(a)') 'object "series" class series'
+	do i=0,nblocks-1
+		write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+nblocks+3), ' position', i
+	enddo
+	write(100, '(A)') 'end'
+
 end Program Projected_band_structure
 
 ! SUBROUTINE INIT_MPI
