@@ -49,8 +49,8 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='curvature20.dx')
-	open(200,file='curvature20.dat')
+    open(100,file='curvature_diff.dx')
+	open(200,file='curvature_diff.dat')
 	open(300,file='eigenvalues20.dx')
     read(99,*)
     read(99,*)nb,nr
@@ -222,7 +222,7 @@ Program Projected_band_structure
 
 				! print*,curvature(3,1,ikx,iky,ikz),curvature(3,2,ikx,iky,ikz),sum(3)
 				
-				write(100, '(3(1x,f20.8))') curvature(:,ikx,iky,ikz) * diff_value
+				write(100, '(3(1x,f20.8))') curvature(:,ikx,iky,ikz) / 10000
 				! write(200, '(3(1x,f12.8),3(1x,f20.2))') kpoint(1,ikx,iky,ikz),kpoint(2,ikx,iky,ikz),kpoint(3,ikx,iky,ikz),sum(:)
 			enddo	
 		enddo

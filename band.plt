@@ -1,19 +1,17 @@
-ef= 17.22439820
-#set xrange [ -0.12 : 0.12]
-set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 0.5 size 5.00in, 5.00in
-set output "band.pdf"
-set title "B =       0.500T (along y-axis) \n beta_0 =       3.000 (along y-axis)"
+set xrange [ -0.09 : 0.09]
+set terminal pngcairo enhanced font "DejaVu,30" fontscale 1 size 2000, 2000
+set output "band.png"
 set border
-set xtics
-set ytics
+unset xtics
+unset ytics
 set encoding iso_8859_1
-set xlabel "k_y"
-set ylabel "E"
 set size ratio 0 1.0,1.0
+set yrange [5.5: 6.5]
 unset key
 set mytics 2
 set parametric
+set palette defined (0 "#deebf7", 1 "#c6dbef", 2 "#9ecae1", 3 "#6baed6", 4 "#4292c6", 5 "#2171b5", 6 "#084594")
 set trange [-10:10]
 set multiplot
-plot "band.dat" u 1:($2-ef) with l lt 1 lw 1 lc rgb "black"
+plot "super_H_top.dat" u 1:2:3 with l lt 1 lw 1 linecolor palette notitle
 unset multiplot

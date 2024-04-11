@@ -1,11 +1,11 @@
 //
-// time: Thu Mar 28 16:44:25 2024
+// time: Thu Apr 11 16:13:48 2024
 //
 // version: 3.2.0 (format), 4.4.4 (DX)
 //
 //
 //
-// macro reference (direct): Arrow3D /Users/James/Desktop/Work/MPhys/opendx/dx/samples/macros/Arrow3dMacro2.net
+// macro reference (direct): Arrow3D /opt/local/libexec/opendx/dx/samples/macros/Arrow3dMacro2.net
 include "Arrow3dMacro2.net"
 //
 // MODULE main
@@ -16,7 +16,7 @@ macro main(
 ) -> (
 ) {
     // 
-    // node Arrow3D[1]: x = 625, y = 346, inputs = 0, label = Arrow3D
+    // node Arrow3D[1]: x = 651, y = 411, inputs = 0, label = Arrow3D
     //
 main_Arrow3D_1_out_1 = 
     Arrow3D(
@@ -24,11 +24,11 @@ main_Arrow3D_1_out_1 =
     ) [instance: 1, cache: 1];
     // 
     // node FileSelector[2]: x = 208, y = 20, inputs = 0, label = FileSelector
-    // output[1]: visible = 1, type = 32, value = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/eigenvalues.dx"
+    // output[1]: visible = 1, type = 32, value = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/eigenvalues.dx"
     // output[2]: visible = 1, type = 32, value = "eigenvalues.dx"
     //
     // 
-    // node Import[2]: x = 261, y = 140, inputs = 6, label = Import
+    // node Import[2]: x = 262, y = 140, inputs = 6, label = Import
     //
 main_Import_2_out_1 = 
     Import(
@@ -40,21 +40,34 @@ main_Import_2_out_1 =
     main_Import_2_in_6
     ) [instance: 2, cache: 1];
     // 
-    // node Scalar[1]: x = 351, y = 176, inputs = 11, label = Scalar
+    // node Compute[9]: x = 277, y = 218, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0.0"
+    // expression: value = a.0
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_9_out_1 = 
+    Compute(
+    main_Compute_9_in_1,
+    main_Import_2_out_1,
+    main_Compute_9_in_3
+    ) [instance: 9, cache: 1];
+    // 
+    // node Scalar[1]: x = 408, y = 141, inputs = 11, label = Scalar
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "Scalar_1"
-    // input[3]: defaulting = 0, visible = 0, type = 5, value = 5.584 
+    // input[3]: defaulting = 0, visible = 0, type = 5, value = 5.585938 
     // input[5]: defaulting = 1, visible = 0, type = 5, value = -1000000.0
     // input[6]: defaulting = 1, visible = 0, type = 5, value = 1000000.0
     // input[7]: defaulting = 1, visible = 0, type = 5, value = 1.0
-    // input[9]: defaulting = 1, visible = 0, type = 1, value = 5
-    // output[1]: visible = 1, type = 5, value = 5.584 
+    // input[9]: defaulting = 1, visible = 0, type = 1, value = 6
+    // output[1]: visible = 1, type = 5, value = 5.585938 
     //
     // 
-    // node Isosurface[2]: x = 345, y = 266, inputs = 6, label = Isosurface
+    // node Isosurface[2]: x = 348, y = 284, inputs = 6, label = Isosurface
     //
 main_Isosurface_2_out_1 = 
     Isosurface(
-    main_Import_2_out_1,
+    main_Compute_9_out_1,
     main_Scalar_1_out_1,
     main_Isosurface_2_in_3,
     main_Isosurface_2_in_4,
@@ -62,9 +75,9 @@ main_Isosurface_2_out_1 =
     main_Isosurface_2_in_6
     ) [instance: 2, cache: 1];
     // 
-    // node FileSelector[1]: x = 523, y = 30, inputs = 0, label = FileSelector
-    // output[1]: visible = 1, type = 32, value = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/curvature.dx"
-    // output[2]: visible = 1, type = 32, value = "curvature.dx"
+    // node FileSelector[1]: x = 523, y = 31, inputs = 0, label = FileSelector
+    // output[1]: visible = 1, type = 32, value = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/curvature20.dx"
+    // output[2]: visible = 1, type = 32, value = "curvature20.dx"
     //
     // 
     // node Import[1]: x = 522, y = 124, inputs = 6, label = Import
@@ -92,7 +105,7 @@ main_Compute_1_out_1 =
     main_Compute_1_in_3
     ) [instance: 1, cache: 1];
     // 
-    // node Map[1]: x = 458, y = 433, inputs = 4, label = Map
+    // node Map[1]: x = 484, y = 362, inputs = 4, label = Map
     //
 main_Map_1_out_1 = 
     Map(
@@ -102,7 +115,8 @@ main_Map_1_out_1 =
     main_Map_1_in_4
     ) [instance: 1, cache: 1];
     // 
-    // node AutoColor[1]: x = 442, y = 530, inputs = 10, label = AutoColor
+    // node AutoColor[1]: x = 448, y = 430, inputs = 10, label = AutoColor
+    // input[4]: defaulting = 1, visible = 0, type = 5, value = NULL
     //
 main_AutoColor_1_out_1,
 main_AutoColor_1_out_2 = 
@@ -134,13 +148,49 @@ main_AutoGlyph_1_out_1 =
     main_AutoGlyph_1_in_7
     ) [instance: 1, cache: 1];
     // 
-    // node Color[1]: x = 347, y = 364, inputs = 5, label = Color
-    // input[2]: defaulting = 0, visible = 1, type = 32, value = "red"
+    // node Colormap[1]: x = 248, y = 344, inputs = 19, label = Colormap
+    // input[1]: defaulting = 0, visible = 0, type = 16777224, value = { [1.0 0.0] }
+    // input[2]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.66315789] }
+    // input[3]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] }
+    // input[4]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] [1.0 1.0] }
+    // input[5]: defaulting = 0, visible = 0, type = 32, value = "Colormap_1"
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 0.0
+    // input[8]: defaulting = 1, visible = 0, type = 5, value = 7.0
+    // input[9]: defaulting = 1, visible = 0, type = 1, value = 20
+    // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 0.0 7.0 }
+    // window: position = (  -inf,   inf), size =    nanx   nan
+    //
+main_Colormap_1_out_1[cache: 2],
+main_Colormap_1_out_2[cache: 2] = 
+    Colormap(
+    main_Colormap_1_in_1,
+    main_Colormap_1_in_2,
+    main_Colormap_1_in_3,
+    main_Colormap_1_in_4,
+    main_Colormap_1_in_5,
+    main_Colormap_1_in_6,
+    main_Colormap_1_in_7,
+    main_Colormap_1_in_8,
+    main_Colormap_1_in_9,
+    main_Colormap_1_in_10,
+    main_Colormap_1_in_11,
+    main_Colormap_1_in_12,
+    main_Colormap_1_in_13,
+    main_Colormap_1_in_14,
+    main_Colormap_1_in_15,
+    main_Colormap_1_in_16,
+    main_Colormap_1_in_17,
+    main_Colormap_1_in_18,
+    main_Colormap_1_in_19
+    ) [instance: 1, cache: 1];
+    // 
+    // node Color[1]: x = 345, y = 395, inputs = 5, label = Color
+    // input[2]: defaulting = 1, visible = 1, type = 32, value = "blue"
     //
 main_Color_1_out_1 = 
     Color(
     main_Isosurface_2_out_1,
-    main_Color_1_in_2,
+    main_Colormap_1_out_1,
     main_Color_1_in_3,
     main_Color_1_in_4,
     main_Color_1_in_5
@@ -190,6 +240,10 @@ main_Compute_8_out_1 =
     ) [instance: 8, cache: 1];
     // 
     // node Shade[1]: x = 670, y = 579, inputs = 8, label = Shade
+    // input[3]: defaulting = 0, visible = 1, type = 32, value = "smooth"
+    // input[4]: defaulting = 1, visible = 0, type = 5, value = 2.0
+    // input[5]: defaulting = 0, visible = 0, type = 1, value = 100
+    // input[6]: defaulting = 1, visible = 0, type = 5, value = 1.0
     //
 main_Shade_1_out_1 = 
     Shade(
@@ -206,13 +260,13 @@ main_Shade_1_out_1 =
     // node Image[1]: x = 785, y = 660, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.0112667 0.0480954 0.445155]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-0.0112667 0.0480954 0.446931]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 0.000951463
-    // input[8]: defaulting = 0, visible = 0, type = 1, value = 1150
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.699
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 1 0]
-    // input[11]: defaulting = 0, visible = 0, type = 5, value = 29.9912
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0.0176654 0.0466391 0.475149]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [0.0177131 0.0467267 0.474988]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 5.30381e-05
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 1140
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.641
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [-0.29607 0.872762 0.388108]
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 15.9415
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -220,13 +274,17 @@ main_Shade_1_out_1 =
     // input[17]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
+    // input[22]: defaulting = 0, visible = 0, type = 32, value = "white"
     // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[30]: defaulting = 0, visible = 0, type = 16777248, value = {"kx", "ky", "kz"}
+    // input[32]: defaulting = 1, visible = 0, type = 16777224, value = {[-0.06 -0.06 0.4] [0.06 0.06 0.5]}
     // input[33]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[36]: defaulting = 0, visible = 0, type = 3, value = 1
-    // input[41]: defaulting = 0, visible = 0, type = 32, value = "zoom"
+    // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"clear", "white", "yellow", "black"}
+    // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background", "grid", "ticks", "labels"}
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
     // depth: value = 24
-    // window: position = (0.3980,0.0359), size = 0.7918x0.9185, screen = 0
+    // window: position = (0.0578,0.0755), size = 0.6411x0.6856, screen = 0
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -329,16 +387,19 @@ main_Unmark_3_out_1 =
 CacheScene(main_Image_1_in_1, main_Image_1_out_1, main_Image_1_out_2);
 }
 main_Arrow3D_1_out_1 = NULL;
-main_FileSelector_2_out_1 = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/eigenvalues.dx";
+main_FileSelector_2_out_1 = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/eigenvalues.dx";
 main_Import_2_in_2 = NULL;
 main_Import_2_in_3 = NULL;
 main_Import_2_in_4 = NULL;
 main_Import_2_in_5 = NULL;
 main_Import_2_in_6 = NULL;
 main_Import_2_out_1 = NULL;
+main_Compute_9_in_1 = "$0.0";
+main_Compute_9_in_3 = NULL;
+main_Compute_9_out_1 = NULL;
 main_Scalar_1_in_1 = "Scalar_1";
 main_Scalar_1_in_2 = NULL;
-main_Scalar_1_in_3 = 5.584 ;
+main_Scalar_1_in_3 = 5.585938 ;
 main_Scalar_1_in_4 = NULL;
 main_Scalar_1_in_5 = NULL;
 main_Scalar_1_in_6 = NULL;
@@ -347,13 +408,13 @@ main_Scalar_1_in_8 = NULL;
 main_Scalar_1_in_9 = NULL;
 main_Scalar_1_in_10 = NULL;
 main_Scalar_1_in_11 = NULL;
-main_Scalar_1_out_1 = 5.584 ;
+main_Scalar_1_out_1 = 5.585938 ;
 main_Isosurface_2_in_3 = NULL;
 main_Isosurface_2_in_4 = NULL;
 main_Isosurface_2_in_5 = NULL;
 main_Isosurface_2_in_6 = NULL;
 main_Isosurface_2_out_1 = NULL;
-main_FileSelector_1_out_1 = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/curvature.dx";
+main_FileSelector_1_out_1 = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/curvature20.dx";
 main_Import_1_in_2 = NULL;
 main_Import_1_in_3 = NULL;
 main_Import_1_in_4 = NULL;
@@ -382,7 +443,26 @@ main_AutoGlyph_1_in_5 = NULL;
 main_AutoGlyph_1_in_6 = NULL;
 main_AutoGlyph_1_in_7 = NULL;
 main_AutoGlyph_1_out_1 = NULL;
-main_Color_1_in_2 = "red";
+main_Colormap_1_in_1 = { [1.0 0.0] };
+main_Colormap_1_in_2 = { [0.0 0.66315789] };
+main_Colormap_1_in_3 = { [0.0 1.0] };
+main_Colormap_1_in_4 = { [0.0 1.0] [1.0 1.0] };
+main_Colormap_1_in_5 = "Colormap_1";
+main_Colormap_1_in_6 = NULL;
+main_Colormap_1_in_7 = NULL;
+main_Colormap_1_in_8 = NULL;
+main_Colormap_1_in_9 = NULL;
+main_Colormap_1_in_10 = NULL;
+main_Colormap_1_in_11 = NULL;
+main_Colormap_1_in_12 = { 0.0 7.0 };
+main_Colormap_1_in_13 = NULL;
+main_Colormap_1_in_14 = NULL;
+main_Colormap_1_in_15 = NULL;
+main_Colormap_1_in_16 = NULL;
+main_Colormap_1_in_17 = NULL;
+main_Colormap_1_in_18 = NULL;
+main_Colormap_1_in_19 = NULL;
+main_Colormap_1_out_1 = NULL;
 main_Color_1_in_3 = NULL;
 main_Color_1_in_4 = NULL;
 main_Color_1_in_5 = NULL;
@@ -398,9 +478,9 @@ main_Compute_8_in_1 = "";
 main_Compute_8_in_2 = NULL;
 main_Compute_8_in_3 = NULL;
 main_Shade_1_in_2 = NULL;
-main_Shade_1_in_3 = NULL;
+main_Shade_1_in_3 = "smooth";
 main_Shade_1_in_4 = NULL;
-main_Shade_1_in_5 = NULL;
+main_Shade_1_in_5 = 100;
 main_Shade_1_in_6 = NULL;
 main_Shade_1_in_7 = NULL;
 main_Shade_1_in_8 = NULL;
@@ -720,13 +800,13 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-0.0112667 0.0480954 0.445155];
-main_Image_1_in_6 = [-0.0112667 0.0480954 0.446931];
-main_Image_1_in_7 = 0.000951463;
-main_Image_1_in_8 = 1150;
-main_Image_1_in_9 = 0.699;
-main_Image_1_in_10 = [0 1 0];
-main_Image_1_in_11 = 29.9912;
+main_Image_1_in_5 = [0.0176654 0.0466391 0.475149];
+main_Image_1_in_6 = [0.0177131 0.0467267 0.474988];
+main_Image_1_in_7 = 5.30381e-05;
+main_Image_1_in_8 = 1140;
+main_Image_1_in_9 = 0.641;
+main_Image_1_in_10 = [-0.29607 0.872762 0.388108];
+main_Image_1_in_11 = NULL;
 main_Image_1_in_12 = 0;
 main_Image_1_in_13 = NULL;
 main_Image_1_in_14 = 1;
@@ -737,7 +817,7 @@ main_Image_1_in_18 = NULL;
 main_Image_1_in_19 = 0;
 main_Image_1_in_20 = NULL;
 main_Image_1_in_21 = NULL;
-main_Image_1_in_22 = NULL;
+main_Image_1_in_22 = "white";
 main_Image_1_in_23 = NULL;
 main_Image_1_in_25 = NULL;
 main_Image_1_in_26 = NULL;
@@ -751,11 +831,11 @@ main_Image_1_in_33 = 1;
 main_Image_1_in_34 = NULL;
 main_Image_1_in_35 = NULL;
 main_Image_1_in_36 = 1;
-main_Image_1_in_37 = NULL;
-main_Image_1_in_38 = NULL;
+main_Image_1_in_37 = {"clear", "white", "yellow", "black"};
+main_Image_1_in_38 = {"background", "grid", "ticks", "labels"};
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
-main_Image_1_in_41 = "zoom";
+main_Image_1_in_41 = "rotate";
 main_Image_1_in_42 = NULL;
 main_Image_1_in_43 = NULL;
 main_Image_1_in_44 = NULL;

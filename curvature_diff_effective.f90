@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.00035,a=0.791,diff_value=kmax/10
+    real*8,parameter::ef= 4.18903772,kmax=0.000035,a=0.791,diff_value=kmax/100
     integer,parameter::meshres=5,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
@@ -49,9 +49,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='curvature20.dx')
-	open(200,file='curvature20.dat')
-	open(300,file='eigenvalues20.dx')
+    open(100,file='curvature_diff_effective.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(3,nr),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -202,13 +200,13 @@ Program Projected_band_structure
 			do ikz=1,nkpoints
 				do ik=1,4
 					do i=1,2
-						du(:,i,1) = (eig_eff(ik,2,i,:,ikx,iky,ikz) - eig_eff(ik,1,i,:,ikx,iky,ikz))/diff_value
-						du(:,i,2) = (eig_eff(ik,3,i,:,ikx,iky,ikz) - eig_eff(ik,1,i,:,ikx,iky,ikz))/diff_value
-						du(:,i,3) = (eig_eff(ik,4,i,:,ikx,iky,ikz) - eig_eff(ik,1,i,:,ikx,iky,ikz))/diff_value
+						du(:,i,1) = (eig_eff(ik,2,:,i,ikx,iky,ikz) - eig_eff(ik,1,:,i,ikx,iky,ikz))/diff_value
+						du(:,i,2) = (eig_eff(ik,3,:,i,ikx,iky,ikz) - eig_eff(ik,1,:,i,ikx,iky,ikz))/diff_value
+						du(:,i,3) = (eig_eff(ik,4,:,i,ikx,iky,ikz) - eig_eff(ik,1,:,i,ikx,iky,ikz))/diff_value
 
-						connection(ik,1,i,ikx,iky,ikz) = dot_product(eig_eff(ik,1,i,:,ikx,iky,ikz),du(:,i,1))
-						connection(ik,2,i,ikx,iky,ikz) = dot_product(eig_eff(ik,1,i,:,ikx,iky,ikz),du(:,i,2))
-						connection(ik,3,i,ikx,iky,ikz) = dot_product(eig_eff(ik,1,i,:,ikx,iky,ikz),du(:,i,3))
+						connection(ik,1,i,ikx,iky,ikz) = dot_product(eig_eff(ik,1,:,i,ikx,iky,ikz),du(:,i,1))
+						connection(ik,2,i,ikx,iky,ikz) = dot_product(eig_eff(ik,1,:,i,ikx,iky,ikz),du(:,i,2))
+						connection(ik,3,i,ikx,iky,ikz) = dot_product(eig_eff(ik,1,:,i,ikx,iky,ikz),du(:,i,3))
 					enddo
 				enddo
 				sum = connection(1,:,1,ikx,iky,ikz) + connection(1,:,2,ikx,iky,ikz)

@@ -62,7 +62,7 @@ Program Projected_band_structure
        rvec(:,k) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2) + rvec_data(3)*avec(:,3)
     enddo
 
-	kmiddle_initial = (/0.0d0,0.05d0,0.46d0/)
+	kmiddle_initial = (/0.017d0,0.046d0,0.475d0/)
 	lwork=max(1,2*nb-1)
 	allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
 	allocate(k_ene(nb))

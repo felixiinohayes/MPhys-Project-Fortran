@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.063,kymax=0.0315,kzmax=0.1,amax=0.01892,acritical=0.79858
-    integer,parameter::xmeshres=15,ymeshres=15,zmeshres=15,ares=0,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
+    real*8,parameter::ef= 4.18903772,kxmax=0.06,kymax=0.06,kzmax=0.06,amax=0.01892,acritical=0.791
+    integer,parameter::meshres=20,xmeshres=meshres,ymeshres=meshres,zmeshres=meshres,ares=0,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,7 +17,7 @@ Program Projected_band_structure
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.015d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.06d0
     real*8 phase,pi2,x1,y1,x2,y2,a,minbandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
@@ -82,7 +82,7 @@ Program Projected_band_structure
 
     if(myid.eq.0) then
         write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints,nkypoints,nkzpoints
-        write(100, '(a,3(1x,f12.6))') 'origin',-kxmax,0d0,-kzmax+0.5d0*bvec(3,3)
+        write(100, '(a,3(1x,f12.6))') 'origin',-kxmax,-kymax,-kzmax+0.5d0*bvec(3,3)
         write(100, '(a,3(1x,f12.6))') 'delta',dx,0d0,0d0
         write(100, '(a,3(1x,f12.6))') 'delta',0d0,dy,0d0
         write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dz
@@ -95,9 +95,10 @@ Program Projected_band_structure
       do iky=-ymeshres,ymeshres
         do ikz=-zmeshres,zmeshres
           ik=ik+1
-          kpoint(1,ik)=ikx*dx 
-          kpoint(2,ik)=iky*dy + kymax 
-          kpoint(3,ik)=ikz*dz + 0.5d0*bvec(3,3)
+		  kpoint(1,ik)=ikx*dx! + 0.017665681958398235
+          kpoint(2,ik)=iky*dy! + 0.046638430945586576
+          kpoint(3,ik)=ikz*dz + 0.5*bvec(3,3)! + 0.47514974714462382
+		!   print *, kpoint(:,ikx,iky,ikz)
         enddo
       enddo
     enddo

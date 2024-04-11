@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.005,a=0.791
-    integer,parameter::meshres=10,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
+    real*8,parameter::ef= 4.18903772,kmax=0.00035,a=0.791
+    integer,parameter::meshres=50,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -49,9 +49,9 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='curvature.dx')
-	open(200,file='curvature.dat')
-	open(300,file='eigenvalues.dx')
+    open(100,file='curvature50.dx')
+	open(200,file='curvature50.dat')
+	open(300,file='eigenvalues50.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(3,nr),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -78,8 +78,8 @@ Program Projected_band_structure
 
 !-----BTPs:
 
-	node = 1
-	pair = 5
+	node = 2
+	pair = 1
 
 	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve
 	offset(:,2,1) = (/ 0.017665681958398235,0.046638430945586576,0.47514974714462382/) !-ve
@@ -101,18 +101,18 @@ Program Projected_band_structure
 !----- Create header of dx files
 
 	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-1,nkpoints-1,nkpoints-1
-	write(100, '(a,3(1x,f12.6))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
-	write(100, '(a,3(1x,f12.6))') 'delta',dk,0d0,0d0
-	write(100, '(a,3(1x,f12.6))') 'delta',0d0,dk,0d0
+	write(100, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
+	write(100, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
+	write(100, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
 	write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
 	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-1,nkpoints-1,nkpoints-1
 	write(100, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
 								   ' item', (nkpoints-1)*(nkpoints-1)*(nkpoints-1), ' data follows'
 	write(300, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints,nkpoints
-	write(300, '(a,3(1x,f12.6))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
-	write(300, '(a,3(1x,f12.6))') 'delta',dk,0d0,0d0
-	write(300, '(a,3(1x,f12.6))') 'delta',0d0,dk,0d0
-	write(300, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
+	write(300, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
+	write(300, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
+	write(300, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
+	write(300, '(a,3(1x,f12.8))') 'delta',0d0,0d0,dk
 	write(300, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints,nkpoints
 	write(300, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',1,&
 									' item', (nkpoints)*(nkpoints)*(nkpoints), ' data follows'
@@ -122,11 +122,12 @@ Program Projected_band_structure
 	do ikx=1,nkpoints	
 		do iky=1,nkpoints
 			do ikz=1,nkpoints
-				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,node,pair) - (kmax/2)
-				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,node,pair) - (kmax/2)
-				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,node,pair) - (kmax/2)
+				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,node,pair) - kmax/2
+				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,node,pair) - kmax/2
+				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,node,pair) - kmax/2
 			enddo
 		enddo
+		! print *, kpoint(1,ikx,1,1)
 	enddo
 
 	! kpool=nkp3/numprocs
@@ -164,15 +165,15 @@ Program Projected_band_structure
 				write(300,'(1(1x,f10.8))') k_ene(12)
 
 !----Constructing effective Hamiltonian and diagonalizing
-				do i=1,2
-					do j=1,2
-						H_eff(i,j) = dot_product(eig(:,i,ikx,iky,ikz),matmul(H_k(:,:,ikx,iky,ikz),eig(:,j,ikx,iky,ikz)))
-					enddo
-				enddo
-				call zheev('V','U',2,H_eff,2,eff,work,lwork,rwork,info)
+				! do i=1,2
+				! 	do j=1,2
+				! 		H_eff(i,j) = dot_product(eig(:,i,ikx,iky,ikz),matmul(H_k(:,:,ikx,iky,ikz),eig(:,j,ikx,iky,ikz)))
+				! 	enddo
+				! enddo
+				! call zheev('V','U',2,H_eff,2,eff,work,lwork,rwork,info)
 
-				eig_eff(:,1,ikx,iky,ikz) = H_eff(:,1)
-				eig_eff(:,2,ikx,iky,ikz) = H_eff(:,2)
+				! eig_eff(:,1,ikx,iky,ikz) = H_eff(:,1)
+				! eig_eff(:,2,ikx,iky,ikz) = H_eff(:,2)
 			enddo
 		enddo
 	enddo
@@ -193,8 +194,8 @@ Program Projected_band_structure
 				connection(3,1,ikx,iky,ikz) = dot_product(eig(:,1,ikx,iky,ikz),du(:,1,3))
 				! enddo
 				total_c(:) = connection(:,1,ikx,iky,ikz)*dcmplx(0d0,-1d0) 
-				write(100, '(3(1x,f20.2))') total_c
-				write(200, '(3(1x,f12.8),3(1x,f20.2))') kpoint(:,ikx,iky,ikz),total_c
+				! write(100, '(3(1x,f20.2))') total_c
+				! write(200, '(3(1x,f12.8),3(1x,f20.2))') kpoint(:,ikx,iky,ikz),total_c
 			enddo
 		enddo
 	enddo
@@ -216,10 +217,10 @@ Program Projected_band_structure
 				enddo
 				! sum(:) = curvature(:,1,ikx,iky,ikz) + curvature(:,2,ikx,iky,ikz)
 
-				!print*,curvature(3,1,ikx,iky,ikz),curvature(3,2,ikx,iky,ikz),sum(3)
+				! print*,curvature(3,1,ikx,iky,ikz),curvature(3,2,ikx,iky,ikz),sum(3)
 				
-				! write(100, '(3(1x,f20.2))') sum(1),sum(2),sum(3)
-				! write(200, '(3(1x,f12.8),3(1x,f20.2))') kpoint(1,ikx,iky,ikz),kpoint(2,ikx,iky,ikz),kpoint(3,ikx,iky,ikz),sum(1),sum(2),sum(3)
+				! write(100, '(3(1x,f20.2))') total_c
+				! write(200, '(3(1x,f12.8),3(1x,f20.2))') kpoint(:,ikx,iky,ikz),total_c
 			enddo	
 		enddo
 	enddo

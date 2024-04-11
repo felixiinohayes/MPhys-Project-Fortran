@@ -129,7 +129,7 @@ Program Projected_band_structure
 
 	allocate(H_eff(2,2,4),dHdK(2,2,3))
 
-	!Constructing effective Hamiltonian and finite difference in each direct
+	!Constructing effective Hamiltonian and finite difference in each direction
 	do k = 1,3
 		do i=1,2
 			do j=1,2

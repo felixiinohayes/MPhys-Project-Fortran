@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=2.0
-    integer,parameter::nkpath=3,np=100,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,eres=50
+    real*8,parameter::ef= 4.18903772,a=1,emin=0.0,emax=6.5,bfactor=1
+    integer,parameter::nkpath=3,np=50,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,eres=80
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -46,8 +46,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='super_H_top.dat')
-    open(200,file='super_H_bottom.dat')
+    open(100,file='super_H_top.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -89,6 +88,8 @@ Program Projected_band_structure
 	! kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
 	! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.5d0 ]  !-L
 
+
+
 	do j = 1, nkpath-1
 		  sign = 1
 		  if(j ==1) sign = -1
@@ -99,16 +100,22 @@ Program Projected_band_structure
 			xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
 		enddo
 	enddo
-
 	de = (emax-emin)/eres
 
 	do i=1, eres
 		epoints(i) = emin + de*i
-		print *, epoints(i)
 	enddo
 
 
 !----Construct magnetic perturbation
+	! call write_header()
+
+	write(100, '(a,2(1x,i8))') 'object 1 class gridpositions counts',nk,eres
+	write(100, '(a,2(1x,f12.6))') 'origin',-0.1d0,emin
+	write(100, '(a,2(1x,f12.6))') 'delta',sqrt(dot_product(dk,dk)),0d0
+	write(100, '(a,2(1x,f12.6))') 'delta',0d0,de
+	write(100, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nk,eres
+	write(100, '(a,i10,a)') 'object 3 class array type float rank 1 shape 3 item',nk*eres,' data follows'
 	allocate(B_pt(nb, nb))
 
      !B along Y axis
@@ -175,7 +182,7 @@ Program Projected_band_structure
 				spectral_A = spectral_A + exp(-0.5d0 * exp_factor * exp_factor)
 				spectral_A = spectral_A * p_l
 			enddo
-			write(100, '(f12.6,a,f12.6,a,f12.6)') xk(ik),",", epoints(ie),",", real(spectral_A)! Top surface
+			write(100, '(f12.6,f12.6,a,f12.10)') xk(ik), epoints(ie), " ", real(spectral_A)! Top surface
 		enddo
 
 		
@@ -187,33 +194,16 @@ Program Projected_band_structure
 		! enddo
 		print *, count
 	enddo
-	call write_plt()
+	write(100,'(A,/,A,/,A,/,A)') &
+    'object "regular positions regular connections" class field', &
+    'component "positions" value 1', &
+    'component "connections" value 2', &
+    'component "data" value 3', &
+    'end'
+
 	stop
 end Program Projected_band_structure
 
-subroutine write_plt()
-	open(99,file='band.plt')
-	write(99,'(a,f12.6,a,f12.6,a)') 'set xrange [ -0.09 : 0.09]'
-	write(99,'(a)') &
-		 'set terminal pngcairo enhanced font "DejaVu,30" fontscale 1 size 2000, 2000'
-	write(99,'(a,f4.2,a)')'set output "band.png"'
-	write(99,'(13(a,/),a)') &
-		 'set border',&
-		 'unset xtics',&
-		 'unset ytics',&
-		 'set encoding iso_8859_1',&
-		 'set size ratio 0 1.0,1.0',&
-		 'set yrange [5.5: 6.5]',&
-		 'unset key',&
-		 'set mytics 2',&
-		 'set parametric',&
-		 'set palette defined (0 "#deebf7", 1 "#c6dbef", 2 "#9ecae1", 3 "#6baed6", 4 "#4292c6", 5 "#2171b5", 6 "#084594")',&
-		 'set trange [-10:10]',&
-		 'set multiplot',&
-		 'plot "super_H_top.dat" u 1:2:3 with l lt 1 lw 1 linecolor palette notitle',&
-		 'unset multiplot'
-
-   end subroutine write_plt
 ! SUBROUTINE INIT_MPI
 !     USE PARAMETERS               ,             ONLY: IERR,MYID,NUMPROCS
 !     IMPLICIT NONE
