@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be midified by the usere
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.4,two=2.0d0,sqrt2=sqrt(two),Bx=0.0d0,beta0=0.2d0,alpha=0
+    real*8,parameter::kmax=0.2,two=2.0d0,sqrt2=sqrt(two),Bx=0.0d0,beta0=0d0,alpha=0
     integer,parameter::meshres=20, nkpoints=(2*meshres+1),nbmin=11,nbmax=14,nkp2=nkpoints*nkpoints
     integer nb
 end module parameters
@@ -15,9 +15,9 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikp,ir,ik,ii,jj,l,m
     real*8,parameter::third=1d0/3d0,pi_8=4*atan(1.0_8),cos60=cos(pi_8/3),tan30=tan(pi_8/6),sin30=sin(pi_8/6)
-    real*8 phase,pi2,a,b,x1,y1,theta_r,beta,ratio
+    real*8 phase,pi2,a,b,x1,y1,theta_r,beta,ratio,ef
     real*8 avec(3,3),bvec(3,3),r_frac(3,3),rvec_stress(2)
-    real*8,allocatable:: rvec_data(:,:),ene(:),rwork(:),k_ene(:),rs(:),kpoint(:,:),rvec(:,:)
+    real*8,allocatable:: rvec_data(:,:),ene(:),rwork(:),k_ene(:,:),rs(:),kpoint(:,:),rvec(:,:)
     integer*4,allocatable:: ndeg(:)
     complex*16,allocatable:: Hk(:,:),Hamr(:,:,:),work(:),B_pt(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),B_sigma(:,:)
 !------------------------------------------------------
@@ -79,7 +79,7 @@ Program Projected_band_structure
             enddo
         enddo
        
-        ! avec(2,:) = avec(2,:) * 1.000
+        avec(2,:) = avec(2,:) * 1d0
         rvec(:,k) = rvec_data(1,k)*avec(:,1) + rvec_data(2,k)*avec(:,2) + rvec_data(3,k)*avec(:,3)
     enddo
    lwork=max(1,2*nb-1)
@@ -96,13 +96,13 @@ Program Projected_band_structure
                                     ' item', nkpoints*nkpoints,' data follows'
 
 !----Magnetic Perturbation
-    allocate(k_ene(nb),kpoint(3,nkp2),B_pt(nb,nb),B_sigma(2,2))
+    allocate(k_ene(nb,nkp2),kpoint(3,nkp2),B_pt(nb,nb),B_sigma(2,2))
 
     !B along X-axis
     B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
     B_sigma(2,:) = [dcmplx(Bx,0d0) ,  dcmplx(0d0,0d0)]
 
-    ! !B along Y axis
+    !B along Y axis
 	! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
     ! B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 	B_pt=0d0
@@ -147,10 +147,17 @@ Program Projected_band_structure
 
 			HK=HK+B_pt
 
-            call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
-            write(100, '(4(1x,f12.6))') k_ene(nbmin), k_ene(nbmin+1),k_ene(nbmin+2),k_ene(nbmin+3)
+            call zheev('V','U',nb,HK,nb,k_ene(:,ikp),work,lwork,rwork,info)
         enddo
     enddo
+!-----Fermi Energy
+    ef = (MAXVAL(k_ene(12, :)) + MINVAL(k_ene(13, :)))/2.0d0
+    do ikp =1,nkp2
+        write(100, '(4(1x,f12.6))') k_ene(nbmin:nbmax,ikp)-ef
+    enddo
+
+    print * , ef
+
     write(*,'(a,(1x,f10.3))') 'beta(0)=',2-(1-beta0*abs(cos(0d0)))
     write(100,'(A,/,A,/,A,/,A)') &
     'object "regular positions regular connections" class field', &

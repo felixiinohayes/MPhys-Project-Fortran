@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=1
-    integer,parameter::nkpath=3,np=200,nblocks=40,nr3=11,nk=(nkpath-1)*np+1
+    real*8,parameter::ef= 4.18903772,a=0.7
+    integer,parameter::nkpath=3,np=20,nblocks=20,nr3=11,nk=(nkpath-1)*np+1
 	integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -16,7 +16,7 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.1d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.0d0
     real*8 phase,pi2,x1,y1,x2,y2
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3)
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
