@@ -1,11 +1,15 @@
 //
-// time: Fri Mar 22 16:55:00 2024
+// time: Thu Apr 11 17:26:38 2024
 //
 // version: 3.2.0 (format), 4.4.4 (DX)
 //
 //
+//
+// macro reference (direct): ClipSurfaceMacro /Users/James/Desktop/Work/MPhys/opendx/dx/samples/macros/ClipSurfaceMacro.net
+include "ClipSurfaceMacro.net"
+//
 // MODULE main
-// workspace: width = 612, height = 646
+// workspace: width = 769, height = 817
 // layout: snap = 0, width = 50, height = 50, align = NN
 //
 macro main(
@@ -29,7 +33,7 @@ main_Import_1_out_1 =
     main_Import_1_in_6
     ) [instance: 1, cache: 1];
     // 
-    // node Compute[10]: x = 257, y = 169, inputs = 3, label = Compute
+    // node Compute[10]: x = 255, y = 169, inputs = 3, label = Compute
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0/2"
     // expression: value = a/2
     // name[2]: value = a
@@ -42,87 +46,7 @@ main_Compute_10_out_1 =
     main_Compute_10_in_3
     ) [instance: 10, cache: 1];
     // 
-    // node Compute[3]: x = 237, y = 254, inputs = 3, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,1)"
-    // expression: value = select(a,1)
-    // name[2]: value = a
-    // name[3]: value = b
-    //
-main_Compute_3_out_1 = 
-    Compute(
-    main_Compute_3_in_1,
-    main_Compute_10_out_1,
-    main_Compute_3_in_3
-    ) [instance: 3, cache: 1];
-    // 
-    // node Compute[5]: x = 319, y = 254, inputs = 3, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,2)"
-    // expression: value = select(a,2)
-    // name[2]: value = a
-    // name[3]: value = b
-    //
-main_Compute_5_out_1 = 
-    Compute(
-    main_Compute_5_in_1,
-    main_Compute_10_out_1,
-    main_Compute_5_in_3
-    ) [instance: 5, cache: 1];
-    // 
-    // node Collect[1]: x = 490, y = 254, inputs = 4, label = Collect
-    //
-main_Collect_1_out_1 = 
-    Collect(
-    main_Collect_1_in_1,
-    main_Compute_3_out_1,
-    main_Compute_5_out_1,
-    main_Collect_1_in_4
-    ) [instance: 1, cache: 1];
-    // 
-    // node Mark[1]: x = 433, y = 333, inputs = 2, label = Mark
-    // input[2]: defaulting = 0, visible = 1, type = 32, value = "positions"
-    //
-main_Mark_1_out_1 = 
-    Mark(
-    main_Collect_1_out_1,
-    main_Mark_1_in_2
-    ) [instance: 1, cache: 1];
-    // 
-    // node Compute[2]: x = 502, y = 363, inputs = 3, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "[$0.0,$0.1,$1]"
-    // expression: value = [a.0,a.1,b]
-    // name[2]: value = a
-    // name[3]: value = b
-    //
-main_Compute_2_out_1 = 
-    Compute(
-    main_Compute_2_in_1,
-    main_Mark_1_out_1,
-    main_Collect_1_out_1
-    ) [instance: 2, cache: 1];
-    // 
-    // node Unmark[1]: x = 552, y = 452, inputs = 2, label = Unmark
-    //
-main_Unmark_1_out_1 = 
-    Unmark(
-    main_Compute_2_out_1,
-    main_Unmark_1_in_2
-    ) [instance: 1, cache: 1];
-    // 
-    // node Shade[1]: x = 508, y = 538, inputs = 8, label = Shade
-    //
-main_Shade_1_out_1 = 
-    Shade(
-    main_Unmark_1_out_1,
-    main_Shade_1_in_2,
-    main_Shade_1_in_3,
-    main_Shade_1_in_4,
-    main_Shade_1_in_5,
-    main_Shade_1_in_6,
-    main_Shade_1_in_7,
-    main_Shade_1_in_8
-    ) [instance: 1, cache: 1];
-    // 
-    // node Compute[1]: x = 159, y = 253, inputs = 3, label = Compute
+    // node Compute[1]: x = 285, y = 253, inputs = 3, label = Compute
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,0)"
     // expression: value = select(a,0)
     // name[2]: value = a
@@ -135,20 +59,33 @@ main_Compute_1_out_1 =
     main_Compute_1_in_3
     ) [instance: 1, cache: 1];
     // 
-    // node Compute[11]: x = 243, y = 384, inputs = 3, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "min($0.0)"
-    // expression: value = min(a.0)
+    // node Compute[3]: x = 374, y = 255, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,1)"
+    // expression: value = select(a,1)
     // name[2]: value = a
     // name[3]: value = b
     //
-main_Compute_11_out_1 = 
+main_Compute_3_out_1 = 
     Compute(
-    main_Compute_11_in_1,
-    main_Compute_1_out_1,
-    main_Compute_11_in_3
-    ) [instance: 11, cache: 1];
+    main_Compute_3_in_1,
+    main_Compute_10_out_1,
+    main_Compute_3_in_3
+    ) [instance: 3, cache: 1];
     // 
-    // node Compute[7]: x = 390, y = 255, inputs = 3, label = Compute
+    // node Compute[5]: x = 463, y = 254, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,2)"
+    // expression: value = select(a,2)
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_5_out_1 = 
+    Compute(
+    main_Compute_5_in_1,
+    main_Compute_10_out_1,
+    main_Compute_5_in_3
+    ) [instance: 5, cache: 1];
+    // 
+    // node Compute[7]: x = 552, y = 251, inputs = 3, label = Compute
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "select($0,3)"
     // expression: value = select(a,3)
     // name[2]: value = a
@@ -161,9 +98,94 @@ main_Compute_7_out_1 =
     main_Compute_7_in_3
     ) [instance: 7, cache: 1];
     // 
-    // node Compute[12]: x = 328, y = 383, inputs = 3, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "max($0)"
-    // expression: value = max(a)
+    // node Collect[1]: x = 578, y = 338, inputs = 4, label = Collect
+    //
+main_Collect_1_out_1 = 
+    Collect(
+    main_Compute_1_out_1,
+    main_Compute_3_out_1,
+    main_Compute_5_out_1,
+    main_Compute_7_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node Mark[1]: x = 632, y = 440, inputs = 2, label = Mark
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "positions"
+    //
+main_Mark_1_out_1 = 
+    Mark(
+    main_Collect_1_out_1,
+    main_Mark_1_in_2
+    ) [instance: 1, cache: 1];
+    // 
+    // node Compute[2]: x = 700, y = 429, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "[$0.0,$0.1,$1]"
+    // expression: value = [a.0,a.1,b]
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_2_out_1 = 
+    Compute(
+    main_Compute_2_in_1,
+    main_Mark_1_out_1,
+    main_Collect_1_out_1
+    ) [instance: 2, cache: 1];
+    // 
+    // node Unmark[1]: x = 632, y = 517, inputs = 2, label = Unmark
+    //
+main_Unmark_1_out_1 = 
+    Unmark(
+    main_Compute_2_out_1,
+    main_Unmark_1_in_2
+    ) [instance: 1, cache: 1];
+    // 
+    // node ClipSurfaceMacro[1]: x = 408, y = 573, inputs = 2, label = ClipSurfaceMacro
+    // input[2]: defaulting = 0, visible = 1, type = 16777245, value = {[0,0,1,-0.315]}
+    //
+main_ClipSurfaceMacro_1_out_1 = 
+    ClipSurfaceMacro(
+    main_Unmark_1_out_1,
+    main_ClipSurfaceMacro_1_in_2
+    ) [instance: 1, cache: 1];
+    // 
+    // node ClipSurfaceMacro[2]: x = 243, y = 573, inputs = 2, label = ClipSurfaceMacro
+    // input[2]: defaulting = 0, visible = 1, type = 16777245, value = {[0,0,-1,-0.19]}
+    //
+main_ClipSurfaceMacro_2_out_1 = 
+    ClipSurfaceMacro(
+    main_ClipSurfaceMacro_1_out_1,
+    main_ClipSurfaceMacro_2_in_2
+    ) [instance: 2, cache: 1];
+    // 
+    // node Shade[1]: x = 154, y = 627, inputs = 8, label = Shade
+    //
+main_Shade_1_out_1 = 
+    Shade(
+    main_ClipSurfaceMacro_2_out_1,
+    main_Shade_1_in_2,
+    main_Shade_1_in_3,
+    main_Shade_1_in_4,
+    main_Shade_1_in_5,
+    main_Shade_1_in_6,
+    main_Shade_1_in_7,
+    main_Shade_1_in_8
+    ) [instance: 1, cache: 1];
+    // 
+    // node Compute[11]: x = 265, y = 338, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "min($0.0)+0.1"
+    // expression: value = min(a.0)+0.1
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_11_out_1 = 
+    Compute(
+    main_Compute_11_in_1,
+    main_Compute_1_out_1,
+    main_Compute_11_in_3
+    ) [instance: 11, cache: 1];
+    // 
+    // node Compute[12]: x = 373, y = 338, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "max($0)-0.25"
+    // expression: value = max(a)-0.25
     // name[2]: value = a
     // name[3]: value = b
     //
@@ -174,14 +196,15 @@ main_Compute_12_out_1 =
     main_Compute_12_in_3
     ) [instance: 12, cache: 1];
     // 
-    // node AutoColor[1]: x = 383, y = 503, inputs = 10, label = AutoColor
+    // node AutoColor[1]: x = 46, y = 479, inputs = 10, label = AutoColor
     // input[2]: defaulting = 0, visible = 0, type = 5, value = 0.7
     // input[3]: defaulting = 0, visible = 0, type = 5, value = 1.0
     // input[4]: defaulting = 0, visible = 0, type = 5, value = 0.65
     // input[5]: defaulting = 0, visible = 0, type = 5, value = 0.75
-    // input[6]: defaulting = 0, visible = 0, type = 5, value = 0.8
+    // input[6]: defaulting = 0, visible = 0, type = 5, value = 0.85
     // input[7]: defaulting = 1, visible = 1, type = 5, value = 0.0
     // input[8]: defaulting = 1, visible = 1, type = 5, value = 5.4
+    // input[10]: defaulting = 0, visible = 1, type = 16777224, value = {[.0 .0 .0]}
     //
 main_AutoColor_1_out_1,
 main_AutoColor_1_out_2 = 
@@ -198,63 +221,25 @@ main_AutoColor_1_out_2 =
     main_AutoColor_1_in_10
     ) [instance: 1, cache: 1];
     // 
-    // node Colormap[1]: x = 77, y = 386, inputs = 19, label = Colormap
-    // input[1]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.83157895] [0.91194969 0.0] }
-    // input[2]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] [1.0 1.0] }
-    // input[3]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] [1.0 1.0] }
-    // input[4]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0031446541 0.57303371] [0.92767296 0.5505618] [0.92767296 0.0] }
-    // input[5]: defaulting = 0, visible = 0, type = 32, value = "Colormap_1"
-    // input[7]: defaulting = 1, visible = 0, type = 5, value = 2.0
-    // input[8]: defaulting = 1, visible = 0, type = 5, value = 11.0
-    // input[9]: defaulting = 1, visible = 0, type = 1, value = 20
-    // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 2.0 11.0 }
-    // window: position = (0.2585,0.1674), size = 0.4422x0.4891, screen = 0
+    // node Scale[1]: x = 55, y = 587, inputs = 2, label = Scale
+    // input[2]: defaulting = 0, visible = 1, type = 8, value = [10 10 10]
     //
-main_Colormap_1_out_1[cache: 2],
-main_Colormap_1_out_2[cache: 2] = 
-    Colormap(
-    main_Colormap_1_in_1,
-    main_Colormap_1_in_2,
-    main_Colormap_1_in_3,
-    main_Colormap_1_in_4,
-    main_Colormap_1_in_5,
-    main_Colormap_1_in_6,
-    main_Colormap_1_in_7,
-    main_Colormap_1_in_8,
-    main_Colormap_1_in_9,
-    main_Colormap_1_in_10,
-    main_Colormap_1_in_11,
-    main_Colormap_1_in_12,
-    main_Colormap_1_in_13,
-    main_Colormap_1_in_14,
-    main_Colormap_1_in_15,
-    main_Colormap_1_in_16,
-    main_Colormap_1_in_17,
-    main_Colormap_1_in_18,
-    main_Colormap_1_in_19
+main_Scale_1_out_1 = 
+    Scale(
+    main_AutoColor_1_out_1,
+    main_Scale_1_in_2
     ) [instance: 1, cache: 1];
     // 
-    // node Color[1]: x = 110, y = 471, inputs = 5, label = Color
-    //
-main_Color_1_out_1 = 
-    Color(
-    main_Color_1_in_1,
-    main_Colormap_1_out_1,
-    main_Colormap_1_out_2,
-    main_Color_1_in_4,
-    main_Color_1_in_5
-    ) [instance: 1, cache: 1];
-    // 
-    // node Image[1]: x = 309, y = 584, inputs = 49, label = Image
+    // node Image[1]: x = 52, y = 755, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-1.49012e-08 -1.49012e-08 2.49954]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-1.49012e-08 -1.49012e-08 5.8475]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 0.478603
-    // input[8]: defaulting = 0, visible = 0, type = 1, value = 761
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.924
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 1 0]
-    // input[11]: defaulting = 1, visible = 0, type = 5, value = 8.17673
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-1.19209e-07 0 0.625]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-1.19209e-07 -23.7765 1.01358]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 12.7435
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 809
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.601
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 0.016341 0.999866]
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 30.0
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -269,16 +254,16 @@ main_Color_1_out_1 =
     // input[28]: defaulting = 0, visible = 0, type = 5, value = 1.0
     // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[30]: defaulting = 0, visible = 0, type = 16777248, value = {"kx", "ky", "E / eV"}
-    // input[31]: defaulting = 0, visible = 0, type = 16777217, value = { -2 -2 -10 }
-    // input[32]: defaulting = 1, visible = 0, type = 16777224, value = {[-0.2 -0.2 3.4] [0.2 0.2 4.8]}
+    // input[31]: defaulting = 0, visible = 0, type = 16777217, value = { -10 -10 -10 }
+    // input[32]: defaulting = 1, visible = 0, type = 16777224, value = {[-0.2 -0.2 -1] [0.2 0.2 1]}
     // input[33]: defaulting = 0, visible = 0, type = 3, value = 0
     // input[34]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[36]: defaulting = 0, visible = 0, type = 3, value = 0
     // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"clear", "grey5", "black", "black"}
     // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background", "grid", "ticks", "labels"}
-    // input[41]: defaulting = 0, visible = 0, type = 32, value = "zoom"
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
     // depth: value = 24
-    // window: position = (0.4694,0.0141), size = 0.5272x0.8098, screen = 0
+    // window: position = (0.0068,0.0565), size = 0.5599x0.5739, screen = 0
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -286,7 +271,7 @@ main_Image_1_out_2,
 main_Image_1_out_3 = 
     Image(
     main_Image_1_in_1,
-    main_AutoColor_1_out_1,
+    main_Scale_1_out_1,
     main_Image_1_in_3,
     main_Image_1_in_4,
     main_Image_1_in_5,
@@ -348,14 +333,18 @@ main_Import_1_out_1 = NULL;
 main_Compute_10_in_1 = "$0/2";
 main_Compute_10_in_3 = NULL;
 main_Compute_10_out_1 = NULL;
+main_Compute_1_in_1 = "select($0,0)";
+main_Compute_1_in_3 = NULL;
+main_Compute_1_out_1 = NULL;
 main_Compute_3_in_1 = "select($0,1)";
 main_Compute_3_in_3 = NULL;
 main_Compute_3_out_1 = NULL;
 main_Compute_5_in_1 = "select($0,2)";
 main_Compute_5_in_3 = NULL;
 main_Compute_5_out_1 = NULL;
-main_Collect_1_in_1 = NULL;
-main_Collect_1_in_4 = NULL;
+main_Compute_7_in_1 = "select($0,3)";
+main_Compute_7_in_3 = NULL;
+main_Compute_7_out_1 = NULL;
 main_Collect_1_out_1 = NULL;
 main_Mark_1_in_2 = "positions";
 main_Mark_1_out_1 = NULL;
@@ -363,6 +352,10 @@ main_Compute_2_in_1 = "[$0.0,$0.1,$1]";
 main_Compute_2_out_1 = NULL;
 main_Unmark_1_in_2 = NULL;
 main_Unmark_1_out_1 = NULL;
+main_ClipSurfaceMacro_1_in_2 = {[0,0,1,-0.315]};
+main_ClipSurfaceMacro_1_out_1 = NULL;
+main_ClipSurfaceMacro_2_in_2 = {[0,0,-1,-0.19]};
+main_ClipSurfaceMacro_2_out_1 = NULL;
 main_Shade_1_in_2 = NULL;
 main_Shade_1_in_3 = NULL;
 main_Shade_1_in_4 = NULL;
@@ -371,50 +364,22 @@ main_Shade_1_in_6 = NULL;
 main_Shade_1_in_7 = NULL;
 main_Shade_1_in_8 = NULL;
 main_Shade_1_out_1 = NULL;
-main_Compute_1_in_1 = "select($0,0)";
-main_Compute_1_in_3 = NULL;
-main_Compute_1_out_1 = NULL;
-main_Compute_11_in_1 = "min($0.0)";
+main_Compute_11_in_1 = "min($0.0)+0.1";
 main_Compute_11_in_3 = NULL;
 main_Compute_11_out_1 = NULL;
-main_Compute_7_in_1 = "select($0,3)";
-main_Compute_7_in_3 = NULL;
-main_Compute_7_out_1 = NULL;
-main_Compute_12_in_1 = "max($0)";
+main_Compute_12_in_1 = "max($0)-0.25";
 main_Compute_12_in_3 = NULL;
 main_Compute_12_out_1 = NULL;
 main_AutoColor_1_in_2 = 0.7;
 main_AutoColor_1_in_3 = 1.0;
 main_AutoColor_1_in_4 = 0.65;
 main_AutoColor_1_in_5 = 0.75;
-main_AutoColor_1_in_6 = 0.8;
+main_AutoColor_1_in_6 = 0.85;
 main_AutoColor_1_in_9 = NULL;
-main_AutoColor_1_in_10 = NULL;
+main_AutoColor_1_in_10 = {[.0 .0 .0]};
 main_AutoColor_1_out_1 = NULL;
-main_Colormap_1_in_1 = { [0.0 0.83157895] [0.91194969 0.0] };
-main_Colormap_1_in_2 = { [0.0 1.0] [1.0 1.0] };
-main_Colormap_1_in_3 = { [0.0 1.0] [1.0 1.0] };
-main_Colormap_1_in_4 = { [0.0031446541 0.57303371] [0.92767296 0.5505618] [0.92767296 0.0] };
-main_Colormap_1_in_5 = "Colormap_1";
-main_Colormap_1_in_6 = NULL;
-main_Colormap_1_in_7 = NULL;
-main_Colormap_1_in_8 = NULL;
-main_Colormap_1_in_9 = NULL;
-main_Colormap_1_in_10 = NULL;
-main_Colormap_1_in_11 = NULL;
-main_Colormap_1_in_12 = { 2.0 11.0 };
-main_Colormap_1_in_13 = NULL;
-main_Colormap_1_in_14 = NULL;
-main_Colormap_1_in_15 = NULL;
-main_Colormap_1_in_16 = NULL;
-main_Colormap_1_in_17 = NULL;
-main_Colormap_1_in_18 = NULL;
-main_Colormap_1_in_19 = NULL;
-main_Colormap_1_out_1 = NULL;
-main_Colormap_1_out_2 = NULL;
-main_Color_1_in_1 = NULL;
-main_Color_1_in_4 = NULL;
-main_Color_1_in_5 = NULL;
+main_Scale_1_in_2 = [10 10 10];
+main_Scale_1_out_1 = NULL;
 macro Image(
         id,
         object,
@@ -730,12 +695,12 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-1.49012e-08 -1.49012e-08 2.49954];
-main_Image_1_in_6 = [-1.49012e-08 -1.49012e-08 5.8475];
-main_Image_1_in_7 = 0.478603;
-main_Image_1_in_8 = 761;
-main_Image_1_in_9 = 0.924;
-main_Image_1_in_10 = [0 1 0];
+main_Image_1_in_5 = [-1.19209e-07 0 0.625];
+main_Image_1_in_6 = [-1.19209e-07 -23.7765 1.01358];
+main_Image_1_in_7 = 12.7435;
+main_Image_1_in_8 = 809;
+main_Image_1_in_9 = 0.601;
+main_Image_1_in_10 = [0 0.016341 0.999866];
 main_Image_1_in_11 = NULL;
 main_Image_1_in_12 = 0;
 main_Image_1_in_13 = NULL;
@@ -755,7 +720,7 @@ main_Image_1_in_27 = 2000;
 main_Image_1_in_28 = 1.0;
 main_Image_1_in_29 = 1;
 main_Image_1_in_30 = {"kx", "ky", "E / eV"};
-main_Image_1_in_31 = { -2 -2 -10 };
+main_Image_1_in_31 = { -10 -10 -10 };
 main_Image_1_in_32 = NULL;
 main_Image_1_in_33 = 0;
 main_Image_1_in_34 = 1;
@@ -765,7 +730,7 @@ main_Image_1_in_37 = {"clear", "grey5", "black", "black"};
 main_Image_1_in_38 = {"background", "grid", "ticks", "labels"};
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
-main_Image_1_in_41 = "zoom";
+main_Image_1_in_41 = "rotate";
 main_Image_1_in_42 = NULL;
 main_Image_1_in_43 = NULL;
 main_Image_1_in_44 = NULL;
