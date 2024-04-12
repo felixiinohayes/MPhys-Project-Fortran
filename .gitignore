@@ -33,3 +33,9 @@ spectral.cfg
 surface_kpath_spectral
 surface_kpath_spectral.o
 test.dx
+Bulk.tiff
+I_terminated.tiff
+Te_terminated.tiff
+super_H_top.dx
+I_terminated.tiff
+I_terminated.tiff

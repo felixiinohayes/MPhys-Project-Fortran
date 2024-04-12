@@ -1,5 +1,5 @@
 //
-// time: Fri Apr 12 01:16:03 2024
+// time: Fri Apr 12 13:47:55 2024
 //
 // version: 3.2.0 (format), 4.4.4 (DX)
 //
@@ -31,11 +31,11 @@ main_Import_1_out_1 =
     // 
     // node Sequencer[1]: x = 458, y = 104, inputs = 7, label = Sequencer
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "Sequencer_1"
-    // input[4]: defaulting = 1, visible = 1, type = 1, value = 1
-    // input[5]: defaulting = 1, visible = 1, type = 1, value = 29
+    // input[4]: defaulting = 1, visible = 1, type = 1, value = 0
+    // input[5]: defaulting = 1, visible = 1, type = 1, value = 59
     // input[6]: defaulting = 1, visible = 0, type = 1, value = 1
-    // input[7]: defaulting = 0, visible = 0, type = 16777217, value = { 1 29 1 1 29 1 }
-    // vcr[1]: min = 1, max = 29, beg = 1, end = 29, cur = 1, inc = 1, loop = on, step = on, pal = off
+    // input[7]: defaulting = 0, visible = 0, type = 16777217, value = { 0 59 1 0 59 1 }
+    // vcr[1]: min = 0, max = 59, beg = 0, end = 59, cur = 59, inc = 1, loop = on, step = on, pal = off
     // window: position = (0.0056,0.0657), size = 0.1556x0.0710, screen = 0
     //
     main_Sequencer_1_out_1 = @frame;
@@ -95,18 +95,18 @@ main_Unmark_1_out_1 =
     ) [instance: 1, cache: 1];
     // 
     // node Colormap[1]: x = 564, y = 361, inputs = 19, label = Colormap
-    // input[1]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.0] [1.0 0.21052632] }
+    // input[1]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.0] [1.0 0.17894737] }
     // input[2]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] }
-    // input[3]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.0] [0.050314465 0.23157895] [0.10377358 0.45263158] [0.1572327 0.63157895] [0.28301887 0.8] [0.40251572 0.85263158] [0.99685535 1.0] [1.0 1.0] }
+    // input[3]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.0] [0.047169811 0.46315789] [0.18553459 0.66315789] [0.42767296 0.77894737] [0.99685535 1.0] [1.0 1.0] }
     // input[4]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] }
     // input[5]: defaulting = 0, visible = 0, type = 32, value = "Colormap_1"
     // input[7]: defaulting = 1, visible = 0, type = 5, value = 0.0
-    // input[8]: defaulting = 1, visible = 0, type = 5, value = 0.63914937
+    // input[8]: defaulting = 1, visible = 0, type = 5, value = 1.2
     // input[9]: defaulting = 1, visible = 0, type = 1, value = 20
-    // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 0.0 0.63914937 }
+    // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 0.0 1.2 }
     // input[17]: defaulting = 0, visible = 0, type = 5, value = NULL
     // input[18]: defaulting = 0, visible = 0, type = 5, value = NULL
-    // window: position = (0.0206,0.4307), size = 0.3611x0.3996, screen = 0
+    // window: position = (0.0211,0.0382), size = 0.3611x0.3996, screen = 0
     //
 main_Colormap_1_out_1[cache: 2],
 main_Colormap_1_out_2[cache: 2] = 
@@ -146,13 +146,13 @@ main_Color_1_out_1 =
     // node Image[1]: x = 388, y = 525, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.00107151 3.00083 0]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-0.00107151 3.00083 1.39386]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 0.635481
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.000500001 3.00083 0]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-0.000500001 3.00083 1.39527]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 0.304586
     // input[8]: defaulting = 0, visible = 0, type = 1, value = 1195
     // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.785
     // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 1 0]
-    // input[11]: defaulting = 1, visible = 0, type = 5, value = 25.6831
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 12.4583
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -161,14 +161,18 @@ main_Color_1_out_1 =
     // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[22]: defaulting = 0, visible = 0, type = 32, value = "white"
-    // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[25]: defaulting = 0, visible = 0, type = 32, value = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/I_terminated.tiff"
+    // input[26]: defaulting = 0, visible = 0, type = 32, value = "tiff"
+    // input[27]: defaulting = 0, visible = 0, type = 1, value = 1000
+    // input[28]: defaulting = 0, visible = 0, type = 5, value = 1.65
+    // input[29]: defaulting = 0, visible = 0, type = 3, value = 0
     // input[31]: defaulting = 0, visible = 0, type = 1, value = -30
     // input[36]: defaulting = 0, visible = 0, type = 3, value = 0
     // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"clear", "grey5", "black", "black"}
     // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background", "grid", "ticks", "labels"}
     // input[41]: defaulting = 0, visible = 0, type = 32, value = "zoom"
     // depth: value = 24
-    // window: position = (0.2167,0.0115), size = 0.6717x0.8703, screen = 0
+    // window: position = (   inf,   nan), size =    infx   inf
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -241,12 +245,12 @@ main_Sequencer_1_in_3 = NULL;
 main_Sequencer_1_in_4 = NULL;
 main_Sequencer_1_in_5 = NULL;
 main_Sequencer_1_in_6 = NULL;
-main_Sequencer_1_in_7 = { 1 29 1 1 29 1 };
+main_Sequencer_1_in_7 = { 0 59 1 0 59 1 };
 main_Sequencer_1_out_1 = NULL;
 
-@startframe = 1;
+@startframe = 0;
 @nextframe  = @startframe;
-@endframe   = 29;
+@endframe   = 59;
 @deltaframe = 1;
 main_Select_1_in_3 = NULL;
 main_Select_1_out_1 = NULL;
@@ -260,9 +264,9 @@ main_Compute_2_in_4 = NULL;
 main_Compute_2_out_1 = NULL;
 main_Unmark_1_in_2 = NULL;
 main_Unmark_1_out_1 = NULL;
-main_Colormap_1_in_1 = { [0.0 0.0] [1.0 0.21052632] };
+main_Colormap_1_in_1 = { [0.0 0.0] [1.0 0.17894737] };
 main_Colormap_1_in_2 = { [0.0 1.0] };
-main_Colormap_1_in_3 = { [0.0 0.0] [0.050314465 0.23157895] [0.10377358 0.45263158] [0.1572327 0.63157895] [0.28301887 0.8] [0.40251572 0.85263158] [0.99685535 1.0] [1.0 1.0] };
+main_Colormap_1_in_3 = { [0.0 0.0] [0.047169811 0.46315789] [0.18553459 0.66315789] [0.42767296 0.77894737] [0.99685535 1.0] [1.0 1.0] };
 main_Colormap_1_in_4 = { [0.0 1.0] };
 main_Colormap_1_in_5 = "Colormap_1";
 main_Colormap_1_in_6 = NULL;
@@ -271,7 +275,7 @@ main_Colormap_1_in_8 = NULL;
 main_Colormap_1_in_9 = NULL;
 main_Colormap_1_in_10 = NULL;
 main_Colormap_1_in_11 = NULL;
-main_Colormap_1_in_12 = { 0.0 0.63914937 };
+main_Colormap_1_in_12 = { 0.0 1.2 };
 main_Colormap_1_in_13 = NULL;
 main_Colormap_1_in_14 = NULL;
 main_Colormap_1_in_15 = NULL;
@@ -599,9 +603,9 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-0.00107151 3.00083 0];
-main_Image_1_in_6 = [-0.00107151 3.00083 1.39386];
-main_Image_1_in_7 = 0.635481;
+main_Image_1_in_5 = [-0.000500001 3.00083 0];
+main_Image_1_in_6 = [-0.000500001 3.00083 1.39527];
+main_Image_1_in_7 = 0.304586;
 main_Image_1_in_8 = 1195;
 main_Image_1_in_9 = 0.785;
 main_Image_1_in_10 = [0 1 0];
@@ -618,11 +622,11 @@ main_Image_1_in_20 = NULL;
 main_Image_1_in_21 = NULL;
 main_Image_1_in_22 = "white";
 main_Image_1_in_23 = NULL;
-main_Image_1_in_25 = NULL;
-main_Image_1_in_26 = NULL;
-main_Image_1_in_27 = NULL;
-main_Image_1_in_28 = NULL;
-main_Image_1_in_29 = 1;
+main_Image_1_in_25 = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/I_terminated.tiff";
+main_Image_1_in_26 = "tiff";
+main_Image_1_in_27 = 1000;
+main_Image_1_in_28 = 1.65;
+main_Image_1_in_29 = 0;
 main_Image_1_in_30 = NULL;
 main_Image_1_in_31 = -30;
 main_Image_1_in_32 = NULL;
