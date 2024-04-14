@@ -39,3 +39,8 @@ Te_terminated.tiff
 super_H_top.dx
 I_terminated.tiff
 I_terminated.tiff
+super_H_B0.dx
+super_H_B06.dx
+surface_kpath_spectral_mpi
+surface_kpath_spectral_mpi.o
+I_terminated.tiff
