@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
 	character(len=80):: prefix="BiTeI"
 	real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.008
-	integer,parameter::nkpath=3,np=500,nblocks=3,nr3=11,nk=(nkpath-1)*np+1,eres=400
+	integer,parameter::nkpath=3,np=1000,nblocks=10,nr3=11,nk=(nkpath-1)*np+1,eres=1000
 	integer nb
 	INTEGER IERR,MYID,NUMPROCS
 	
@@ -142,13 +142,13 @@ Program Projected_band_structure
     ecounts=kpool*eres*3
 !----- Perform fourier transform
 	allocate(super_H(nb*nblocks,nb*nblocks),sH(nb,nb*nblocks),k_ene(nb*nblocks))
-	allocate(a_p_top(nb*nblocks,nk),a_p_bottom(nb*nblocks,nk),data_set(3,nk*eres),data_pool(3,kpool*eres))
+	allocate(a_p_top(nb*nblocks,nk),a_p_bottom(nb*nblocks,nk),data_set(3,nk*eres*2),data_pool(3,kpool*eres))
 
 	nr12=nr/nr3
 	count = 0
 	do il=0,nblocks-1
 		if(myid.eq.0) then
-			write(100, '(a,i8,a,i10,a)') 'object',il+3,' class array type float rank 1 shape 3 item',nk*eres,' data follows'
+			write(100, '(a,i8,a,i10,a)') 'object',il+3,' class array type float rank 1 shape 3 item',nk*eres*2,' data follows'
 		endif
 
 		count = count + 1
@@ -157,7 +157,7 @@ Program Projected_band_structure
 			ikp = ikp + 1
 
 			if(myid.eq.0) then
-				print *, count, "/", nblocks
+				print *, count, "/", nblocks,ik
 			endif
 			
 			do ir3=1,nr3 ! Loop over R3 vectors
