@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,kmax=0.00035,a=0.791
-    integer,parameter::meshres=20,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
+    integer,parameter::meshres=30,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -50,8 +50,9 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
     open(100,file='curvature.dx')
-	open(200,file='curvature.dat')
-	open(300,file='eigenvalues.dx')
+	open(200,file='connection.dx')
+	open(300,file='curvature.dat')
+	open(400,file='eigenvalues.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(3,nr),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -100,21 +101,29 @@ Program Projected_band_structure
 
 !----- Create header of dx files
 
-	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-1,nkpoints-1,nkpoints-1
+	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-2,nkpoints-2,nkpoints-2
 	write(100, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
 	write(100, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
 	write(100, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
 	write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
-	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-1,nkpoints-1,nkpoints-1
+	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-2,nkpoints-2,nkpoints-2
 	write(100, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
-								   ' item', (nkpoints-1)*(nkpoints-1)*(nkpoints-1), ' data follows'
-	write(300, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints,nkpoints
-	write(300, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
-	write(300, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
-	write(300, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
-	write(300, '(a,3(1x,f12.8))') 'delta',0d0,0d0,dk
-	write(300, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints,nkpoints
-	write(300, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',1,&
+								   ' item', (nkpoints-2)*(nkpoints-2)*(nkpoints-2), ' data follows'
+	write(200, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-1,nkpoints-1,nkpoints-1
+	write(200, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
+	write(200, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
+	write(200, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
+	write(200, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
+	write(200, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-1,nkpoints-1,nkpoints-1
+	write(200, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
+									' item', (nkpoints-1)*(nkpoints-1)*(nkpoints-1), ' data follows'
+	write(400, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints,nkpoints
+	write(400, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
+	write(400, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
+	write(400, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
+	write(400, '(a,3(1x,f12.8))') 'delta',0d0,0d0,dk
+	write(400, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints,nkpoints
+	write(400, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',1,&
 									' item', (nkpoints)*(nkpoints)*(nkpoints), ' data follows'
     
   !----- Create a uniform k-mesh
@@ -162,7 +171,7 @@ Program Projected_band_structure
 				eig(:,1,ikx,iky,ikz) = HK(:,12)
 				eig(:,2,ikx,iky,ikz) = HK(:,13)
 
-				write(300,'(1(1x,f10.8))') k_ene(12)
+				write(400,'(1(1x,f10.8))') k_ene(12)
 
 !----Constructing effective Hamiltonian and diagonalizing
 				! do i=1,2
@@ -185,16 +194,15 @@ Program Projected_band_structure
 			do ikz=1,nkpoints-1
 				! do i=1,2 !--Accounts for the 2 eigenvectors of the effective hamiltonian
 
-
 				U(1,1,ikx,iky,ikz) = (dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx+1,iky,ikz)))/(abs(dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx+1,iky,ikz))))
 				U(2,1,ikx,iky,ikz) = (dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky+1,ikz)))/(abs(dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky+1,ikz))))
 				U(3,1,ikx,iky,ikz) = (dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky,ikz+1)))/(abs(dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky,ikz+1))))
 				! enddo
 
 				! total_c(:) = U(:,1,ikx,iky,ikz)*dcmplx(0d0,-1d0) 
-				
+
 				! write(100, '(3(1x,f20.2))') total_c
-				! write(200, '(3(1x,f12.8),3(1x,f20.2))') kpoint(:,ikx,iky,ikz),total_c
+				! write(300, '(3(1x,f12.8),3(1x,f20.2))') kpoint(:,ikx,iky,ikz),total_c
 			enddo
 		enddo
 	enddo
@@ -207,16 +215,16 @@ Program Projected_band_structure
 			do ikz=1,nkpoints-2
 				! do i =1,2
 
-				curvature(1,1,ikx,iky,ikz) = log((U(2,1,ikx,iky,ikz)*U(3,1,ikx,iky+1,ikz))/(U(2,1,ikx,iky,ikz+1)*U(3,1,ikx,iky,ikz))) ! F_23
-				curvature(2,1,ikx,iky,ikz) = log((U(3,1,ikx,iky,ikz)*U(1,1,ikx,iky,ikz+1))/(U(3,1,ikx+1,iky,ikz)*U(1,1,ikx,iky,ikz))) ! F_31
-				curvature(3,1,ikx,iky,ikz) = log((U(1,1,ikx,iky,ikz)*U(2,1,ikx+1,iky,ikz))/(U(1,1,ikx,iky+1,ikz)*U(2,1,ikx,iky,ikz))) ! F_12
+				curvature(1,1,ikx,iky,ikz) = log((U(2,1,ikx,iky,ikz)*U(3,1,ikx,iky+1,ikz))/(U(2,1,ikx,iky,ikz+1)*U(3,1,ikx,iky,ikz)))/(dk*dk) ! F_23
+				curvature(2,1,ikx,iky,ikz) = log((U(3,1,ikx,iky,ikz)*U(1,1,ikx,iky,ikz+1))/(U(3,1,ikx+1,iky,ikz)*U(1,1,ikx,iky,ikz)))/(dk*dk) ! F_31
+				curvature(3,1,ikx,iky,ikz) = log((U(1,1,ikx,iky,ikz)*U(2,1,ikx+1,iky,ikz))/(U(1,1,ikx,iky+1,ikz)*U(2,1,ikx,iky,ikz)))/(dk*dk) ! F_12
 
 				! enddo
-
+				! print*, curvature(:,1,ikx,iky,ikz)
 				! sum(:) = curvature(:,1,ikx,iky,ikz) + curvature(:,2,ikx,iky,ikz)
 				
-				write(100, '(3(1x,f10.10))') total_c
-				write(200, '(3(1x,f12.8),3(1x,f10.10))') kpoint(:,ikx,iky,ikz),total_c
+				write(100, '(3(1x,f20.5))') aimag(curvature(:,1,ikx,iky,ikz))
+				write(300, '(3(1x,f12.8),3(1x,f20.5))') kpoint(:,ikx,iky,ikz),aimag(curvature(:,1,ikx,iky,ikz))
 			enddo	
 		enddo
 	enddo
@@ -228,7 +236,13 @@ Program Projected_band_structure
 		'component "connections" value 2', &
 		'component "data" value 3', &
 		'end'
-	write(300,'(A,/,A,/,A,/,A)') &
+	write(200,'(A,/,A,/,A,/,A)') &
+		'object "regular positions regular connections" class field', &
+		'component "positions" value 1', &
+		'component "connections" value 2', &
+		'component "data" value 3', &
+		'end'
+	write(400,'(A,/,A,/,A,/,A)') &
 		'object "regular positions regular connections" class field', &
 		'component "positions" value 1', &
 		'component "connections" value 2', &
