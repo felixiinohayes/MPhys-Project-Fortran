@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.00015,a=0.791
-    integer,parameter::meshres=35,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
+    real*8,parameter::ef= 4.18903772,kxmax=0.13,kymax=0.13,kzmax=0.07,a=0.791
+    integer,parameter::xmeshres=35,ymeshres=35,zmeshres=17,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -14,12 +14,12 @@ Program Projected_band_structure
     Implicit None
 	!INCLUDE 'mpif.h'
 !------------------------------------------------------
-    real*8 dk
+    real*8 dk,dx,dy,dz
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,ikp,ir,node,pair
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2
-    real*8 avec(3,3),bvec(3,3),kpoint(3,nkpoints,nkpoints,nkpoints),rvec_data(3),dV(3),offset(3,2,5),normal(3),v(3,3,nkpoints,nkpoints,nkpoints),v2xv3(3),total_c(3)
+    real*8 avec(3,3),bvec(3,3),kpoint(3,nkxpoints,nkypoints,nkzpoints),rvec_data(3),dV(3),offset(3,2,5),normal(3),v(3,3,nkxpoints,nkypoints,nkzpoints),v2xv3(3),total_c(3)
 	real*8 dAdx(3,2),dAdy(3,2),dAdz(3,2)
 	complex*8 spinor(2,2),H_2(2,2,2)
 	real*8,allocatable:: rvec(:,:),rwork(:)
@@ -49,10 +49,10 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='curvature.dx')
+    open(100,file='curvaturebig.dx')
 	open(200,file='connection.dx')
 	open(300,file='curvature.dat')
-	open(400,file='eigenvalues.dx')
+	open(400,file='eigenvaluesbig.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(3,nr),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -79,8 +79,8 @@ Program Projected_band_structure
 
 !-----BTPs:
 
-	node = 1
-	pair = 1
+	node = 2
+	pair = 5
 
 	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve
 	offset(:,2,1) = (/ 0.017665681958398235,0.046638430945586576,0.47514974714462382/) !-ve
@@ -95,45 +95,48 @@ Program Projected_band_structure
 	offset(:,2,4) = (/-0.04933437400371396,-0.00708356750361176,0.47545289372516780/) !-ve
 
 	offset(:,1,5) = (/-0.00879804124970561,0.04855142510428899,0.44745395357167184/)  !Dirac Point
+	offset(:,2,5) = (/0.0,0.0,0.5*0.9144694/)  !Dirac Point
 
 
-    dk=kmax/(nkpoints-1)
+    dx=kxmax/(nkxpoints-1)
+    dy=kymax/(nkypoints-1)
+    dz=kzmax/(nkzpoints-1)
 
 !----- Create header of dx files
 
-	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-2,nkpoints-2,nkpoints-2
-	write(100, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
-	write(100, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
-	write(100, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
-	write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
-	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-2,nkpoints-2,nkpoints-2
+	write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints-2,nkypoints-2,nkzpoints-2
+	write(100, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kxmax/2),offset(2,node,pair)-(kymax/2),offset(3,node,pair)-(kzmax/2)
+	write(100, '(a,3(1x,f12.8))') 'delta',dx,0d0,0d0
+	write(100, '(a,3(1x,f12.8))') 'delta',0d0,dy,0d0
+	write(100, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dz
+	write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkxpoints-2,nkypoints-2,nkzpoints-2
 	write(100, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
-								   ' item', (nkpoints-2)*(nkpoints-2)*(nkpoints-2), ' data follows'
-	write(200, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints-1,nkpoints-1,nkpoints-1
-	write(200, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
-	write(200, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
-	write(200, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
-	write(200, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dk
-	write(200, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints-1,nkpoints-1,nkpoints-1
+								   ' item', (nkxpoints-2)*(nkypoints-2)*(nkzpoints-2), ' data follows'
+	write(200, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints-1,nkypoints-1,nkzpoints-1
+	write(200, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kxmax/2),offset(2,node,pair)-(kymax/2),offset(3,node,pair)-(kzmax/2)
+	write(200, '(a,3(1x,f12.8))') 'delta',dx,0d0,0d0
+	write(200, '(a,3(1x,f12.8))') 'delta',0d0,dy,0d0
+	write(200, '(a,3(1x,f12.6))') 'delta',0d0,0d0,dz
+	write(200, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkxpoints-1,nkypoints-1,nkzpoints-1
 	write(200, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
-									' item', (nkpoints-1)*(nkpoints-1)*(nkpoints-1), ' data follows'
-	write(400, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkpoints,nkpoints,nkpoints
-	write(400, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kmax/2),offset(2,node,pair)-(kmax/2),offset(3,node,pair)-(kmax/2)
-	write(400, '(a,3(1x,f12.8))') 'delta',dk,0d0,0d0
-	write(400, '(a,3(1x,f12.8))') 'delta',0d0,dk,0d0
-	write(400, '(a,3(1x,f12.8))') 'delta',0d0,0d0,dk
-	write(400, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkpoints,nkpoints,nkpoints
+									' item', (nkxpoints-1)*(nkypoints-1)*(nkzpoints-1), ' data follows'
+	write(400, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nkxpoints,nkypoints,nkzpoints
+	write(400, '(a,3(1x,f12.8))') 'origin',offset(1,node,pair)-(kxmax/2),offset(2,node,pair)-(kymax/2),offset(3,node,pair)-(kzmax/2)
+	write(400, '(a,3(1x,f12.8))') 'delta',dx,0d0,0d0
+	write(400, '(a,3(1x,f12.8))') 'delta',0d0,dy,0d0
+	write(400, '(a,3(1x,f12.8))') 'delta',0d0,0d0,dz
+	write(400, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nkxpoints,nkypoints,nkzpoints
 	write(400, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',1,&
-									' item', (nkpoints)*(nkpoints)*(nkpoints), ' data follows'
+									' item', (nkxpoints)*(nkypoints)*(nkzpoints), ' data follows'
     
   !----- Create a uniform k-mesh
 	ik=0	
-	do ikx=1,nkpoints	
-		do iky=1,nkpoints
-			do ikz=1,nkpoints
-				kpoint(1,ikx,iky,ikz) = (ikx-1)*dk + offset(1,node,pair) - kmax/2
-				kpoint(2,ikx,iky,ikz) = (iky-1)*dk + offset(2,node,pair) - kmax/2
-				kpoint(3,ikx,iky,ikz) = (ikz-1)*dk + offset(3,node,pair) - kmax/2
+	do ikx=1,nkxpoints	
+		do iky=1,nkypoints
+			do ikz=1,nkzpoints
+				kpoint(1,ikx,iky,ikz) = (ikx-1)*dx - kxmax/2 + offset(1,node,pair)
+				kpoint(2,ikx,iky,ikz) = (iky-1)*dy - kymax/2 + offset(2,node,pair)
+				kpoint(3,ikx,iky,ikz) = (ikz-1)*dz - kzmax/2 + offset(3,node,pair)
 			enddo
 		enddo
 		! print *, kpoint(1,ikx,1,1)
@@ -147,16 +150,16 @@ Program Projected_band_structure
 
     ! ecounts=kpool*3 !
 	
-	allocate(HK(nb,nb),H_k(nb,nb,ikx,iky,ikz),k_ene(nb),eig(nb,2,nkpoints,nkpoints,nkpoints))
-    allocate(H_eff(2,2),eig_eff(2,2,nkpoints,nkpoints,nkpoints),eff(2),du(nb,2,3))
-	allocate(U(3,2,nkpoints,nkpoints,nkpoints),curvature(3,2,nkpoints,nkpoints,nkpoints))
+	allocate(HK(nb,nb),H_k(nb,nb,ikx,iky,ikz),k_ene(nb),eig(nb,2,nkxpoints,nkypoints,nkzpoints))
+    allocate(H_eff(2,2),eig_eff(2,2,nkxpoints,nkypoints,nkzpoints),eff(2),du(nb,2,3))
+	allocate(U(3,2,nkxpoints,nkypoints,nkzpoints),curvature(3,2,nkxpoints,nkypoints,nkzpoints))
 
 	print *, "Finding eigenvectors"
 !----- Fourier Transform
 	ikp=0
-	do ikx=1,nkpoints
-		do iky=1,nkpoints
-			do ikz=1,nkpoints
+	do ikx=1,nkxpoints
+		do iky=1,nkypoints
+			do ikz=1,nkzpoints
 				print*, ikp, '/', nkp3
 				ikp=ikp+1
 				Hk = 0d0
@@ -189,9 +192,9 @@ Program Projected_band_structure
 
 !----- Berry connection
 	print *, "Computing Berry connection"
-	do ikx=1,nkpoints-1
-		do iky=1,nkpoints-1
-			do ikz=1,nkpoints-1
+	do ikx=1,nkxpoints-1
+		do iky=1,nkypoints-1
+			do ikz=1,nkzpoints-1
 				! do i=1,2 !--Accounts for the 2 eigenvectors of the effective hamiltonian
 
 				U(1,1,ikx,iky,ikz) = (dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx+1,iky,ikz)))/(abs(dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx+1,iky,ikz))))
@@ -203,6 +206,7 @@ Program Projected_band_structure
 
 				! write(100, '(3(1x,f20.2))') total_c
 				! write(300, '(3(1x,f12.8),3(1x,f20.2))') kpoint(:,ikx,iky,ikz),total_c
+				! print *, U(:,1,ikx,iky,ikz)
 			enddo
 		enddo
 	enddo
@@ -210,14 +214,14 @@ Program Projected_band_structure
 !----- Berry curvature
 	print *, "Computing Berry curvature"
 	total_c = 0d0
-	do ikx=1,nkpoints-2
-		do iky=1,nkpoints-2
-			do ikz=1,nkpoints-2
+	do ikx=1,nkxpoints-2
+		do iky=1,nkypoints-2
+			do ikz=1,nkzpoints-2
 				! do i =1,2
 
-				curvature(1,1,ikx,iky,ikz) = log((U(2,1,ikx,iky,ikz)*U(3,1,ikx,iky+1,ikz))/(U(2,1,ikx,iky,ikz+1)*U(3,1,ikx,iky,ikz)))/(dk*dk) ! F_23
-				curvature(2,1,ikx,iky,ikz) = log((U(3,1,ikx,iky,ikz)*U(1,1,ikx,iky,ikz+1))/(U(3,1,ikx+1,iky,ikz)*U(1,1,ikx,iky,ikz)))/(dk*dk) ! F_31
-				curvature(3,1,ikx,iky,ikz) = log((U(1,1,ikx,iky,ikz)*U(2,1,ikx+1,iky,ikz))/(U(1,1,ikx,iky+1,ikz)*U(2,1,ikx,iky,ikz)))/(dk*dk) ! F_12
+				curvature(1,1,ikx,iky,ikz) = log((U(2,1,ikx,iky,ikz)*U(3,1,ikx,iky+1,ikz))/(U(2,1,ikx,iky,ikz+1)*U(3,1,ikx,iky,ikz)))/(dx*dx) ! F_23
+				curvature(2,1,ikx,iky,ikz) = log((U(3,1,ikx,iky,ikz)*U(1,1,ikx,iky,ikz+1))/(U(3,1,ikx+1,iky,ikz)*U(1,1,ikx,iky,ikz)))/(dy*dy) ! F_31
+				curvature(3,1,ikx,iky,ikz) = log((U(1,1,ikx,iky,ikz)*U(2,1,ikx+1,iky,ikz))/(U(1,1,ikx,iky+1,ikz)*U(2,1,ikx,iky,ikz)))/(dz*dz) ! F_12
 
 				! enddo
 				! print*, curvature(:,1,ikx,iky,ikz)
