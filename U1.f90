@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kmax=0.00035,a=0.791
-    integer,parameter::meshres=30,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
+    real*8,parameter::ef= 4.18903772,kmax=0.00015,a=0.791
+    integer,parameter::meshres=35,nkpoints=(2*meshres+1),nkp3=nkpoints*nkpoints*nkpoints,cp=meshres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -79,7 +79,7 @@ Program Projected_band_structure
 
 !-----BTPs:
 
-	node = 2
+	node = 1
 	pair = 1
 
 	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve

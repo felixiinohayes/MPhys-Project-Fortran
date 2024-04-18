@@ -38,7 +38,7 @@ for line in lines:
 
     length = (float(split_line[3])**2+float(split_line[4])**2+float(split_line[5])**2)**0.5
     magnitude.append(length)
-    if length > 1*10**3 and length < 1*10**6:
+    if length > 2*10**8 and length < 2*10**9:
         k_x.append(float(split_line[0]))
         k_y.append(float(split_line[1]))
         k_z.append(float(split_line[2]))
@@ -66,7 +66,7 @@ for i in range(len(c_x)):
     c_z[i] /= max_mag
 
 
-ax.quiver(k_x, k_y, k_z, c_x, c_y, c_z, length=0.15*kmax)
+ax.quiver(k_x, k_y, k_z, c_x, c_y, c_z, length=0.1*kmax)
 ax.plot(offset[1][0],offset[1][1],offset[1][2],color ='red', marker='x')
 
 
