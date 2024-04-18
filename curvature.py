@@ -38,19 +38,20 @@ for line in lines:
 
     length = (float(split_line[3])**2+float(split_line[4])**2+float(split_line[5])**2)**0.5
     magnitude.append(length)
-    if length > 2*10**8 and length < 2*10**9:
+    tolerance  = (3*10**8)     
+    if tolerance < length and length < tolerance*1.5:
         k_x.append(float(split_line[0]))
         k_y.append(float(split_line[1]))
         k_z.append(float(split_line[2]))
 
-        c_x.append(float(split_line[3]))
-        c_y.append(float(split_line[4]))
-        c_z.append(float(split_line[5]))
+        c_x.append(float(split_line[3])/length)
+        c_y.append(float(split_line[4])/length)
+        c_z.append(float(split_line[5])/length)
     else:
         continue
 
 
-
+#
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.set_proj_type('ortho')
@@ -60,14 +61,14 @@ min_mag = min(magnitude)
 
 print("min: ",min_mag,"max: ",max_mag)
 
-for i in range(len(c_x)):
-    c_x[i] /= max_mag
-    c_y[i] /= max_mag
-    c_z[i] /= max_mag
+# for i in range(len(c_x)):
+#     c_x[i] /= max_mag
+#     c_y[i] /= max_mag
+#     c_z[i] /= max_mag
 
 
-ax.quiver(k_x, k_y, k_z, c_x, c_y, c_z, length=0.1*kmax)
-ax.plot(offset[1][0],offset[1][1],offset[1][2],color ='red', marker='x')
+ax.quiver(k_x, k_y, k_z, c_x, c_y, c_z, length=8*10**-6)
+ax.plot(offset[0][0],offset[0][1],offset[0][2],color ='red', marker='x')
 
 
 plt.show()
