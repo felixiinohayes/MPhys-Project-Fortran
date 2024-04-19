@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006
-    integer,parameter::nkpath=3,np=150,nr3=11,nk=(nkpath-1)*np+1,eres=300,nblocks=6,blocksize=(nblocks+1)**3
+    integer*8,parameter::nkpath=3,np=150,nr3=11,nk=(nkpath-1)*np+1,eres=5,nepoints=(2*eres)+1,nblocks=6,blocksize=(nblocks+1)**3
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,9 +17,9 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.00d0
-    real*8 phase,pi2,x1,y1,x2,y2,de,spectral_A,exp_factor,p_l
-    real*8 xk(nk),avec(3,3),bvec(3,3),kpoints(3,nkpath),kpath(3,nk),dk(3),epoints(eres)
-    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
+    real*8 phase,pi2,x1,y1,x2,y2,de,spectral_A,exp_factor,p_l,emiddle
+    real*8 xk(nk),avec(3,3),bvec(3,3),kpoints(3,nkpath),kpath(3,nk),dk(3),epoints(nepoints),g_E(nepoints-1)
+    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),ene(:)
     integer*4,allocatable:: ndeg(:)
     complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),top_Hr(:,:),triv_Hr(:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:)
     complex*16,dimension(18,18,-6:6,-6:6,-6:6) :: interp_Hr
@@ -46,13 +46,14 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='super_H_B06.dx')
+    open(100,file='DOS.dat')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb),triv_Hr(nb,nb),ndeg(nr))
-    allocate(super_H(nb*blocksize,nb*blocksize),sH(nb,nb*nblocks),k_ene(nb*nblocks,nk))
+    allocate(super_H(nb*blocksize,nb*blocksize),sH(nb,nb*nblocks),ene(nb*blocksize))
     allocate(a_p_top(nb*nblocks,nk),a_p_bottom(nb*nblocks,nk))
     read(99,*)ndeg
+    print *, blocksize
 
     do i=1,80
       read(97,*)
@@ -92,7 +93,6 @@ Program Projected_band_structure
     ! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.5d0 ]  !-L
 
 
-
     do j = 1, nkpath-1
           sign = 1
           if(j ==1) sign = -1
@@ -103,10 +103,13 @@ Program Projected_band_structure
             xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
         enddo
     enddo
-    de = (emax-emin)/eres
 
-    do i=1, eres
-        epoints(i) = emin + de*i
+    emiddle = emin + (emax-emin)/2
+    de = (emax-emin)/(2*eres)
+    ie=0
+    do i=-eres, eres
+        ie=ie+1
+        epoints(ie) = emiddle + de*i
     enddo
 
 
@@ -145,7 +148,7 @@ Program Projected_band_structure
                             xindex = i3*((nblocks+1)**2)+i2*(nblocks+1)+i1
                             yindex = j3*((nblocks+1)**2)+j2*(nblocks+1)+j1
                             super_H((1+nb*xindex):(nb*(xindex+1)),(1+nb*yindex):(nb*(yindex+1))) = interp_Hr(:,:,r1,r2,r3)
-                            ! print *, xindex, yindex
+                            ! print *, xindex, yindex,r1,r2,r3
                         enddo
                     enddo
                 enddo
@@ -153,20 +156,17 @@ Program Projected_band_structure
         enddo
     enddo
 
-    call zheev('V','U',nb*blocksize,super_H,nb*blocksize,k_ene(:,ik),work,lwork,rwork,info)
+    call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
 
-    do i=0,nblocks-1
-        write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-        'object',nblocks+3+i,' class field', &
-        'component "positions" value 1', &
-        'component "connections" value 2', &
-        'component "data" value ',3+i
+    g_E=0d0
+    do i=1,nepoints-1
+        do j=1,nb*blocksize
+            if((ene(j) .gt. epoints(i)) .and. (ene(j) .lt. epoints(i+1))) g_E(i)=g_E(i)+1
+        enddo
     enddo
-    write(100, '(a)') 'object "series" class series'
-    do i=0,nblocks-1
-        write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+nblocks+3), ' position', i
-    enddo
-    write(100, '(A)') 'end'
+
+    write(100, '(f12.6)') ene
+
 
 end Program Projected_band_structure
 
