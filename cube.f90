@@ -156,14 +156,15 @@ Program Projected_band_structure
         enddo
     enddo
 
-    call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
+    ! call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
+    ! call dsaupd()
 
-    g_E=0d0
-    do i=1,nepoints-1
-        do j=1,nb*blocksize
-            if((ene(j) .gt. epoints(i)) .and. (ene(j) .lt. epoints(i+1))) g_E(i)=g_E(i)+1
-        enddo
-    enddo
+    ! g_E=0d0
+    ! do i=1,nepoints-1
+    !     do j=1,nb*blocksize
+    !         if((ene(j) .gt. epoints(i)) .and. (ene(j) .lt. epoints(i+1))) g_E(i)=g_E(i)+1
+    !     enddo
+    ! enddo
 
     write(100, '(f12.6)') ene
 
