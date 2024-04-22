@@ -58,6 +58,7 @@ Program Projected_band_structure
     do i=1,80
       read(97,*)
     enddo
+    interp_Hr=0d0
     do ir=1,nr
         do i=1,nb
             do j=1,nb
@@ -136,6 +137,7 @@ Program Projected_band_structure
 
 !----- Construct supercell hamiltonian
 
+    super_H=0d0
     do i3=0,nblocks
         do j3=0,nblocks
             r3=i3-j3
@@ -156,7 +158,7 @@ Program Projected_band_structure
         enddo
     enddo
 
-    ! call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
+    call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
     ! call dsaupd()
 
     ! g_E=0d0
@@ -165,6 +167,7 @@ Program Projected_band_structure
     !         if((ene(j) .gt. epoints(i)) .and. (ene(j) .lt. epoints(i+1))) g_E(i)=g_E(i)+1
     !     enddo
     ! enddo
+    print *, ene
 
     write(100, '(f12.6)') ene
 

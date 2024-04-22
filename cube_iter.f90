@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='LM'
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006,TOL=0.0001
-    integer*8,parameter::nblocks=3,matsize=(nblocks)**3,maxiter=1000000,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006,TOL=0.01
+    integer*8,parameter::nblocks=2,matsize=(nblocks)**3,maxiter=10000000,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,10 +17,10 @@ Program Projected_band_structure
     !INCLUDE 'mpif.h'
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),x1,x2,y1,y2
+    integer*4 i,j,k,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3)
     integer*4 IPARAM(11),IPNTR(14),iter,IDO,LWORKL,LDV,LDZ,N
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.00d0
-    real*8 avec(3,3),bvec(3,3),pi2
+    real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),ene(:)
     integer*4,allocatable:: ndeg(:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),work(:),super_H(:,:)
@@ -99,7 +99,7 @@ Program Projected_band_structure
     enddo
 
     ! call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
-    N=size(super_H,1)
+    N=nb*matsize
     allocate(RESID(N),V(N,NCV),WORKD(N*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),Z(N,NEV),WORKEV(2*NCV))
     ! print *, super_H
@@ -124,12 +124,14 @@ Program Projected_band_structure
     do while (iter<maxiter)
 
         iter=iter+1
+        print *, iter
         call znaupd(IDO,bmat,N,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
 
         if(IDO==99) exit
 
         if(IDO==-1 .or. IDO==1) then
             WORKD(IPNTR(2)+1:IPNTR(2)+N) = matmul(super_H,WORKD(IPNTR(1)+1:IPNTR(1)+N))
+            ! call matmul_chunk(interp_Hr,WORKD(IPNTR(1)+1:IPNTR(1)+N),WORKD(IPNTR(2)+1:IPNTR(2)+N),N)
             continue
         endif
     enddo
@@ -153,5 +155,40 @@ Program Projected_band_structure
 
     write(100, '(f12.6)') real(d)
 
+    ! print *, v
+
+    ! do i=1,nblocks
+
+    contains
+
+        subroutine matmul_chunk(interp_Hr,vec_in,vec_out,N)  
+            integer*4:: N
+            complex*16,dimension(18,18,-6:6,-6:6,-6:6):: interp_Hr
+            complex*16:: vec_in(N*3),vec_out(N*3),chunkvec(nb),tempvec(N*3)
+            tempvec=0d0
+            do i3=0,nblocks-1
+                do j3=0,nblocks-1
+                    r3=i3-j3
+                    do i2=0,nblocks-1
+                        do j2=0,nblocks-1
+                            r2=i2-j2
+                            do i1=0,nblocks-1
+                                do j1=0,nblocks-1
+                                    r1=i1-j1
+                                    xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
+                                    yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
+                                    ! super_H((1+nb*xindex):(nb*(xindex+1)),(1+nb*yindex):(nb*(yindex+1))) = interp_Hr(:,:,r1,r2,r3)
+                                    ! chunkvec = matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+                                    tempvec((1+nb*xindex):(nb*(xindex+1))) = tempvec((1+nb*xindex):(nb*(xindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+                                enddo
+                            enddo
+                        enddo
+                    enddo
+                enddo
+            enddo
+            vec_out=tempvec
+
+
+        end subroutine matmul_chunk
 
 end Program Projected_band_structure
