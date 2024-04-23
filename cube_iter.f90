@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='LM'
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006,TOL=0.01
-    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=10000000,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
+    integer*8,parameter::nblocks=3,matsize=(nblocks)**3,maxiter=10000000,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -24,7 +24,7 @@ Program Projected_band_structure
     real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),ene(:)
     integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),work(:),super_H(:,:)
+    complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),work(:),super_H(:,:),dos(:,:)
     complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:)
     complex*16,dimension(18,18,-6:6,-6:6,-6:6) :: interp_Hr
     complex*16 B_sigma(2,2),SIGMA
@@ -133,7 +133,6 @@ Program Projected_band_structure
         iter=iter+1
         call znaupd(IDO,bmat,N,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
         
-        print*,IDO
         if(IDO==99) exit
         
         if(IDO==-1 .or. IDO==1) then
@@ -161,13 +160,18 @@ Program Projected_band_structure
              workev, bmat, n, which, nev, tol, resid, ncv,&
              v, ldv, iparam, ipntr, workd, workl, lworkl, &
              rwork, info)
+        
     endif
 
-    write(100, '(f12.6)') real(d)
+    do i=1,N
+        do j=0,nblocks-1
+            dos(i,j) = dot_product( v(1+j*nblocks*nb : (j+1)*nblocks*nb, i),v(1+j*nblocks*nb : (j+1)*nblocks*nb, i))/(nblocks**2)
 
-    ! print *, v
+            write(100, '(2(1x,f12.6))') real(d), dos(i,1)
 
-    ! do i=1,nblocks
+        enddo 
+    enddo
+
 
     call date_and_time(date_end, time_end)
     read(time_end  , '(f10.1)') end_second
@@ -183,8 +187,6 @@ Program Projected_band_structure
             complex*16,intent(in):: vec_in(N*3)
             complex*16,intent(out)::vec_out(N*3)
             complex*16::tempvec(N)
-
-            print*,"here"
 
             tempvec=0d0
             do i3=0,nblocks-1

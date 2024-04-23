@@ -11,15 +11,17 @@ with open(file, 'r') as input_file:
     lines = input_file.readlines()
 
 data = []
+col = []
 bins=180
 histrange=[0,10]
 
 for line in lines:
-    for val in line.split():
-        val = float(val)
-        data.append(val)
+    data.append(float(line.split()[0]))
+    col.append(float(line.split()[1]))
+    # for val in line.split():
+    #     val = float(val)
+    #     data.append(val)
 
-#
 fig = plt.figure()
 plt.hist(data,bins,histrange,density=True)
 
