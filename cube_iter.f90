@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='LM'
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006,TOL=0.01
-    integer*8,parameter::nblocks=3,matsize=(nblocks)**3,maxiter=1,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
+    integer*4,parameter::nblocks=8,matsize=(nblocks)**3,maxiter=10000000,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -29,8 +29,14 @@ Program Projected_band_structure
     complex*16 B_sigma(2,2),SIGMA
     logical:: rvecmat
     logical,allocatable:: select(:)
+!----Date and Time:
+    ! Declare variables for date and time
+    character(len=8) :: date_start, time_start
+    character(len=8) :: date_end, time_end
+    real*8::end_second, start_second
 !------------------------------------------------------
     !call init_mpi
+    call date_and_time(date_start, time_start)
 
     write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
     write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
@@ -130,8 +136,9 @@ Program Projected_band_structure
         if(IDO==99) exit
 
         if(IDO==-1 .or. IDO==1) then
-            WORKD(IPNTR(2):IPNTR(2)+N-1) = matmul(super_H,WORKD(IPNTR(1):IPNTR(1)+N-1))
-            ! call matmul_chunk(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1), N)
+            ! WORKD(IPNTR(2):IPNTR(2)+N-1) = matmul(super_H,WORKD(IPNTR(1):IPNTR(1)+N-1))
+            call matmul_chunk(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),N)
+            ! call matmul_(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),N,nblocks)
             print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
             continue
         endif
@@ -160,6 +167,12 @@ Program Projected_band_structure
 
     ! do i=1,nblocks
 
+    call date_and_time(date_end, time_end)
+    read(time_end  , '(f10.1)') end_second
+    read(time_start, '(f10.1)') start_second
+    ! print*,"Start Time: ", trim(time_start)
+    print*, 'Duration: ', end_second- start_second
+
     contains
 
         subroutine matmul_chunk(interp_Hr,vec_in,vec_out,N)  
@@ -182,7 +195,7 @@ Program Projected_band_structure
                                     xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
                                     yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
                                     tempvec((1+nb*yindex):(nb*(yindex+1))) = tempvec((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
-                                    print *, (1+nb*yindex),(nb*(yindex+1)) 
+                                    ! print *, (1+nb*yindex),(nb*(yindex+1)) 
                                 enddo
                             enddo
                         enddo
@@ -192,5 +205,36 @@ Program Projected_band_structure
             vec_out=tempvec
 
         end subroutine matmul_chunk
+
+        subroutine matmul_(interp_Hr,vec_in,vec_out,N,nblocks)  
+            integer*4,intent(in)::N,nblocks
+            complex*16,dimension(18,18,-6:6,-6:6,-6:6), intent(in):: interp_Hr
+            complex*16,intent(in):: vec_in(N*3)
+            complex*16,intent(out)::vec_out(N*3)
+            complex*16::tempvec(N)
+            integer*4::irow,icol,r1,r2,r3,f1,f2,f3,N2,N3,count,count1
+
+            N3 = nblocks**3
+            N2 = nblocks**2
+            tempvec=0d0
+
+            count1 =0
+            do irow = 1,N3
+                f3 = (irow-1)/(N2)
+                f2 = mod((irow-1)/nblocks,3)
+                f1 = mod(irow-1,3)
+                do icol = 1,N3
+                    r3 = ((icol-1)/N2)- f3
+                    r2 = mod((icol-1)/nblocks,3) - f2
+                    r1 = mod(icol-1,3) - f1
+        
+                    tempvec(1+(icol-1)*nb : nb*(icol)) = tempvec(1+(icol-1)*nb : nb*(icol)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in( 1+(irow-1)*nb : nb*(irow) ))
+                enddo
+            enddo
+
+            vec_out=tempvec
+            
+
+        end subroutine matmul_
 
 end Program Projected_band_structure
