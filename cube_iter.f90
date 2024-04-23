@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='LM'
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006,TOL=0.01
-    integer*8,parameter::nblocks=2,matsize=(nblocks)**3,maxiter=10000000,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
+    integer*8,parameter::nblocks=3,matsize=(nblocks)**3,maxiter=1,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -77,7 +77,7 @@ Program Projected_band_structure
     enddo
 
 !----- Construct supercell hamiltonian
-
+    super_H=0d0
     do i3=0,nblocks-1
         do j3=0,nblocks-1
             r3=i3-j3
@@ -124,14 +124,15 @@ Program Projected_band_structure
     do while (iter<maxiter)
 
         iter=iter+1
-        print *, iter
+        ! print *, iter
         call znaupd(IDO,bmat,N,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
 
         if(IDO==99) exit
 
         if(IDO==-1 .or. IDO==1) then
-            WORKD(IPNTR(2)+1:IPNTR(2)+N) = matmul(super_H,WORKD(IPNTR(1)+1:IPNTR(1)+N))
-            ! call matmul_chunk(interp_Hr,WORKD(IPNTR(1)+1:IPNTR(1)+N),WORKD(IPNTR(2)+1:IPNTR(2)+N),N)
+            WORKD(IPNTR(2):IPNTR(2)+N-1) = matmul(super_H,WORKD(IPNTR(1):IPNTR(1)+N-1))
+            ! call matmul_chunk(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1), N)
+            print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
             continue
         endif
     enddo
@@ -162,9 +163,12 @@ Program Projected_band_structure
     contains
 
         subroutine matmul_chunk(interp_Hr,vec_in,vec_out,N)  
-            integer*4:: N
-            complex*16,dimension(18,18,-6:6,-6:6,-6:6):: interp_Hr
-            complex*16:: vec_in(N*3),vec_out(N*3),chunkvec(nb),tempvec(N*3)
+            integer*4,intent(in)::N
+            complex*16,dimension(18,18,-6:6,-6:6,-6:6), intent(in):: interp_Hr
+            complex*16,intent(in):: vec_in(N*3)
+            complex*16,intent(out)::vec_out(N*3)
+            complex*16::tempvec(N)
+
             tempvec=0d0
             do i3=0,nblocks-1
                 do j3=0,nblocks-1
@@ -177,9 +181,8 @@ Program Projected_band_structure
                                     r1=i1-j1
                                     xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
                                     yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
-                                    ! super_H((1+nb*xindex):(nb*(xindex+1)),(1+nb*yindex):(nb*(yindex+1))) = interp_Hr(:,:,r1,r2,r3)
-                                    ! chunkvec = matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
-                                    tempvec((1+nb*xindex):(nb*(xindex+1))) = tempvec((1+nb*xindex):(nb*(xindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+                                    tempvec((1+nb*yindex):(nb*(yindex+1))) = tempvec((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+                                    print *, (1+nb*yindex),(nb*(yindex+1)) 
                                 enddo
                             enddo
                         enddo
@@ -187,7 +190,6 @@ Program Projected_band_structure
                 enddo
             enddo
             vec_out=tempvec
-
 
         end subroutine matmul_chunk
 
