@@ -27,7 +27,7 @@ Program Projected_band_structure
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),dos(:,:),surface_vec(:)
     complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:)
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
-    complex*16 B_sigma(2,2),SIGMA
+    complex*16 B_sigma(2,2),B_pt(nb,nb),SIGMA
     logical:: rvecmat
     logical,allocatable:: select(:)
 !----Date and Time
@@ -59,6 +59,34 @@ Program Projected_band_structure
 !------read H(R)
     interp_size=6
     if(abs(nblocks) > interp_size) interp_size = abs(nblocks)
+
+    !---- Magnetic Perturbation
+    allocate(B_pt(nb,nb))
+
+    !B along X-axis
+    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
+    B_sigma(2,:) = [dcmplx(Bx,0d0) ,  dcmplx(0d0,0d0)]
+
+    !B along Y axis
+	! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
+    ! B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
+	B_pt=0d0
+	do i=1,nb
+		do j=1,nb
+			if (i==j) then
+				if (i<10) then
+					B_pt(i,j) = B_sigma(1,1)
+				else
+					B_pt(i,j) = B_sigma(2,2)
+				endif
+			else if (i==j+9) then
+				B_pt(i,j) = B_sigma(2,1)
+			else if (j==i+9) then
+				B_pt(i,j) = B_sigma(1,2)
+			endif
+		enddo
+	enddo
+
 
     read(99,*)
     read(99,*)nb,nr
