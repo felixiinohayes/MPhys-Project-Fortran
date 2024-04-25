@@ -3,7 +3,7 @@ from mpl_toolkits.mplot3d import axes3d
 from matplotlib.colors import LightSource
 import numpy as np
 
-file = 'DOS.dat'
+file = 'ene_total.dat'
 
 # Open the input file in read mode
 with open(file, 'r') as input_file:
@@ -11,7 +11,6 @@ with open(file, 'r') as input_file:
     lines = input_file.readlines()
 
 data = []
-col = []
 bins=180
 histrange=[0,10]
 

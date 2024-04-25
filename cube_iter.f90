@@ -3,9 +3,9 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
-    character*2:: which='LM'
+    character*2:: which='SM'
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006,TOL=0.0001
-    integer*8,parameter::nblocks=5,matsize=(nblocks)**3,maxiter=10000000,NEV=matsize*18-2,NCV=NEV+2,ishift=1,mode=1
+    integer*8,parameter::nblocks=5,matsize=(nblocks)**3,maxiter=10000000,ishift=1,mode=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -18,35 +18,29 @@ Program Projected_band_structure
     ! INCLUDE 'debug-arpack.h'
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index
+    integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size
     integer*4 IPARAM(11),IPNTR(14),iter,IDO,LDV,LDZ,N
-    integer*8 LWORKL
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.00d0
+    integer*8 LWORKL,NEV,NCV
     real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2
-    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),ene(:)
+    real*8,allocatable:: rvec(:,:),rwork(:)
     integer*4,allocatable:: ndeg(:)
-    complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),work(:),super_H(:,:),dos(:,:)
-    complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),surface_vec(:)
-    complex*16,dimension(18,18,-6:6,-6:6,-6:6) :: interp_Hr
+    complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),dos(:,:),surface_vec(:)
+    complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:)
+    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     complex*16 B_sigma(2,2),SIGMA
     logical:: rvecmat
     logical,allocatable:: select(:)
-!----Date and Time:
-    ! Declare variables for date and time
+!----Date and Time
     character(len=8) :: date_start, time_start
     character(len=8) :: date_end, time_end
     real*8::end_second, start_second
 !------------------------------------------------------
-    !call init_mpi
+    pi2=4.0d0*atan(1.0d0)*2.0d0
     call date_and_time(date_start, time_start)
 
     write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
     write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
     write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
-
-    pi2=4.0d0*atan(1.0d0)*2.0d0
-
-!---------------  reciprocal vectors
     open(98,file=trim(adjustl(nnkp)))
 111 read(98,'(a)')line
     if(trim(adjustl(line)).ne."begin real_lattice") goto 111
@@ -55,20 +49,23 @@ Program Projected_band_structure
     read(98,'(a)')line
     read(98,'(a)')line
     read(98,*)bvec
-
-!------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
+
     open(100,file='DOS_total.dx')
     open(200,file='DOS_surface.dx')
+    open(300,file='ene_total.dat')
+    open(400,file='ene_surface.dat')
+
+!------read H(R)
+    interp_size=6
+    if(abs(nblocks) > interp_size) interp_size = abs(nblocks)
 
     read(99,*)
     read(99,*)nb,nr
-    allocate(rvec(2,nr),rvec_miller(3,nr),top_Hr(nb,nb),triv_Hr(nb,nb),ndeg(nr))
-    ! allocate(super_H(nb*matsize,nb*matsize),ene(nb*matsize))
+    allocate(rvec(2,nr),top_Hr(nb,nb),triv_Hr(nb,nb),ndeg(nr))
+    allocate(interp_Hr(nb,nb,-interp_size:interp_size,-interp_size:interp_size,-interp_size:interp_size))
     read(99,*)ndeg
-    ! print *, blocksize
-
     do i=1,80
       read(97,*)
     enddo
@@ -84,42 +81,21 @@ Program Projected_band_structure
             enddo
         enddo
         rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2)
+        
+        print *, ir, nr
     enddo
+    deallocate(rvec,top_Hr,triv_Hr,ndeg)
 
-!----- Construct supercell hamiltonian
-    ! super_H=0d0
-    ! do i3=0,nblocks-1
-    !     do j3=0,nblocks-1
-    !         r3=i3-j3
-    !         do i2=0,nblocks-1
-    !             do j2=0,nblocks-1
-    !                 r2=i2-j2
-    !                 do i1=0,nblocks-1
-    !                     do j1=0,nblocks-1
-    !                         r1=i1-j1
-    !                         xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
-    !                         yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
-    !                         super_H((1+nb*xindex):(nb*(xindex+1)),(1+nb*yindex):(nb*(yindex+1))) = interp_Hr(:,:,r1,r2,r3)
-    !                         ! print *, xindex, yindex,r1,r2,r3
-    !                     enddo
-    !                 enddo
-    !             enddo
-    !         enddo
-    !     enddo
-    ! enddo
-
-    ! call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
     N=nb*matsize
+    NEV=N-2
+    NCV=NEV+2
     allocate(RESID(N),V(N,NCV),WORKD(N*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),Z(N,NEV),WORKEV(2*NCV))
-    ! print *, super_H
-    ! print *, WORKD
 
     iparam(1)=ishift
     iparam(3)=maxiter
     iparam(7)=mode
     lworkl=3*(NCV**2) + 5*NCV
-
     iter=0
     IDO=0
     INFO=0
@@ -127,12 +103,16 @@ Program Projected_band_structure
     WORKL=0d0
     WORKD=0d0
     RWORK=0d0
-    
-    select=.true.
     rvecmat=.true.
+    select=.true.
+
+    ! do i=1,NCV
+    !     if((i*10/NCV .gt. 5) .and. (i*10/NCV .lt. 7)) select(i) = .true.
+    ! enddo
+
+
 
     do while (iter<maxiter)
-
         iter=iter+1
         print *, iter
         call znaupd(IDO,bmat,N,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
@@ -146,27 +126,25 @@ Program Projected_band_structure
             ! print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
             continue
         endif
-        
     enddo
 
     if ( info .lt. 0 ) then
-
         print *, ' '
         print *, ' Error with _naupd, info = ', info
         print *, ' Check the documentation of _naupd'
         print *, ' '
-    
     else
-    
         rvecmat = .true.
         print *, "Finished iterations, calling zneupd..."
-    
         call zneupd (rvecmat, 'A', select, d, v, ldv, sigma,&
              workev, bmat, n, which, nev, tol, resid, ncv,&
              v, ldv, iparam, ipntr, workd, workl, lworkl, &
              rwork, info)
-        
     endif
+    ! print *, d
+
+    ! deallocate(RESID,WORKD,WORKL,RWORK)
+    ! deallocate(Z,WORKEV)
 
     do i=1,2
         write(100*i, '(a,3(1x,i8))') 'object 1 class gridpositions counts',N/nblocks,nblocks,nblocks
@@ -180,14 +158,12 @@ Program Projected_band_structure
     enddo
 
 
-    allocate(dos(N,nblocks),surface_vec(4*nb*(nblocks-1)))
+    allocate(dos(NCV,nblocks),surface_vec(4*nb*(nblocks-1)))
 !------Computes total DOS for each Z layer
     do i=1,N
         do j=0,nblocks-1
-            
             dos(i,j+1) = dot_product( v(1+j*nblocks*nb : (j+1)*nblocks*nb, i),v(1+j*nblocks*nb : (j+1)*nblocks*nb, i))
             write(100, '(3(1x,f12.6))') real(d(i)), real(j), real(dos(i,j+1))
-
         enddo 
     enddo
 
@@ -198,7 +174,6 @@ Program Projected_band_structure
             surface_vec = 0d0 
             index=1
             surface_vec(1:nb*nblocks) = v(1+ j*nb*(nblocks**2):nb*nblocks + j*nb*(nblocks**2),i)
-
             index=index+nb*nblocks
             ik=0
             do k=0,nblocks-3
@@ -226,17 +201,17 @@ Program Projected_band_structure
             'end'
     enddo
 
-    call date_and_time(date_end, time_end)
-    read(time_end  , '(f10.1)') end_second
-    read(time_start, '(f10.1)') start_second
-    ! print*,"Start Time: ", trim(time_start)
-    print*, 'Duration: ', end_second- start_second
+    ! call date_and_time(date_end, time_end)
+    ! read(time_end  , '(f10.1)') end_second
+    ! read(time_start, '(f10.1)') start_second
+    ! ! print*,"Start Time: ", trim(time_start)
+    ! print*, 'Duration: ', end_second- start_second
 
     contains
 
         subroutine matmul_chunk(interp_Hr,vec_in,vec_out,N)  
             integer*4,intent(in)::N
-            complex*16,dimension(18,18,-6:6,-6:6,-6:6), intent(in):: interp_Hr
+            complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
             complex*16,intent(in):: vec_in(N*3)
             complex*16,intent(out)::vec_out(N*3)
             complex*16::tempvec(N)
@@ -254,7 +229,8 @@ Program Projected_band_structure
                                     xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
                                     yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
                                     tempvec((1+nb*yindex):(nb*(yindex+1))) = tempvec((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
-                                    ! print *, (1+nb*yindex),(nb*(yindex+1)) 
+                                    ! tempvec(1:N) = tempvec(1:N) + 0.0001
+                                    ! print *, xindex,yindex 
                                 enddo
                             enddo
                         enddo
@@ -267,7 +243,7 @@ Program Projected_band_structure
 
         subroutine matmul_(interp_Hr,vec_in,vec_out,N,nblocks)  
             integer*4,intent(in)::N,nblocks
-            complex*16,dimension(18,18,-6:6,-6:6,-6:6), intent(in):: interp_Hr
+            complex*16,dimension(18,18,-nblocks:nblocks,-nblocks:nblocks,-nblocks:nblocks), intent(in):: interp_Hr
             complex*16,intent(in):: vec_in(N*3)
             complex*16,intent(out)::vec_out(N*3)
             complex*16::tempvec(N)
