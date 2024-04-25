@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006,TOL=0.0001
-    integer*8,parameter::nblocks=5,matsize=(nblocks)**3,maxiter=10000000,ishift=1,mode=1
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta=1,TOL=0.0001
+    integer*8,parameter::nblocks=4,matsize=(nblocks)**3,maxiter=1000,ishift=1,mode=1,eres=20
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -21,9 +21,9 @@ Program Projected_band_structure
     integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size
     integer*4 IPARAM(11),IPNTR(14),iter,IDO,LDV,LDZ,N
     integer*8 LWORKL,NEV,NCV
-    real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2
+    real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,epoints(eres),a_spec,factor,p_l,de
     real*8,allocatable:: rvec(:,:),rwork(:)
-    integer*4,allocatable:: ndeg(:)
+    integer*4,allocatable:: ndeg(:),vec_ind(:,:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),dos(:,:),surface_vec(:)
     complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:)
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
@@ -52,8 +52,7 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
 
-    open(100,file='DOS_total.dx')
-    open(200,file='DOS_surface.dx')
+    open(100,file='DOS_cube.dx')
     open(300,file='ene_total.dat')
     open(400,file='ene_surface.dat')
 
@@ -82,10 +81,19 @@ Program Projected_band_structure
         enddo
         rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2)
         
-        print *, ir, nr
+        ! print *, ir, nr
     enddo
     deallocate(rvec,top_Hr,triv_Hr,ndeg)
 
+!-----Energy Mesh
+    de = (emax-emin)/eres
+
+    do i=1, eres
+        epoints(i) = emin + de*i
+    enddo
+
+!------ARPACK
+ 
     N=nb*matsize
     NEV=N-2
     NCV=NEV+2
@@ -105,12 +113,6 @@ Program Projected_band_structure
     RWORK=0d0
     rvecmat=.true.
     select=.true.
-
-    ! do i=1,NCV
-    !     if((i*10/NCV .gt. 5) .and. (i*10/NCV .lt. 7)) select(i) = .true.
-    ! enddo
-
-
 
     do while (iter<maxiter)
         iter=iter+1
@@ -141,65 +143,98 @@ Program Projected_band_structure
              v, ldv, iparam, ipntr, workd, workl, lworkl, &
              rwork, info)
     endif
-    ! print *, d
 
-    ! deallocate(RESID,WORKD,WORKL,RWORK)
-    ! deallocate(Z,WORKEV)
+    deallocate(RESID,WORKD,WORKL,RWORK)
+    deallocate(Z,WORKEV)
 
-    do i=1,2
-        write(100*i, '(a,3(1x,i8))') 'object 1 class gridpositions counts',N/nblocks,nblocks,nblocks
-        write(100*i, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
-        write(100*i, '(a,3(1x,f12.8))') 'delta',0d0,0d0,0d0
-        write(100*i, '(a,3(1x,f12.8))') 'delta',0d0,0d0,0d0
-        write(100*i, '(a,3(1x,f12.6))') 'delta',0d0,0d0,0d0
-        write(100*i, '(a,3(1x,i8))') 'object 2 class gridconnections counts',N/nblocks,nblocks,nblocks
-        write(100*i, '(a,i8,a,i8,a,i10,a)') 'object 3 class array type float rank 1 shape',3,&
-                                    ' item', N*nblocks, ' data follows'
+
+!-------Header File
+
+    write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nblocks,nblocks,nblocks
+    write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
+    write(100, '(a,3(1x,f12.8))') 'delta',0d0,0d0,1d0
+    write(100, '(a,3(1x,f12.8))') 'delta',0d0,1d0,0d0
+    write(100, '(a,3(1x,f12.6))') 'delta',1d0,0d0,0d0
+    write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nblocks,nblocks,nblocks
+
+    allocate(dos(eres,matsize),surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
+
+!------Computes total DOS for each Z layer
+    do j=1,matsize
+    !------ Indices for blocks in eigenvector
+        r3 = ((j-1)/nblocks**2)
+        r2 = mod((j-1)/nblocks,3)
+        r1 = mod((j-1),3)
+
+        vec_ind(j,1) = r1
+        vec_ind(j,2) = r2
+        vec_ind(j,3) = r3
     enddo
 
 
-    allocate(dos(NCV,nblocks),surface_vec(4*nb*(nblocks-1)))
-!------Computes total DOS for each Z layer
-    do i=1,N
-        do j=0,nblocks-1
-            dos(i,j+1) = dot_product( v(1+j*nblocks*nb : (j+1)*nblocks*nb, i),v(1+j*nblocks*nb : (j+1)*nblocks*nb, i))
-            write(100, '(3(1x,f12.6))') real(d(i)), real(j), real(dos(i,j+1))
-        enddo 
+    count = 0 
+    do ie=1,eres
+        count = count + 1
+
+        write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
+                                ' item', matsize, ' data follows'
+        !----Spectral DOS
+        do j=0,matsize-1
+            a_spec = 0d0
+            do i=1,N
+
+                p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
+
+                factor = -0.5*(((epoints(ie)- d(i))**2)/eta**2)
+                print*,(((epoints(ie)- d(i))**2)/eta**2)
+
+                a_spec = a_spec + p_l* exp(factor)
+            enddo
+            a_spec = a_spec*(1/sqrt(2*pi2)*eta)
+
+            write(100, '(3(1x,f12.6))') a_spec
+        enddo
+        write(100, '(a)') 'attribute "dep" string "positions"' 
     enddo
 
 !------Computes surface DOS for each Z layer
-    do i=1,N
-        dos(i,:)=0d0
-        do j=0,nblocks-1
-            surface_vec = 0d0 
-            index=1
-            surface_vec(1:nb*nblocks) = v(1+ j*nb*(nblocks**2):nb*nblocks + j*nb*(nblocks**2),i)
-            index=index+nb*nblocks
-            ik=0
-            do k=0,nblocks-3
-                surface_vec(nb*nblocks+1+ik*nb:nb*(nblocks+1)+1+ik*nb) = v(index+ j*nb*(nblocks**2):index+nb-1+ j*nb*(nblocks**2),i)
-                ik=ik+1
-                index=index+(nb*(nblocks-1))
-                surface_vec(nb*nblocks+1+ik*nb:nb*(nblocks+1)+1+ik*nb) = v(index+ j*nb*(nblocks**2):index+nb-1+ j*nb*(nblocks**2),i)
-                ik=ik+1
-                index=index+nb
-            enddo
-            surface_vec(nb*nblocks+1+ik*nb:nb*(2*nblocks)+1+ik*nb) = v(index+ j*nb*(nblocks**2):index+nb*(nblocks)-1+ j*nb*(nblocks**2),i)
+    ! do i=1,N
+    !     dos(i,:)=0d0
+    !     do j=0,nblocks-1
+    !         surface_vec = 0d0 
+    !         index=1
+    !         surface_vec(1:nb*nblocks) = v(1+ j*nb*(nblocks**2):nb*nblocks + j*nb*(nblocks**2),i)
+    !         index=index+nb*nblocks
+    !         ik=0
+    !         do k=0,nblocks-3
+    !             surface_vec(nb*nblocks+1+ik*nb:nb*(nblocks+1)+1+ik*nb) = v(index+ j*nb*(nblocks**2):index+nb-1+ j*nb*(nblocks**2),i)
+    !             ik=ik+1
+    !             index=index+(nb*(nblocks-1))
+    !             surface_vec(nb*nblocks+1+ik*nb:nb*(nblocks+1)+1+ik*nb) = v(index+ j*nb*(nblocks**2):index+nb-1+ j*nb*(nblocks**2),i)
+    !             ik=ik+1
+    !             index=index+nb
+    !         enddo
+    !         surface_vec(nb*nblocks+1+ik*nb:nb*(2*nblocks)+1+ik*nb) = v(index+ j*nb*(nblocks**2):index+nb*(nblocks)-1+ j*nb*(nblocks**2),i)
 
-            dos(i,j+1) = dot_product(surface_vec,surface_vec)
-            write(200, '(3(1x,f12.6))') real(d(i)), real(j), real(dos(i,j+1))
+    !         dos(i,j+1) = dot_product(surface_vec,surface_vec)
+    !         write(200, '(3(1x,f12.6))') real(d(i)), real(j), real(dos(i,j+1))
 
-        enddo 
+    !     enddo 
+    ! enddo
+
+    do i=0,eres-1
+        write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
+        'object',eres+3+i,' class field', &
+        'component "positions" value 1', &
+        'component "connections" value 2', &
+        'component "data" value ',3+i
+    enddo
+    write(100, '(a)') 'object "series" class series'
+    do i=0,eres-1
+        write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
     enddo
 
-    do i=1,2
-        write(100*i,'(A,/,A,/,A,/,A)') &
-            'object "regular positions regular connections" class field', &
-            'component "positions" value 1', &
-            'component "connections" value 2', &
-            'component "data" value 3', &
-            'end'
-    enddo
+    write(100, '(A)') 'end'
 
     ! call date_and_time(date_end, time_end)
     ! read(time_end  , '(f10.1)') end_second
@@ -228,7 +263,9 @@ Program Projected_band_structure
                                     r1=i1-j1
                                     xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
                                     yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
-                                    tempvec((1+nb*yindex):(nb*(yindex+1))) = tempvec((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+                                    if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
+                                        tempvec((1+nb*yindex):(nb*(yindex+1))) = tempvec((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+                                    endif
                                     ! tempvec(1:N) = tempvec(1:N) + 0.0001
                                     ! print *, xindex,yindex 
                                 enddo
@@ -262,8 +299,9 @@ Program Projected_band_structure
                     r3 = ((icol-1)/N2)- f3
                     r2 = mod((icol-1)/nblocks,3) - f2
                     r1 = mod(icol-1,3) - f1
-        
-                    tempvec(1+(icol-1)*nb : nb*(icol)) = tempvec(1+(icol-1)*nb : nb*(icol)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in( 1+(irow-1)*nb : nb*(irow) ))
+                    if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
+                        tempvec(1+(icol-1)*nb : nb*(icol)) = tempvec(1+(icol-1)*nb : nb*(icol)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in( 1+(irow-1)*nb : nb*(irow) ))
+                    endif
                 enddo
             enddo
 

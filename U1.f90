@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.13,kymax=0.13,kzmax=0.07,a=0.791
-    integer,parameter::xmeshres=35,ymeshres=35,zmeshres=17,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),nkp3=nkxpoints*nkypoints*nkzpoints
+    real*8,parameter::ef= 4.18903772,kxmax=0.03,kymax=0.03,kzmax=0.018,a=0.791
+    integer,parameter::xmeshres=10,ymeshres=10,zmeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,7 +17,7 @@ Program Projected_band_structure
     real*8 dk,dx,dy,dz
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,ikp,ir,node,pair
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.01d0
     real*8 phase,pi2,x1,y1,x2,y2
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkxpoints,nkypoints,nkzpoints),rvec_data(3),dV(3),offset(3,2,5),normal(3),v(3,3,nkxpoints,nkypoints,nkzpoints),v2xv3(3),total_c(3)
 	real*8 dAdx(3,2),dAdy(3,2),dAdz(3,2)
@@ -26,7 +26,8 @@ Program Projected_band_structure
     real*8,allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:),eff(:)
     integer*4,allocatable:: ndeg(:)
     complex*16,allocatable::Hk(:,:),H_k(:,:,:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),eig_eff(:,:,:,:,:),eig(:,:,:,:,:),H_eff(:,:),dHdK(:,:,:)
-	complex*16,allocatable::U(:,:,:,:,:),curvature(:,:,:,:,:),du(:,:,:)
+	complex*16,allocatable::U(:,:,:,:,:),curvature(:,:,:,:,:),du(:,:,:),B_pt(:,:)
+    complex*16 B_sigma(2,2)
 	!------------------------------------------------------
 	!call init_mpi
 
@@ -79,8 +80,8 @@ Program Projected_band_structure
 
 !-----BTPs:
 
-	node = 2
-	pair = 5
+	node = 1
+	pair = 1
 
 	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve
 	offset(:,2,1) = (/ 0.017665681958398235,0.046638430945586576,0.47514974714462382/) !-ve
@@ -139,21 +140,35 @@ Program Projected_band_structure
 				kpoint(3,ikx,iky,ikz) = (ikz-1)*dz - kzmax/2 + offset(3,node,pair)
 			enddo
 		enddo
-		! print *, kpoint(1,ikx,1,1)
 	enddo
 
-	! kpool=nkp3/numprocs
-    ! if (mod(nkp3,numprocs).ne.0) kpool=kpool+1
-
-    ! kpmin=1+myid*kpool
-    ! kpmax=(myid+1)*kpool
-
-    ! ecounts=kpool*3 !
-	
+!----Construct magnetic perturbation
 	allocate(HK(nb,nb),H_k(nb,nb,ikx,iky,ikz),k_ene(nb),eig(nb,2,nkxpoints,nkypoints,nkzpoints))
     allocate(H_eff(2,2),eig_eff(2,2,nkxpoints,nkypoints,nkzpoints),eff(2),du(nb,2,3))
 	allocate(U(3,2,nkxpoints,nkypoints,nkzpoints),curvature(3,2,nkxpoints,nkypoints,nkzpoints))
+    allocate(B_pt(nb, nb))
 
+    !B along Y axis
+    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
+    B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
+
+    B_pt=0d0
+    do i=1,nb
+        do j=1,nb
+            if (i==j) then
+                if (i<10) then
+                    B_pt(i,j) = B_sigma(1,1)
+                else
+                    B_pt(i,j) = B_sigma(2,2)
+                endif
+            else if (i==j+9) then
+                B_pt(i,j) = B_sigma(2,1)
+            else if (j==i+9) then
+                B_pt(i,j) = B_sigma(1,2)
+            endif
+        enddo
+    enddo
+	
 	print *, "Finding eigenvectors"
 !----- Fourier Transform
 	ikp=0
@@ -167,6 +182,7 @@ Program Projected_band_structure
 					phase = dot_product(kpoint(:,ikx,iky,ikz),rvec(:,ir))
 					HK=HK+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
 				enddo
+				HK = HK + B_pt
 				H_k(:,:,ikx,iky,ikz) = HK(:,:) ! Store Hamiltonian
 				call zheev('V','U',nb,HK,nb,k_ene,work,lwork,rwork,info)
 
@@ -176,16 +192,6 @@ Program Projected_band_structure
 
 				write(400,'(1(1x,f10.8))') k_ene(12)
 
-!----Constructing effective Hamiltonian and diagonalizing
-				! do i=1,2
-				! 	do j=1,2
-				! 		H_eff(i,j) = dot_product(eig(:,i,ikx,iky,ikz),matmul(H_k(:,:,ikx,iky,ikz),eig(:,j,ikx,iky,ikz)))
-				! 	enddo
-				! enddo
-				! call zheev('V','U',2,H_eff,2,eff,work,lwork,rwork,info)
-
-				! eig_eff(:,1,ikx,iky,ikz) = H_eff(:,1)
-				! eig_eff(:,2,ikx,iky,ikz) = H_eff(:,2)
 			enddo
 		enddo
 	enddo
@@ -195,18 +201,9 @@ Program Projected_band_structure
 	do ikx=1,nkxpoints-1
 		do iky=1,nkypoints-1
 			do ikz=1,nkzpoints-1
-				! do i=1,2 !--Accounts for the 2 eigenvectors of the effective hamiltonian
-
 				U(1,1,ikx,iky,ikz) = (dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx+1,iky,ikz)))/(abs(dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx+1,iky,ikz))))
 				U(2,1,ikx,iky,ikz) = (dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky+1,ikz)))/(abs(dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky+1,ikz))))
 				U(3,1,ikx,iky,ikz) = (dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky,ikz+1)))/(abs(dot_product(eig(:,1,ikx,iky,ikz),eig(:,1,ikx,iky,ikz+1))))
-				! enddo
-
-				! total_c(:) = U(:,1,ikx,iky,ikz)*dcmplx(0d0,-1d0) 
-
-				! write(100, '(3(1x,f20.2))') total_c
-				! write(300, '(3(1x,f12.8),3(1x,f20.2))') kpoint(:,ikx,iky,ikz),total_c
-				! print *, U(:,1,ikx,iky,ikz)
 			enddo
 		enddo
 	enddo
@@ -217,18 +214,11 @@ Program Projected_band_structure
 	do ikx=1,nkxpoints-2
 		do iky=1,nkypoints-2
 			do ikz=1,nkzpoints-2
-				! do i =1,2
-
 				curvature(1,1,ikx,iky,ikz) = log((U(2,1,ikx,iky,ikz)*U(3,1,ikx,iky+1,ikz))/(U(2,1,ikx,iky,ikz+1)*U(3,1,ikx,iky,ikz)))/(dx*dx) ! F_23
 				curvature(2,1,ikx,iky,ikz) = log((U(3,1,ikx,iky,ikz)*U(1,1,ikx,iky,ikz+1))/(U(3,1,ikx+1,iky,ikz)*U(1,1,ikx,iky,ikz)))/(dy*dy) ! F_31
 				curvature(3,1,ikx,iky,ikz) = log((U(1,1,ikx,iky,ikz)*U(2,1,ikx+1,iky,ikz))/(U(1,1,ikx,iky+1,ikz)*U(2,1,ikx,iky,ikz)))/(dz*dz) ! F_12
-
-				! enddo
-				! print*, curvature(:,1,ikx,iky,ikz)
-				! sum(:) = curvature(:,1,ikx,iky,ikz) + curvature(:,2,ikx,iky,ikz)
-				
-				write(100, '(3(1x,f20.5))') aimag(curvature(:,1,ikx,iky,ikz))
-				write(300, '(3(1x,f12.8),3(1x,f20.5))') kpoint(:,ikx,iky,ikz),aimag(curvature(:,1,ikx,iky,ikz))
+				write(100, '(3(1x,f20.5))') -aimag(curvature(:,1,ikx,iky,ikz))
+				write(300, '(3(1x,f12.8),3(1x,f20.5))') kpoint(:,ikx,iky,ikz),-aimag(curvature(:,1,ikx,iky,ikz))
 			enddo	
 		enddo
 	enddo
