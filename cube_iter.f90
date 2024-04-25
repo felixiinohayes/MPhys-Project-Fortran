@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta=1,TOL=0.0001
-    integer*8,parameter::nblocks=4,matsize=(nblocks)**3,maxiter=1000,ishift=1,mode=1,eres=20
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta=200,TOL=0.0001
+    integer*8,parameter::nblocks=8,matsize=(nblocks)**3,maxiter=1000,ishift=1,mode=1,eres=20
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -185,14 +185,13 @@ Program Projected_band_structure
 
                 p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
 
-                factor = -0.5*(((epoints(ie)- d(i))**2)/eta**2)
-                print*,(((epoints(ie)- d(i))**2)/eta**2)
+                factor = ((epoints(ie)- d(i)))/eta
 
-                a_spec = a_spec + p_l* exp(factor)
+                a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
             enddo
-            a_spec = a_spec*(1/sqrt(2*pi2)*eta)
 
-            write(100, '(3(1x,f12.6))') a_spec
+            write(100, '(3(1x,f12.10))') a_spec
+            print*, a_spec
         enddo
         write(100, '(a)') 'attribute "dep" string "positions"' 
     enddo
