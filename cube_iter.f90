@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta=200,TOL=0.0001
-    integer*8,parameter::nblocks=8,matsize=(nblocks)**3,maxiter=1000,ishift=1,mode=1,eres=20
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta=200,TOL=0.0001,B=0.6d0
+    integer*8,parameter::nblocks=4,matsize=(nblocks)**3,maxiter=10000000,ishift=1,mode=1,eres=20
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -25,9 +25,9 @@ Program Projected_band_structure
     real*8,allocatable:: rvec(:,:),rwork(:)
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),dos(:,:),surface_vec(:)
-    complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:)
+    complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),B_pt(:,:)
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
-    complex*16 B_sigma(2,2),B_pt(nb,nb),SIGMA
+    complex*16 B_sigma(2,2),SIGMA
     logical:: rvecmat
     logical,allocatable:: select(:)
 !----Date and Time
@@ -59,17 +59,22 @@ Program Projected_band_structure
 !------read H(R)
     interp_size=6
     if(abs(nblocks) > interp_size) interp_size = abs(nblocks)
+    read(99,*)
+    read(99,*)nb,nr
+    allocate(rvec(2,nr),top_Hr(nb,nb),triv_Hr(nb,nb),ndeg(nr))
+    allocate(interp_Hr(nb,nb,-interp_size:interp_size,-interp_size:interp_size,-interp_size:interp_size))
+    read(99,*)ndeg
+    do i=1,80
+      read(97,*)
+    enddo
 
     !---- Magnetic Perturbation
     allocate(B_pt(nb,nb))
 
-    !B along X-axis
-    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
-    B_sigma(2,:) = [dcmplx(Bx,0d0) ,  dcmplx(0d0,0d0)]
+    !B along Z-axis
+    B_sigma(1,:) = [dcmplx(B,0d0)   , dcmplx(0d0,0d0)]
+    B_sigma(2,:) = [dcmplx(0d0,0d0) , dcmplx(-B,0d0)]
 
-    !B along Y axis
-	! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
-    ! B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 	B_pt=0d0
 	do i=1,nb
 		do j=1,nb
@@ -87,15 +92,6 @@ Program Projected_band_structure
 		enddo
 	enddo
 
-
-    read(99,*)
-    read(99,*)nb,nr
-    allocate(rvec(2,nr),top_Hr(nb,nb),triv_Hr(nb,nb),ndeg(nr))
-    allocate(interp_Hr(nb,nb,-interp_size:interp_size,-interp_size:interp_size,-interp_size:interp_size))
-    read(99,*)ndeg
-    do i=1,80
-      read(97,*)
-    enddo
     do ir=1,nr
         do i=1,nb
             do j=1,nb
@@ -104,7 +100,7 @@ Program Projected_band_structure
                read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
                triv_Hr(j1,j2)=dcmplx(x2,y2)
 
-               interp_Hr(i1,i2,rvec_data(1),rvec_data(2),rvec_data(3))=(1-a)*triv_Hr(i1,i2) + a*top_Hr(i1,i2)
+               interp_Hr(i1,i2,rvec_data(1),rvec_data(2),rvec_data(3))=((1-a)*triv_Hr(i1,i2) + a*top_Hr(i1,i2)) + B_pt(i1,i2)
             enddo
         enddo
         rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2)
@@ -171,7 +167,6 @@ Program Projected_band_structure
              v, ldv, iparam, ipntr, workd, workl, lworkl, &
              rwork, info)
     endif
-
     deallocate(RESID,WORKD,WORKL,RWORK)
     deallocate(Z,WORKEV)
 
@@ -213,13 +208,13 @@ Program Projected_band_structure
 
                 p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
 
-                factor = ((epoints(ie)- d(i)))/eta
+                factor = ((epoints(ie)- real(d(i))))/eta
 
                 a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
             enddo
 
             write(100, '(3(1x,f12.10))') a_spec
-            print*, a_spec
+            ! print*, a_spec
         enddo
         write(100, '(a)') 'attribute "dep" string "positions"' 
     enddo
@@ -290,9 +285,9 @@ Program Projected_band_structure
                                     r1=i1-j1
                                     xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
                                     yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
-                                    if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
-                                        tempvec((1+nb*yindex):(nb*(yindex+1))) = tempvec((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
-                                    endif
+                                    ! if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
+                                    tempvec((1+nb*yindex):(nb*(yindex+1))) = tempvec((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+                                    ! endif
                                     ! tempvec(1:N) = tempvec(1:N) + 0.0001
                                     ! print *, xindex,yindex 
                                 enddo
