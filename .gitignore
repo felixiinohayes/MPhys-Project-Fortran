@@ -25,3 +25,6 @@ matmul_test
 matmul_test.f90
 DOS-general.general
 plot_DOS_colour.py
+cube_iter_copy
+cube_iter_copy.f90
+nohup.out
