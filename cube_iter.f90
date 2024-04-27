@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=1,emin=0,emax=10,eta1=3.5,eta2=0.03,TOL=0.0001,Bx=0.1
-    integer*8,parameter::nblocks=9,matsize=(nblocks)**3,maxiter=30000,ishift=1,mode=1,eres=200
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.6,emax=10,eta1=2,eta2=0.03,TOL=0.0001,Bx=1
+    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=100
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -52,7 +52,7 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
 
-    open(100,file='DOS_cube_B010Z.dx')
+    open(100,file='DOS_cube_B010Z_5.dx')
     open(200,file='ene_total.dat')
     open(300,file='ene_surface.dat')
 
@@ -208,6 +208,7 @@ Program Projected_band_structure
     count = 0 
     do ie=1,eres
         count = count + 1
+        print*, ie, eres
 
         write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
                                 ' item', matsize, ' data follows'
