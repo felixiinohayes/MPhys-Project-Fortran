@@ -2,7 +2,9 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.03,kymax=0.03,kzmax=0.018,a=0.791
+    ! real*8,parameter::kxmax=0.12,kymax=0.12,kzmax=0.08,a=0.77966  !For all the monopoles
+	! real*8,parameter::kxmax=0.065,kymax=0.02,kzmax=0.065,a=0.791	!For two monopoles
+	real*8,parameter::kxmax=0.00035,kymax=0.00035,kzmax=0.00035,a=0.791	!For a single monopole
     integer,parameter::xmeshres=10,ymeshres=10,zmeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
@@ -17,11 +19,11 @@ Program Projected_band_structure
     real*8 dk,dx,dy,dz
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,ikp,ir,node,pair
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.01d0
-    real*8 phase,pi2,x1,y1,x2,y2
-    real*8 avec(3,3),bvec(3,3),kpoint(3,nkxpoints,nkypoints,nkzpoints),rvec_data(3),dV(3),offset(3,2,5),normal(3),v(3,3,nkxpoints,nkypoints,nkzpoints),v2xv3(3),total_c(3)
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.00d0
+    real*8 phase,pi2,x1,y1,x2,y2,div
+    real*8 avec(3,3),bvec(3,3),kpoint(3,nkxpoints,nkypoints,nkzpoints),rvec_data(3),dV(3),offset(3,3,6),normal(3),v(3,3,nkxpoints,nkypoints,nkzpoints),v2xv3(3),total_c(3)
 	real*8 dAdx(3,2),dAdy(3,2),dAdz(3,2)
-	complex*8 spinor(2,2),H_2(2,2,2)
+	complex*8 spinor(2,2),H_2(2,2,2),chern
 	real*8,allocatable:: rvec(:,:),rwork(:)
     real*8,allocatable:: k_ene(:),k_ene_data(:,:),sam(:,:),oam(:,:),kmesh(:,:),energy(:,:),ene(:,:),eff(:)
     integer*4,allocatable:: ndeg(:)
@@ -35,7 +37,7 @@ Program Projected_band_structure
     write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
     write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
 
-    pi2=4.0d0*atan(1.0d0)*2.0d0
+    pi2=4.0d0*atan(1.0d0) 
 
 !---------------  reciprocal vectors
     open(98,file=trim(adjustl(nnkp)))
@@ -97,6 +99,8 @@ Program Projected_band_structure
 
 	offset(:,1,5) = (/-0.00879804124970561,0.04855142510428899,0.44745395357167184/)  !Dirac Point
 	offset(:,2,5) = (/0.0,0.0,0.5*0.9144694/)  !Dirac Point
+	offset(:,3,5) = (/0.0,0.0465,0.5*0.9144694/) ! 2 monopoles
+	
 
 
     dx=kxmax/(nkxpoints-1)
@@ -214,14 +218,35 @@ Program Projected_band_structure
 	do ikx=1,nkxpoints-2
 		do iky=1,nkypoints-2
 			do ikz=1,nkzpoints-2
-				curvature(1,1,ikx,iky,ikz) = log((U(2,1,ikx,iky,ikz)*U(3,1,ikx,iky+1,ikz))/(U(2,1,ikx,iky,ikz+1)*U(3,1,ikx,iky,ikz)))/(dx*dx) ! F_23
-				curvature(2,1,ikx,iky,ikz) = log((U(3,1,ikx,iky,ikz)*U(1,1,ikx,iky,ikz+1))/(U(3,1,ikx+1,iky,ikz)*U(1,1,ikx,iky,ikz)))/(dy*dy) ! F_31
-				curvature(3,1,ikx,iky,ikz) = log((U(1,1,ikx,iky,ikz)*U(2,1,ikx+1,iky,ikz))/(U(1,1,ikx,iky+1,ikz)*U(2,1,ikx,iky,ikz)))/(dz*dz) ! F_12
-				write(100, '(3(1x,f20.5))') -aimag(curvature(:,1,ikx,iky,ikz))
+				curvature(1,1,ikx,iky,ikz) = log((U(2,1,ikx,iky,ikz)*U(3,1,ikx,iky+1,ikz))/(U(2,1,ikx,iky,ikz+1)*U(3,1,ikx,iky,ikz))) ! F_23
+				curvature(2,1,ikx,iky,ikz) = log((U(3,1,ikx,iky,ikz)*U(1,1,ikx,iky,ikz+1))/(U(3,1,ikx+1,iky,ikz)*U(1,1,ikx,iky,ikz))) ! F_31
+				curvature(3,1,ikx,iky,ikz) = log((U(1,1,ikx,iky,ikz)*U(2,1,ikx+1,iky,ikz))/(U(1,1,ikx,iky+1,ikz)*U(2,1,ikx,iky,ikz))) ! F_12
+				write(100, '(3(1x,f20.10))') -aimag(curvature(:,1,ikx,iky,ikz))
 				write(300, '(3(1x,f12.8),3(1x,f20.5))') kpoint(:,ikx,iky,ikz),-aimag(curvature(:,1,ikx,iky,ikz))
 			enddo	
 		enddo
 	enddo
+
+	chern=0d0
+	do ikx=1,nkxpoints-3
+		do iky=1,nkypoints-3
+			do ikz=1,nkzpoints-3
+				! div =   ((curvature(1,1,ikx+1,iky  ,ikz  )-curvature(1,1,ikx,iky,ikz))/dx + &
+				! 		 (curvature(2,1,ikx  ,iky+1,ikz  )-curvature(2,1,ikx,iky,ikz))/dy + &
+				! 		 (curvature(3,1,ikx  ,iky  ,ikz+1)-curvature(3,1,ikx,iky,ikz))/dz)
+				
+				chern = chern + (1/(2*pi2*dcmplx(0d0,1d0)))*sum(curvature(:,1,ikx  ,iky  ,ikz))
+				if(ikx.eq.1) then
+					! print*,curvature(:,1,ikx  ,iky  ,ikz)
+					print*,' '
+					print*,'Chern:', chern
+				endif
+
+			enddo	
+		enddo
+	enddo
+
+	print *, chern
 
 	deallocate(H_k,Hk,eig,eig_eff)
 	write(100,'(A,/,A,/,A,/,A)') &

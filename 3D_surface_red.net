@@ -1,5 +1,5 @@
 //
-// time: Fri Mar 29 11:36:46 2024
+// time: Wed May  1 00:31:52 2024
 //
 // version: 3.2.0 (format), 4.4.4 (DX)
 //
@@ -13,7 +13,7 @@ macro main(
 ) {
     // 
     // node FileSelector[1]: x = 21, y = 72, inputs = 0, label = FileSelector
-    // output[1]: visible = 1, type = 32, value = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/fermi_surface.dx"
+    // output[1]: visible = 1, type = 32, value = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/fermi_surface.dx"
     // output[2]: visible = 1, type = 32, value = "fermi_surface.dx"
     //
     // 
@@ -76,7 +76,7 @@ main_Compute_7_out_1 =
     // input[8]: defaulting = 1, visible = 0, type = 5, value = 0.55
     // input[9]: defaulting = 1, visible = 0, type = 1, value = 20
     // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 0.35 0.55 }
-    // window: position = (0.0067,0.1741), size = 0.5261x0.5044, screen = 0
+    // window: position = (0.0068,0.1739), size = 0.5259x0.5043, screen = 0
     //
 main_Colormap_1_out_1[cache: 2],
 main_Colormap_1_out_2[cache: 2] = 
@@ -134,14 +134,14 @@ main_Replace_1_out_1 =
     main_Replace_1_in_4
     ) [instance: 1, cache: 1];
     // 
-    // node Scalar[1]: x = 379, y = 159, inputs = 11, label = Scalar
+    // node Scalar[1]: x = 378, y = 160, inputs = 11, label = Scalar
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "Scalar_1"
-    // input[3]: defaulting = 0, visible = 0, type = 5, value = 5.585932 
+    // input[3]: defaulting = 0, visible = 0, type = 5, value = 5.57593 
     // input[5]: defaulting = 1, visible = 0, type = 5, value = -1000000.0
     // input[6]: defaulting = 1, visible = 0, type = 5, value = 1000000.0
     // input[7]: defaulting = 1, visible = 0, type = 5, value = 1.0
-    // input[9]: defaulting = 1, visible = 0, type = 1, value = 6
-    // output[1]: visible = 1, type = 5, value = 5.585932 
+    // input[9]: defaulting = 1, visible = 0, type = 1, value = 5
+    // output[1]: visible = 1, type = 5, value = 5.57593 
     //
     // 
     // node Isosurface[1]: x = 86, y = 560, inputs = 6, label = Isosurface
@@ -169,13 +169,13 @@ main_Scale_1_out_1 =
     // node Image[1]: x = 113, y = 656, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.000947826 -0.000978431 4.57323]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-0.00107416 -0.001662 4.57368]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 0.0056049
-    // input[8]: defaulting = 0, visible = 0, type = 1, value = 973
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.619
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.160914 0.519876 0.838949]
-    // input[11]: defaulting = 1, visible = 0, type = 5, value = 147.077
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0 0 4.57235]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [0 0 9.1334]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 2.44427
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 792
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.612
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 1 0]
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 30.0001
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -194,10 +194,10 @@ main_Scale_1_out_1 =
     // input[33]: defaulting = 0, visible = 0, type = 3, value = 0
     // input[36]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"clear", "white", "yellow", "black"}
-    // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background","grid","ticks","labels"}
-    // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
+    // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background", "grid", "ticks", "labels"}
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "none"
     // depth: value = 24
-    // window: position = (0.3439,0.1279), size = 0.5483x0.5719, screen = 0
+    // window: position = (0.3442,0.1522), size = 0.5483x0.5717, screen = 0
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -267,7 +267,7 @@ main_Image_1_out_3 =
 // network: end of macro body
 CacheScene(main_Image_1_in_1, main_Image_1_out_1, main_Image_1_out_2);
 }
-main_FileSelector_1_out_1 = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortran/fermi_surface.dx";
+main_FileSelector_1_out_1 = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/fermi_surface.dx";
 main_Import_1_in_2 = NULL;
 main_Import_1_in_3 = NULL;
 main_Import_1_in_4 = 0;
@@ -313,7 +313,7 @@ main_Replace_1_in_4 = "colors";
 main_Replace_1_out_1 = NULL;
 main_Scalar_1_in_1 = "Scalar_1";
 main_Scalar_1_in_2 = NULL;
-main_Scalar_1_in_3 = 5.585932 ;
+main_Scalar_1_in_3 = 5.57593 ;
 main_Scalar_1_in_4 = NULL;
 main_Scalar_1_in_5 = NULL;
 main_Scalar_1_in_6 = NULL;
@@ -322,7 +322,7 @@ main_Scalar_1_in_8 = NULL;
 main_Scalar_1_in_9 = NULL;
 main_Scalar_1_in_10 = NULL;
 main_Scalar_1_in_11 = NULL;
-main_Scalar_1_out_1 = 5.585932 ;
+main_Scalar_1_out_1 = 5.57593 ;
 main_Isosurface_1_in_3 = NULL;
 main_Isosurface_1_in_4 = NULL;
 main_Isosurface_1_in_5 = NULL;
@@ -645,12 +645,12 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-0.000947826 -0.000978431 4.57323];
-main_Image_1_in_6 = [-0.00107416 -0.001662 4.57368];
-main_Image_1_in_7 = 0.0056049;
-main_Image_1_in_8 = 973;
-main_Image_1_in_9 = 0.619;
-main_Image_1_in_10 = [0.160914 0.519876 0.838949];
+main_Image_1_in_5 = [0 0 4.57235];
+main_Image_1_in_6 = [0 0 9.1334];
+main_Image_1_in_7 = 2.44427;
+main_Image_1_in_8 = 792;
+main_Image_1_in_9 = 0.612;
+main_Image_1_in_10 = [0 1 0];
 main_Image_1_in_11 = NULL;
 main_Image_1_in_12 = 0;
 main_Image_1_in_13 = NULL;
@@ -677,10 +677,10 @@ main_Image_1_in_34 = NULL;
 main_Image_1_in_35 = NULL;
 main_Image_1_in_36 = 1;
 main_Image_1_in_37 = {"clear", "white", "yellow", "black"};
-main_Image_1_in_38 = {"background","grid","ticks","labels"};
+main_Image_1_in_38 = {"background", "grid", "ticks", "labels"};
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
-main_Image_1_in_41 = "rotate";
+main_Image_1_in_41 = "none";
 main_Image_1_in_42 = NULL;
 main_Image_1_in_43 = NULL;
 main_Image_1_in_44 = NULL;
