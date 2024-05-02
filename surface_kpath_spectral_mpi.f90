@@ -132,9 +132,11 @@ Program Projected_band_structure
     ! B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
 
      !B along X axis
-    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(B,0d0)]
-    B_sigma(2,:) = [dcmplx(B,0d0) ,  dcmplx(0d0,0d0)]
+    ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(B,0d0)]
+    ! B_sigma(2,:) = [dcmplx(B,0d0) ,  dcmplx(0d0,0d0)]
 
+    B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
+    B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
     B_pt=0d0
     do i=1,nb
         do j=1,nb
