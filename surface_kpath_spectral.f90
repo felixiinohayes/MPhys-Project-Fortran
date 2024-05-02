@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.006
-    integer,parameter::nkpath=3,np=150,nblocks=10,nr3=11,nk=(nkpath-1)*np+1,eres=300
+    integer,parameter::nkpath=3,np=150,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,eres=300
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -16,7 +16,7 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.06d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.12d0
     real*8 phase,pi2,x1,y1,x2,y2,de,spectral_A,exp_factor,p_l
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),kpath(3,nk),dk(3),epoints(eres)
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:)
@@ -46,7 +46,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='super_H_B06.dx')
+    open(100,file='super_H_B12.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -118,8 +118,14 @@ Program Projected_band_structure
     allocate(B_pt(nb, nb))
 
      !B along Y axis
-    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
-    B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
+    ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
+    ! B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
+
+    ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
+    ! B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
+
+    B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
+    B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
 
     B_pt=0d0
     do i=1,nb

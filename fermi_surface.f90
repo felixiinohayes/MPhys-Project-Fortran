@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,kxmax=0.06,kymax=0.06,kzmax=0.06,amax=0.01892,acritical=0.791
-    integer,parameter::meshres=20,xmeshres=meshres,ymeshres=meshres,zmeshres=meshres,ares=0,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
+    real*8,parameter::ef= 4.18903772,kxmax=0.065,kymax=0.065,kzmax=0.03,amax=0.01892,acritical=1
+    integer,parameter::meshres=40,xmeshres=meshres,ymeshres=meshres,zmeshres=meshres,ares=0,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),napoints=(2*ares+1),nbmin=12,nbmax=13,nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,7 +17,7 @@ Program Projected_band_structure
     real*8 dx,dy,dz,da
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,lwork,info,ikx,iky,ikz,ia,ik,count,kpool,kpmin,kpmax,ecounts,ikp,ir
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.06d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B = 0.00d0
     real*8 phase,pi2,x1,y1,x2,y2,a,minbandgap
     real*8 avec(3,3),bvec(3,3),kpoint(3,nkp3),rvec_data(3)
     real*8,allocatable:: rvec(:,:),rwork(:)
@@ -47,7 +47,7 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
     if(myid.eq.0) then
-        open(100,file='fermi_surface.dx')
+        open(100,file='fermi_surface_B00_a1.dx')
     endif
     read(99,*)
     read(99,*)nb,nr
