@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta1=2,eta2=0.03,TOL=0.0001,Bx=0.08
-    integer*8,parameter::nblocks=2,matsize=(nblocks)**3,maxiter=3,ishift=1,mode=1,eres=200
+    integer*8,parameter::nblocks=4,matsize=(nblocks)**3,maxiter=3,ishift=1,mode=1,eres=200
     integer nb
     
 end module parameters
@@ -17,7 +17,7 @@ Program Projected_band_structure
     ! INCLUDE 'debug-arpack.h'
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size
+    integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),pindex,index,nindex,interp_size
     integer*4 IPARAM(11),IPNTR(14),iter,IDO,LDV,LDZ
     integer*4 comm,myid,nprocs,rc,ierr
     integer*8 LWORKL,NEV,NCV,N,nloc,npmin,npmax,leng
@@ -142,7 +142,7 @@ Program Projected_band_structure
     npmax=(myid+1)*nloc
     leng = (min(npmax,matsize)-npmin+1)*nb
 
-    print*,'npmin:',npmin,'npmax:',npmax,'leng:',leng,'myid:',myid
+    ! print*,'npmin:',npmin,'npmax:',npmax,'leng:',leng,'myid:',myid
 
     allocate(RESID(N),V(N,NCV),WORKD(leng*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),Z(N,NEV),WORKEV(2*NCV))
@@ -309,7 +309,7 @@ Program Projected_band_structure
 
         subroutine matmul_(interp_Hr,vec_in,vec_out,nloc,nblocks,N,npmin,npmax,leng)  
             integer*8,intent(in)::N,nloc,nblocks,npmin,npmax,leng
-            integer*8 npmin_t,npmax_t,len_t,next,prev,send
+            integer*8 npmin_t,npmax_t,len_t,next,prev,send,recv,status(MPI_STATUS_SIZE)
             complex*16,dimension(18,18,-nblocks:nblocks,-nblocks:nblocks,-nblocks:nblocks), intent(in):: interp_Hr
             complex*16,intent(in):: vec_in(leng)
             complex*16,intent(out)::vec_out(leng)
@@ -342,6 +342,75 @@ Program Projected_band_structure
                 enddo
             enddo
 
+            ! do i=1,nprocs 
+            !     send = mod(myid+i,nprocs)
+            !     recv = mod(myid-i,nprocs)
+
+
+            !     npmin_t=1+(send)*nloc
+            !     npmax_t=(send+1)*nloc
+            !     len_t = (min(npmax_t,N3)-npmin_t+1)*nb
+
+            !     print*,recv,myid,send
+            !     ! print*,npmin_t,npmax_t
+
+            !     ! if(myid.eq.(i-1)) print*,len_t
+            !     ! if(myid.eq.(i)) print*,leng
+
+
+            !     call mpi_sendrecv(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
+            !                         send,send, mv_buf,leng,MPI_DOUBLE_COMPLEX,recv,recv,comm,status)
+                
+            !     print*, 'Processor:',myid,'sent to',send
+            !     print*, 'Processor:',myid,'recieved from',recv
+            !     ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
+            !     !                 myid +i, myid+ i ,comm, ierr)
+            !     ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
+            !     !                 myid -i, myid -i ,ierr)
+            !     call mpi_barrier(comm)
+            !     tv_out = tv_out + mv_buf
+            ! enddo
+
+            ! vec_out = tv_out
+
+
+
+                do i=1,nprocs
+
+                    pindex = mod((i+nprocs-3),nprocs)
+                    index  = mod((i+nprocs-2),nprocs)
+                    nindex = mod((i+nprocs-1),nprocs) 
+
+                    print*,pindex,index,nindex
+
+                    npmin_t=1+(i-1)*nloc
+                    npmax_t=(i)*nloc
+                    len_t = (min(npmax_t,N3)-npmin_t+1)*nb
+
+                    if(myid.ne.index) then
+                        send = mod(next+(i-1),nprocs)
+
+                        if(myid.eq.pindex.and.i.gt.1) send = send + 1
+
+                        ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
+                        !                 send,send,comm, ierr)
+                        ! print*, 'Processor:',myid,'sent to',send
+                    endif
+                    if(myid.ne.nindex) then 
+                        ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
+                        !                  (prev-(i-1)), (prev-(i-1)),comm, ierr)
+                        ! tv_out = tv_out + mv_buf
+                        ! print*, 'Processor:',myid,'recv from ',(prev-(i-1))
+                    endif
+                enddo
+
+                print*,''
+
+
+        end subroutine matmul_
+
+end Program Projected_band_structure
+
             ! do i=1,nprocs
                 
             !     npmin_t=1+(i-1)*nloc
@@ -364,29 +433,11 @@ Program Projected_band_structure
             !     endif 
             ! enddo
 
-            do i=1,nprocs
+            ! vec_out = tv_out
 
-                index = mod((i+nprocs-2),nprocs)
 
-                npmin_t=1+(i-1)*nloc
-                npmax_t=(i)*nloc
 
-                len_t = (min(npmax_t,N3)-npmin_t+1)*nb
 
-                if(myid.ne.index) then
-                    
-                    call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
-                                    next+(i-1), next+(i-1),comm, ierr)
-                    print*, 'Processor:',myid,'sent to',i-1
-                endif
-                if(myid.eq.index) then 
-                    call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
-                                     i-1, myid,comm, ierr)
-                    tv_out = tv_out + mv_buf
-                endif
-            enddo
 
-            vec_out = tv_out
-        end subroutine matmul_
 
-end Program Projected_band_structure
+
