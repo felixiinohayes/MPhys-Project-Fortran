@@ -2,16 +2,16 @@
      Implicit None
 !-------to be midified by the usere
      character(len=80):: prefix="BiTeI"
-     integer,parameter::nkpath=3,np=600
+     integer,parameter::nkpath=3,np=1000
 !-----------------------------------------------------
-     integer*4 ik,ikmax, skip,sign
+     integer*4 ik,ikmax, skip,sign,count
      real*8 kz,ef 
      real*8 :: Te_sum, Bi_sum, I_sum
      character(len=30)::klabel(nkpath)
      character(len=80) nnkp,line,top_file,triv_file
      integer*4,parameter::nk=(nkpath-1)*np+1
      integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,j1,j2,nb,l
-     real*8,parameter::third=1d0/3d0, alpha = 1, Bx = 0.06d0
+     real*8,parameter::third=1d0/3d0, alpha = 1, Bx = 0.0d0
      real*8 phase,pi2,jk,a,b,x1,y1
      real*8 xk(nk),bvec(3,3),avec(3,3),ktemp1(3),ktemp2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
      real*8,allocatable:: rvec(:,:),rvec_data(:,:),ene(:,:),rwork(:),od(:,:,:)
@@ -34,16 +34,19 @@
          read(98,*)bvec
 !--------------kpath
 
-     ! ky -> -ky 
-     kpoints(:,1) = [ 0.25d0,  -0.5d0,   0.5d0 ]  !H
-     kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
-     kpoints(:,3) = [ -0.25d0,   0.5d0,   0.5d0 ]  !-H
-
-
-     ! kx -> -kx
-     ! kpoints(:,1) = [ -0.5d0,   0.0d0,   0.5d0 ]  !L
+     ! ! ky -> -ky 
+     ! kpoints(:,1) = [ 0.25d0,  -0.5d0,   0.5d0 ]  !H
      ! kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
-     ! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.5d0 ]  !-L
+     ! kpoints(:,3) = [ -0.25d0,   0.5d0,   0.5d0 ]  !-H
+
+
+
+     ! ! kx -> -kx
+     kpoints(:,1) = [ -0.5d0,   0.0d0,   0.5d0 ]  !L
+     kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
+     kpoints(:,3) = [ 0.5d0,  0.0d0,   0.5d0 ]  !-L
+
+         kpoints(1:2,:) = kpoints(1:2,:)*0.3
 
      data klabel     /'L','A','H'/
   
@@ -97,6 +100,10 @@
 	B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
      B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 
+         !B along X-axis
+!     B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
+!     B_sigma(2,:) = [dcmplx(Bx,0d0) ,  dcmplx(0d0,0d0)]
+
 	B_pt=0d0
 	do i=1,nb
 		do j=1,nb
@@ -119,7 +126,10 @@
      ! enddo
 !---- Fourier transform H(R) to H(k)
     ene=0d0
+    count = 0
     do k=1,nk
+     count = count + 1
+     print*, count,"/",nk
        HK=(0d0,0d0)
        do j=1,nr
           phase=0.0d0
@@ -133,7 +143,7 @@
        enddo
 	   HK=HK+B_pt
        call zheev('V','U',nb,HK,nb,ene(:,k),work,lwork,rwork,info) 
-	   print *, ene(:,k)
+	!    print *, ene(:,k)
     enddo
 
 !---Fermi level:
@@ -145,13 +155,12 @@
 
     deallocate(HK,work)
     
-    do i=1,nb
-       do k=1,nk-1
-         write(100,'(5(x,f12.6))') xk(k), ene(i,k) 
-       enddo
-         write(100,*)
-         write(100,*)
-    enddo
+    
+     do k=1,nk-1
+         write(100,'(5(x,f12.6))') xk(k), ene(11:14,k) 
+     enddo
+     write(100,*)
+     write(100,*)
     call write_plt(nkpath,xkl,klabel,ef,Bx)
     stop
 333 write(*,'(3a)')'ERROR: input file "',trim(adjustl(nnkp)),' not found'
@@ -171,10 +180,10 @@
           write(99,'(a,f12.8)')'ef=',ef
           write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -0.12 : 0.12]'
           write(99,'(a)') &
-               'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 0.5 size 5.00in, 5.00in'
-          write(99,'(a,f4.2,a)')'set output "band.pdf"'
+               'set terminal pngcairo enhanced font "DejaVu,30" fontscale 1 size 2000,2000 #transparent'
+          write(99,'(a,f4.2,a)')'set output "band.png"'
           write(99, '(a,f12.3,a)') 'set title "B =',Bx,'T (along y-axis)"'
-          write(99,'(17(a,/),a)') &
+          write(99,'(28(a,/),a)') &
                'set border',&
                'set xtics',&
                'set ytics',&
@@ -189,9 +198,20 @@
                'set parametric',&
                'set trange [-10:10]',&
                'set multiplot',&
-			   'set arrow from 0,-0.4 to 0, 0.4 nohead lc rgb "red"',&
-                  'set arrow from -0.12,0 to 0.12, 0  nohead lc rgb "red"',&
-               'plot "band.dat" u 1:($2-ef) with l lt 1 lw 1 lc rgb "black"',&
+			   'set arrow from 0,-0.4 to 0, 0.4 nohead lc rgb "black"',&
+                  '#set arrow from -0.12,0 to 0.12, 0  nohead lc rgb "red"',&
+               'set style line 2 lt 2 dt 2 lw 5',&
+               'k1 = 0.0147',&
+               'k2 = -0.0095',&
+               'k1=k2=0',&
+               'plot "band.dat" using 1:($1 <= k1 ? $2-ef : 1/0) with l ls 2 lc rgb "light-red", \',&
+                  '"band.dat" using 1:($1  > k1 ? $2-ef : 1/0) with l ls 2 lc rgb "royalblue" ,\',&
+                  '"band.dat" using 1:($1 <= k1 ? $3-ef : 1/0) with l ls 2 lc rgb "royalblue", \',&
+                  '"band.dat" using 1:($1  > k1 ? $3-ef : 1/0) with l ls 2 lc rgb "light-red" ,\',&
+                  '"band.dat" using 1:($1 <= k2 ? $4-ef : 1/0) with l ls 2 lc rgb "royalblue", \',&
+                  '"band.dat" using 1:($1  > k2 ? $4-ef : 1/0) with l ls 2 lc rgb "light-red", \',&
+                  '"band.dat" using 1:($1 <= k2 ? $5-ef : 1/0) with l ls 2 lc rgb "light-red", \',&
+                  '"band.dat" using 1:($1  > k2 ? $5-ef : 1/0) with l ls 2 lc rgb "royalblue" ',&
                'unset multiplot'
      
          end subroutine write_plt
