@@ -30,3 +30,5 @@ fermi_surface_normal.ai
 fermi_surface.dx
 cube_iter_mpi
 fermi_surface.dx
+testmod.f90
+testmod

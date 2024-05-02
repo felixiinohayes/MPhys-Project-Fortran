@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta1=2,eta2=0.03,TOL=0.0001,Bx=0.08
-    integer*8,parameter::nblocks=4,matsize=(nblocks)**3,maxiter=3,ishift=1,mode=1,eres=200
+    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=200
     integer nb
     
 end module parameters
@@ -193,75 +193,75 @@ Program Projected_band_structure
         !print*, v(1,:)
     endif
 
-    ! deallocate(RESID,WORKD,WORKL,RWORK)
-    ! deallocate(Z,WORKEV)
+    deallocate(RESID,WORKD,WORKL,RWORK)
+    deallocate(Z,WORKEV)
 
 
 !-------Header File
-    ! if(myid.eq.0) then
-    !     write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nblocks,nblocks,nblocks
-    !     write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
-    !     write(100, '(a,3(1x,f12.8))') 'delta',0d0,0d0,1d0
-    !     write(100, '(a,3(1x,f12.8))') 'delta',0d0,1d0,0d0
-    !     write(100, '(a,3(1x,f12.6))') 'delta',1d0,0d0,0d0
-    !     write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nblocks,nblocks,nblocks
+    if(myid.eq.0) then
+        write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nblocks,nblocks,nblocks
+        write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
+        write(100, '(a,3(1x,f12.8))') 'delta',0d0,0d0,1d0
+        write(100, '(a,3(1x,f12.8))') 'delta',0d0,1d0,0d0
+        write(100, '(a,3(1x,f12.6))') 'delta',1d0,0d0,0d0
+        write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nblocks,nblocks,nblocks
 
-    !     ! allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
+        ! allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
 
-    ! !------Computes total DOS for each Z layer
+    !------Computes total DOS for each Z layer
 
-    !     allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
+        allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
 
-    !     do j=1,matsize
-    !     !------ Indices for blocks in eigenvector
-    !         r3 = ((j-1)/nblocks**2)
-    !         r2 = mod((j-1)/nblocks,3)
-    !         r1 = mod((j-1),3)
+        do j=1,matsize
+        !------ Indices for blocks in eigenvector
+            r3 = ((j-1)/nblocks**2)
+            r2 = mod((j-1)/nblocks,3)
+            r1 = mod((j-1),3)
 
-    !         vec_ind(j,1) = r1
-    !         vec_ind(j,2) = r2
-    !         vec_ind(j,3) = r3
-    !     enddo
-    !     ! print *, d
+            vec_ind(j,1) = r1
+            vec_ind(j,2) = r2
+            vec_ind(j,3) = r3
+        enddo
+        ! print *, d
 
-    !     count = 0 
-    !     do ie=1,eres
-    !         count = count + 1
-    !         print*, ie, eres
+        count = 0 
+        do ie=1,eres
+            count = count + 1
+            print*, ie, eres
 
-    !         write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
-    !                                 ' item', matsize, ' data follows'
-    !         !----Spectral DOS
-    !         do j=0,matsize-1
-    !             a_spec = 0d0
-    !             do i=1,N
-    !                 p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
+            write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
+                                    ' item', matsize, ' data follows'
+            !----Spectral DOS
+            do j=0,matsize-1
+                a_spec = 0d0
+                do i=1,N
+                    p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
 
-    !                 factor = ((epoints(ie)- d(i)))/eta1
-    !                 ! if(ie==1)print *, epoints(ie)-d(i)
-    !                 ! if(ie==1)print*, p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
+                    factor = ((epoints(ie)- d(i)))/eta1
+                    ! if(ie==1)print *, epoints(ie)-d(i)
+                    ! if(ie==1)print*, p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
 
-    !                 a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta1**2)
-    !             enddo
-    !             write(100, '(3(1x,f12.10))') a_spec
-    !         enddo
-    !         write(100, '(a)') 'attribute "dep" string "positions"' 
-    !     enddo
+                    a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta1**2)
+                enddo
+                write(100, '(3(1x,f12.10))') a_spec
+            enddo
+            write(100, '(a)') 'attribute "dep" string "positions"' 
+        enddo
 
-    !     do i=0,eres-1
-    !         write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-    !         'object',eres+3+i,' class field', &
-    !         'component "positions" value 1', &
-    !         'component "connections" value 2', &
-    !         'component "data" value ',3+i
-    !     enddo
-    !     write(100, '(a)') 'object "series" class series'
-    !     do i=0,eres-1
-    !         write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
-    !     enddo
+        do i=0,eres-1
+            write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
+            'object',eres+3+i,' class field', &
+            'component "positions" value 1', &
+            'component "connections" value 2', &
+            'component "data" value ',3+i
+        enddo
+        write(100, '(a)') 'object "series" class series'
+        do i=0,eres-1
+            write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
+        enddo
 
-    !     write(100, '(A)') 'end'
-    ! endif
+        write(100, '(A)') 'end'
+    endif
 !
     call MPI_FINALIZE(IERR)
 
@@ -342,69 +342,66 @@ Program Projected_band_structure
                 enddo
             enddo
 
-            ! do i=1,nprocs 
-            !     send = mod(myid+i,nprocs)
-            !     recv = mod(myid-i,nprocs)
+            do i=1,nprocs 
+                send = modulo(myid+i,nprocs)
+                recv = modulo(myid-i,nprocs)
 
 
-            !     npmin_t=1+(send)*nloc
-            !     npmax_t=(send+1)*nloc
-            !     len_t = (min(npmax_t,N3)-npmin_t+1)*nb
+                npmin_t=1+(send)*nloc
+                npmax_t=(send+1)*nloc
+                len_t = (min(npmax_t,N3)-npmin_t+1)*nb
 
-            !     print*,recv,myid,send
-            !     ! print*,npmin_t,npmax_t
+                ! print*,recv,myid,send
 
-            !     ! if(myid.eq.(i-1)) print*,len_t
-            !     ! if(myid.eq.(i)) print*,leng
-
-
-            !     call mpi_sendrecv(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
-            !                         send,send, mv_buf,leng,MPI_DOUBLE_COMPLEX,recv,recv,comm,status)
+                call mpi_sendrecv(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
+                                    send,0, mv_buf,leng,MPI_DOUBLE_COMPLEX,recv,0,comm,status)
                 
-            !     print*, 'Processor:',myid,'sent to',send
-            !     print*, 'Processor:',myid,'recieved from',recv
-            !     ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
-            !     !                 myid +i, myid+ i ,comm, ierr)
-            !     ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
-            !     !                 myid -i, myid -i ,ierr)
-            !     call mpi_barrier(comm)
-            !     tv_out = tv_out + mv_buf
-            ! enddo
+                ! print*, 'Processor:',myid,'sent to',send
+                ! print*, 'Processor:',myid,'recieved from',recv
+                ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
+                !                 myid +i, myid+ i ,comm, ierr)
+                ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
+                !                 myid -i, myid -i ,ierr)
+                ! call mpi_barrier(comm)
+                tv_out = tv_out + mv_buf
+            enddo
 
-            ! vec_out = tv_out
+            vec_out = tv_out
+
+            call mpi_barrier(comm)
 
 
 
-                do i=1,nprocs
+                ! do i=1,nprocs
 
-                    pindex = mod((i+nprocs-3),nprocs)
-                    index  = mod((i+nprocs-2),nprocs)
-                    nindex = mod((i+nprocs-1),nprocs) 
+                !     pindex = mod((i+nprocs-3),nprocs)
+                !     index  = mod((i+nprocs-2),nprocs)
+                !     nindex = mod((i+nprocs-1),nprocs) 
 
-                    print*,pindex,index,nindex
+                !     print*,pindex,index,nindex
 
-                    npmin_t=1+(i-1)*nloc
-                    npmax_t=(i)*nloc
-                    len_t = (min(npmax_t,N3)-npmin_t+1)*nb
+                !     npmin_t=1+(i-1)*nloc
+                !     npmax_t=(i)*nloc
+                !     len_t = (min(npmax_t,N3)-npmin_t+1)*nb
 
-                    if(myid.ne.index) then
-                        send = mod(next+(i-1),nprocs)
+                !     if(myid.ne.index) then
+                !         send = mod(next+(i-1),nprocs)
 
-                        if(myid.eq.pindex.and.i.gt.1) send = send + 1
+                !         if(myid.eq.pindex.and.i.gt.1) send = send + 1
 
-                        ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
-                        !                 send,send,comm, ierr)
-                        ! print*, 'Processor:',myid,'sent to',send
-                    endif
-                    if(myid.ne.nindex) then 
-                        ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
-                        !                  (prev-(i-1)), (prev-(i-1)),comm, ierr)
-                        ! tv_out = tv_out + mv_buf
-                        ! print*, 'Processor:',myid,'recv from ',(prev-(i-1))
-                    endif
-                enddo
+                !         ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
+                !         !                 send,send,comm, ierr)
+                !         ! print*, 'Processor:',myid,'sent to',send
+                !     endif
+                !     if(myid.ne.nindex) then 
+                !         ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
+                !         !                  (prev-(i-1)), (prev-(i-1)),comm, ierr)
+                !         ! tv_out = tv_out + mv_buf
+                !         ! print*, 'Processor:',myid,'recv from ',(prev-(i-1))
+                !     endif
+                ! enddo
 
-                print*,''
+                ! print*,''
 
 
         end subroutine matmul_
