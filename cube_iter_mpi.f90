@@ -3,9 +3,9 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
-    character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta1=2,eta2=0.03,TOL=0.0001,Bx=0.08
-    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=200
+    character*2:: which='LM'
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,eta1=2,eta2=0.03,TOL=0.0001,Bx=0.00
+    integer*8,parameter::nblocks=4,matsize=(nblocks)**3,maxiter=10000,ishift=1,mode=1,eres=200
     integer nb
     
 end module parameters
@@ -18,9 +18,9 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),pindex,index,nindex,interp_size
-    integer*4 IPARAM(11),IPNTR(14),iter,IDO,LDV,LDZ
+    integer*4 IPARAM(11),IPNTR(14),IDO,LDV,LDZ
     integer*4 comm,myid,nprocs,rc,ierr
-    integer*8 LWORKL,NEV,NCV,N,nloc,npmin,npmax,leng
+    integer*8 LWORKL,NEV,NCV,N,nloc,npmin,npmax,leng,iter
     real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,epoints(eres),a_spec,factor,p_l,de,dos
     real*8,allocatable:: rvec(:,:),rwork(:)
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
@@ -132,8 +132,8 @@ Program Projected_band_structure
     call MPI_COMM_SIZE( comm, nprocs, ierr )
  
     N=nb*matsize
-    NEV=N-2
-    NCV=NEV+2
+    NEV=100
+    NCV=NEV+20
 
     nloc = (N/(nprocs*nb))
     if (mod(N,nprocs).ne.0) nloc= nloc +1 
@@ -144,7 +144,7 @@ Program Projected_band_structure
 
     ! print*,'npmin:',npmin,'npmax:',npmax,'leng:',leng,'myid:',myid
 
-    allocate(RESID(N),V(N,NCV),WORKD(leng*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
+    allocate(RESID(N),V(N,NCV),WORKD(leng*4),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),Z(N,NEV),WORKEV(2*NCV))
 
 
@@ -166,14 +166,16 @@ Program Projected_band_structure
         iter=iter+1
         if(myid.eq.0) print *, iter
         call pznaupd(comm,IDO,bmat,leng,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
+        if(myid.eq.0) print *, iter
+
 
         if(IDO==99) exit
         
         if(IDO==-1 .or. IDO==1) then
             !WORKD(IPNTR(2):IPNTR(2)+N-1) = matmul(super_H,WORKD(IPNTR(1):IPNTR(1)+N-1))
             ! call matmul_chunk(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+nloc-1), WORKD(IPNTR(2):IPNTR(2)+nloc-1),nloc)
-            call matmul_(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+leng-1), WORKD(IPNTR(2):IPNTR(2)+leng-1),nloc,nblocks,N,npmin,npmax,leng)
-            ! print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
+            call matmul_(comm,interp_Hr, WORKD(IPNTR(1)), WORKD(IPNTR(2)),nloc,nblocks,N,npmin,npmax,leng,iter)
+            ! if(myid.eq.0)print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
             continue
         endif
     enddo
@@ -185,7 +187,7 @@ Program Projected_band_structure
         print *, ' '
     else
         rvecmat = .true.
-        if(myid.eq.0)print *, "Finished iterations, calling zneupd..."
+        if(myid.eq.0)print *, "Finished iterations, calling pzneupd..."
         call pzneupd (comm,rvecmat, 'A', select, d, v, ldv, sigma,&
              workev, bmat, leng, which, nev, tol, resid, ncv,&
              v, ldv, iparam, ipntr, workd, workl, lworkl, &
@@ -195,73 +197,77 @@ Program Projected_band_structure
 
     deallocate(RESID,WORKD,WORKL,RWORK)
     deallocate(Z,WORKEV)
+    if(myid.eq.7)print *, real(d(1:nev))
+    do i=1,nev
+        if(myid.eq.0)write(100,*) real(d(i))
+    enddo
 
 
 !-------Header File
-    if(myid.eq.0) then
-        write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nblocks,nblocks,nblocks
-        write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
-        write(100, '(a,3(1x,f12.8))') 'delta',0d0,0d0,1d0
-        write(100, '(a,3(1x,f12.8))') 'delta',0d0,1d0,0d0
-        write(100, '(a,3(1x,f12.6))') 'delta',1d0,0d0,0d0
-        write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nblocks,nblocks,nblocks
+    ! if(myid.eq.0) then
+    !     write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nblocks,nblocks,nblocks
+    !     write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
+    !     write(100, '(a,3(1x,f12.8))') 'delta',0d0,0d0,1d0
+    !     write(100, '(a,3(1x,f12.8))') 'delta',0d0,1d0,0d0
+    !     write(100, '(a,3(1x,f12.6))') 'delta',1d0,0d0,0d0
+    !     write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nblocks,nblocks,nblocks
 
-        ! allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
+    !     ! allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
 
-    !------Computes total DOS for each Z layer
+    ! !------Computes total DOS for each Z layer
 
-        allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
+    !     allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
 
-        do j=1,matsize
-        !------ Indices for blocks in eigenvector
-            r3 = ((j-1)/nblocks**2)
-            r2 = mod((j-1)/nblocks,3)
-            r1 = mod((j-1),3)
+    !     do j=1,matsize
+    !     !------ Indices for blocks in eigenvector
+    !         r3 = ((j-1)/nblocks**2)
+    !         r2 = mod((j-1)/nblocks,3)
+    !         r1 = mod((j-1),3)
 
-            vec_ind(j,1) = r1
-            vec_ind(j,2) = r2
-            vec_ind(j,3) = r3
-        enddo
-        ! print *, d
+    !         vec_ind(j,1) = r1
+    !         vec_ind(j,2) = r2
+    !         vec_ind(j,3) = r3
+    !     enddo
+    !     ! print *, d
 
-        count = 0 
-        do ie=1,eres
-            count = count + 1
-            print*, ie, eres
+    !     count = 0 
+    !     do ie=1,eres
+    !         count = count + 1
+    !         print*, ie, eres
 
-            write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
-                                    ' item', matsize, ' data follows'
-            !----Spectral DOS
-            do j=0,matsize-1
-                a_spec = 0d0
-                do i=1,N
-                    p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
+    !         write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
+    !                                 ' item', matsize, ' data follows'
+    !         !----Spectral DOS
+    !         do j=0,matsize-1
+    !             a_spec = 0d0
+    !             do i=1,N
+    !                 p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
 
-                    factor = ((epoints(ie)- d(i)))/eta1
-                    ! if(ie==1)print *, epoints(ie)-d(i)
-                    ! if(ie==1)print*, p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
+    !                 factor = ((epoints(ie)- d(i)))/eta1
+    !                 ! if(ie==1)print *, epoints(ie)-d(i)
+    !                 ! if(ie==1)print*, p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
 
-                    a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta1**2)
-                enddo
-                write(100, '(3(1x,f12.10))') a_spec
-            enddo
-            write(100, '(a)') 'attribute "dep" string "positions"' 
-        enddo
+    !                 a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta1**2)
+    !             enddo
+    !             write(100, '(3(1x,f12.10))') a_spec
+    !         enddo
+    !         write(100, '(a)') 'attribute "dep" string "positions"' 
+    !     enddo
 
-        do i=0,eres-1
-            write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-            'object',eres+3+i,' class field', &
-            'component "positions" value 1', &
-            'component "connections" value 2', &
-            'component "data" value ',3+i
-        enddo
-        write(100, '(a)') 'object "series" class series'
-        do i=0,eres-1
-            write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
-        enddo
+    !     do i=0,eres-1
+    !         write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
+    !         'object',eres+3+i,' class field', &
+    !         'component "positions" value 1', &
+    !         'component "connections" value 2', &
+    !         'component "data" value ',3+i
+    !     enddo
+    !     write(100, '(a)') 'object "series" class series'
+    !     do i=0,eres-1
+    !         write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
+    !     enddo
 
-        write(100, '(A)') 'end'
-    endif
+    !     write(100, '(A)') 'end'
+    ! endif
 !
     call MPI_FINALIZE(IERR)
 
@@ -272,6 +278,72 @@ Program Projected_band_structure
     ! print*, 'Duration: ', end_second- start_second
 
     contains
+
+        subroutine matmul_(comm,interp_Hr,vec_in,vec_out,nloc,nblocks,N,npmin,npmax,leng,iter)  
+            integer*8,intent(in)::N,nloc,nblocks,npmin,npmax,leng,iter
+            integer*8 npmin_t,npmax_t,len_t,next,prev,send,recv,status(MPI_STATUS_SIZE)
+            complex*16,dimension(:,:,:,:,:),allocatable:: interp_Hr
+            complex*16,intent(in):: vec_in(leng)
+            complex*16,intent(out)::vec_out(leng)
+            complex*16::tempvec(N)
+            complex*16 mv_buf(leng),tv_out(leng)
+            integer*4::icol,irow,r1,r2,r3,f1,f2,f3,N2,N3,count,count1,comm
+
+            call MPI_COMM_RANK( comm, myid, ierr )
+            call MPI_COMM_SIZE( comm, nprocs, ierr )
+
+            N3 = nblocks**3
+            N2 = nblocks**2
+            tempvec=0d0
+            tv_out=0d0
+
+            next = myid + 1 
+            prev = myid - 1
+            if(iter.eq.1)print*,myid,vec_in(leng),npmin,min(npmax,N3)
+
+            do irow = 1,N3
+                count1=0
+                f3 = (irow-1)/(N2)
+                f2 = mod((irow-1)/nblocks,nblocks)
+                f1 = mod(irow-1,nblocks)
+                do icol = npmin,min(npmax,N3)
+                    count1=count1+1
+                    r3 = ((icol-1)/N2)- f3
+                    r2 = modulo((icol-1)/nblocks,nblocks) - f2
+                    r1 = modulo(icol-1,nblocks) - f1
+                    if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
+                        tempvec(1+(irow-1)*nb : nb*(irow)) = tempvec(1+(irow-1)*nb : nb*(irow)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in(1+(count1-1)*nb : nb*(count1)))
+                        ! if(myid.eq.0)print *, "input: ", vec_in(1), "output", matmul(interp_Hr(:,:,r1,r2,r3), vec_in( 1+(count1-1)*nb : nb*(count1) ))
+
+                    endif
+                    ! if(myid.eq.2)print *,  irow,icol, r1,r2,r3,interp_Hr(1,1,r1,r2,r3),vec_in(nb*count1),count1
+                enddo
+            enddo
+            ! if(iter.eq.6 .and. myid.eq.1)print *, tempvec
+
+            ! if(myid.eq.0)print *, N,N3
+            do i=1,nprocs 
+                send = modulo(myid+i,nprocs)
+                recv = modulo(myid-i,nprocs)
+
+                npmin_t=1+(send)*nloc
+                npmax_t=(send+1)*nloc
+                len_t = (min(npmax_t,N3)-npmin_t+1)*nb
+
+                call mpi_sendrecv(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
+                                    send,0, mv_buf,leng,MPI_DOUBLE_COMPLEX,recv,0,comm,status)
+                ! if(iter.eq.500)print *, i,myid,send,recv,mv_buf(1)
+                
+                tv_out = tv_out + mv_buf
+                ! call mpi_barrier(comm)
+            enddo
+
+            vec_out(1:leng) = tv_out
+            ! if(myid.eq.3 .and. iter.eq.1)print *, "input: ", vec_in(1), "output", tempvec(1)
+
+            ! call mpi_barrier(comm)
+
+        end subroutine matmul_
 
         subroutine matmul_chunk(interp_Hr,vec_in,vec_out,N)  
             integer*4,intent(in)::N
@@ -306,106 +378,6 @@ Program Projected_band_structure
             vec_out=tempvec
 
         end subroutine matmul_chunk
-
-        subroutine matmul_(interp_Hr,vec_in,vec_out,nloc,nblocks,N,npmin,npmax,leng)  
-            integer*8,intent(in)::N,nloc,nblocks,npmin,npmax,leng
-            integer*8 npmin_t,npmax_t,len_t,next,prev,send,recv,status(MPI_STATUS_SIZE)
-            complex*16,dimension(18,18,-nblocks:nblocks,-nblocks:nblocks,-nblocks:nblocks), intent(in):: interp_Hr
-            complex*16,intent(in):: vec_in(leng)
-            complex*16,intent(out)::vec_out(leng)
-            complex*16::tempvec(N)
-            complex*16 mv_buf(leng),tv_out(leng)
-            integer*4::icol,irow,r1,r2,r3,f1,f2,f3,N2,N3,count,count1
-
-            call MPI_COMM_RANK( comm, myid, ierr )
-            call MPI_COMM_SIZE( comm, nprocs, ierr )
-
-            N3 = nblocks**3
-            N2 = nblocks**2
-            tempvec=0d0
-            count1 =0
-
-            next = myid + 1 
-            prev = myid - 1
-
-            do icol = npmin,min(npmax,N3)
-                f3 = (icol-1)/(N2)
-                f2 = mod((icol-1)/nblocks,3)
-                f1 = mod(icol-1,3)
-                do irow = 1,N3
-                    r3 = ((irow-1)/N2)- f3
-                    r2 = mod((irow-1)/nblocks,3) - f2
-                    r1 = mod(irow-1,3) - f1
-                    if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
-                        tempvec(1+(irow-1)*nb : nb*(irow)) = tempvec(1+(irow-1)*nb : nb*(irow)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in( 1+(icol-1)*nb : nb*(icol) ))
-                    endif
-                enddo
-            enddo
-
-            do i=1,nprocs 
-                send = modulo(myid+i,nprocs)
-                recv = modulo(myid-i,nprocs)
-
-
-                npmin_t=1+(send)*nloc
-                npmax_t=(send+1)*nloc
-                len_t = (min(npmax_t,N3)-npmin_t+1)*nb
-
-                ! print*,recv,myid,send
-
-                call mpi_sendrecv(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
-                                    send,0, mv_buf,leng,MPI_DOUBLE_COMPLEX,recv,0,comm,status)
-                
-                ! print*, 'Processor:',myid,'sent to',send
-                ! print*, 'Processor:',myid,'recieved from',recv
-                ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
-                !                 myid +i, myid+ i ,comm, ierr)
-                ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
-                !                 myid -i, myid -i ,ierr)
-                ! call mpi_barrier(comm)
-                tv_out = tv_out + mv_buf
-            enddo
-
-            vec_out = tv_out
-
-            call mpi_barrier(comm)
-
-
-
-                ! do i=1,nprocs
-
-                !     pindex = mod((i+nprocs-3),nprocs)
-                !     index  = mod((i+nprocs-2),nprocs)
-                !     nindex = mod((i+nprocs-1),nprocs) 
-
-                !     print*,pindex,index,nindex
-
-                !     npmin_t=1+(i-1)*nloc
-                !     npmax_t=(i)*nloc
-                !     len_t = (min(npmax_t,N3)-npmin_t+1)*nb
-
-                !     if(myid.ne.index) then
-                !         send = mod(next+(i-1),nprocs)
-
-                !         if(myid.eq.pindex.and.i.gt.1) send = send + 1
-
-                !         ! call mpi_send(tempvec(1+(npmin_t-1)*nb : nb*min(npmax_t,N3)),len_t,MPI_DOUBLE_COMPLEX,&
-                !         !                 send,send,comm, ierr)
-                !         ! print*, 'Processor:',myid,'sent to',send
-                !     endif
-                !     if(myid.ne.nindex) then 
-                !         ! call mpi_recv(mv_buf,leng,MPI_DOUBLE_COMPLEX,&
-                !         !                  (prev-(i-1)), (prev-(i-1)),comm, ierr)
-                !         ! tv_out = tv_out + mv_buf
-                !         ! print*, 'Processor:',myid,'recv from ',(prev-(i-1))
-                !     endif
-                ! enddo
-
-                ! print*,''
-
-
-        end subroutine matmul_
-
 end Program Projected_band_structure
 
             ! do i=1,nprocs
