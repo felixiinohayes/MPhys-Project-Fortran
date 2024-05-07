@@ -2,8 +2,9 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.7,emax=6.3,bfactor=0.0022
-    integer,parameter::nkpath=3,np=170,eres=300,nblocks=60,nr3=11,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.002
+    ! real*8,parameter::emin=6.04,emax=6.13
+    integer,parameter::nkpath=3,np=150,eres=300,nblocks=60,nr3=11,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -17,7 +18,7 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum
     integer*4 recv(1)
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.07d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.1d0
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:),spectral_A_single(:,:)
@@ -47,7 +48,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='super_H_B07_zoom.dx')
+    open(100,file='spectral_B10Z_final.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -186,7 +187,6 @@ Program Projected_band_structure
                     enddo
                     Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
                 enddo
-                Hk = Hk + B_pt
                 Hkr3(:,:,ir3) = Hk
             enddo
 
@@ -194,7 +194,11 @@ Program Projected_band_structure
                 do j=0,nblocks-1
                     r3 = i-j
                     if (r3<=5 .AND. r3>=-5) then
-                        super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
+                        if(r3.eq.0 .or. r3.eq.nblocks-1) then
+                            super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2) + B_pt
+                        else
+                            super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
+                        endif
                     else
                         super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
                     endif
