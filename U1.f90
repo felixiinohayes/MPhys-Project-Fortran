@@ -5,7 +5,7 @@ module parameters
     ! real*8,parameter::kxmax=0.12,kymax=0.12,kzmax=0.08,a=0.77966  !For all the monopoles
 	! real*8,parameter::kxmax=0.065,kymax=0.02,kzmax=0.065,a=0.791	!For two monopoles
 	real*8,parameter::kxmax=0.00035,kymax=0.00035,kzmax=0.00035,a=0.791	!For a single monopole
-    integer,parameter::xmeshres=10,ymeshres=10,zmeshres=10,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),nkp3=nkxpoints*nkypoints*nkzpoints
+    integer,parameter::xmeshres=12,ymeshres=12,zmeshres=12,nkxpoints=(2*xmeshres+1),nkypoints=(2*ymeshres+1),nkzpoints=(2*zmeshres+1),nkp3=nkxpoints*nkypoints*nkzpoints
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -83,7 +83,7 @@ Program Projected_band_structure
 !-----BTPs:
 
 	node = 1
-	pair = 1
+	pair = 3
 
 	offset(:,1,1) = (/-0.017659606952654991,0.046513917396043679,0.43965460613976798/) !+ve
 	offset(:,2,1) = (/ 0.017665681958398235,0.046638430945586576,0.47514974714462382/) !-ve
@@ -99,7 +99,7 @@ Program Projected_band_structure
 
 	offset(:,1,5) = (/-0.00879804124970561,0.04855142510428899,0.44745395357167184/)  !Dirac Point
 	offset(:,2,5) = (/0.0,0.0,0.5*0.9144694/)  !Dirac Point
-	offset(:,3,5) = (/0.0,0.0465,0.5*0.9144694/) ! 2 monopoles
+	offset(:,3,5) = (/0.0,0.02,0.0/) ! 2 monopoles
 	
 
 
@@ -234,13 +234,14 @@ Program Projected_band_structure
 				! div =   ((curvature(1,1,ikx+1,iky  ,ikz  )-curvature(1,1,ikx,iky,ikz))/dx + &
 				! 		 (curvature(2,1,ikx  ,iky+1,ikz  )-curvature(2,1,ikx,iky,ikz))/dy + &
 				! 		 (curvature(3,1,ikx  ,iky  ,ikz+1)-curvature(3,1,ikx,iky,ikz))/dz)
-				
-				chern = chern + (1/(2*pi2*dcmplx(0d0,1d0)))*sum(curvature(:,1,ikx  ,iky  ,ikz))
-				if(ikx.eq.1) then
-					! print*,curvature(:,1,ikx  ,iky  ,ikz)
-					print*,' '
-					print*,'Chern:', chern
+				if(ikx.eq.1 .or. ikx.eq.nkxpoints-3) then
+					chern = chern + (1/((2*pi2)*dcmplx(1d0,0d0)))*sqrt(dot_product(curvature(:,1,ikx,iky,ikz),curvature(:,1,ikx,iky,ikz)))
+				else if (iky.eq.1 .or. iky.eq.nkypoints-3) then
+					chern = chern + (1/((2*pi2)*dcmplx(1d0,0d0)))*sqrt(dot_product(curvature(:,1,ikx,iky,ikz),curvature(:,1,ikx,iky,ikz)))
+				else if (iky.eq.1 .or. iky.eq.nkypoints-3) then
+					chern = chern + (1/((2*pi2)*dcmplx(1d0,0d0)))*sqrt(dot_product(curvature(:,1,ikx,iky,ikz),curvature(:,1,ikx,iky,ikz)))
 				endif
+				print*, dot_product(curvature(:,1,ikx,iky,ikz),curvature(:,1,ikx,iky,ikz))
 
 			enddo	
 		enddo
