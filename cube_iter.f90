@@ -3,9 +3,9 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
-    character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.6,emax=6.15,eta1=2,eta2=0.03,TOL=0.0001,Bx=0.08
-    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=500
+    character*2:: which='LM'
+    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.2,eta1=0.005,eta2=0.0005,TOL=0.0001,Bx=0.00
+    integer*8,parameter::nblocks=2,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=1000
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -21,7 +21,7 @@ Program Projected_band_structure
     integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size
     integer*4 IPARAM(11),IPNTR(14),iter,IDO,LDV,LDZ,N
     integer*8 LWORKL,NEV,NCV
-    real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,epoints(eres),a_spec,factor,p_l,de,dos
+    real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,epoints(eres),a_spec,factor,p_l,de,dos(nblocks)
     real*8,allocatable:: rvec(:,:),rwork(:)
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),surface_vec(:),B_pt(:,:)
@@ -52,8 +52,8 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
 
-    open(100,file='DOS_cube_B0125Z_7.dx')
-    open(200,file='ene_total.dat')
+    open(100,file='test.dx')
+    open(200,file='DOS_layer_eigen.dat')
     open(300,file='ene_surface.dat')
 
 !------read H(R)
@@ -203,10 +203,47 @@ Program Projected_band_structure
         vec_ind(j,2) = r2
         vec_ind(j,3) = r3
     enddo
-    ! print *, d
+    print *, real(d)
 
-    count = 0 
-    do ie=1,eres
+    ! count = 0 
+    ! do ie=1,eres
+    !     count = count + 1
+    !     print*, ie, eres
+
+    !     write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
+    !                             ' item', matsize, ' data follows'
+    !     !----Spectral DOS
+    !     do j=0,matsize-1
+    !         a_spec = 0d0
+    !         do i=1,N
+    !             p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
+
+    !             factor = ((epoints(ie)- d(i)))/eta1
+    !             ! if(ie==1)print *, epoints(ie)-d(i)
+    !             ! if(ie==1)print*, p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
+
+    !             a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta1**2)
+    !         enddo
+    !         write(100, '(3(1x,f15.10))') a_spec
+    !     enddo
+    !     write(100, '(a)') 'attribute "dep" string "positions"' 
+
+    !     do j=0,nblocks-1
+    !         dos(j+1) = 0d0
+    !         do i=1,N
+    !             p_l = dot_product(v( 1+(j*(nblocks**2)*nb) : (j+1)*(nblocks**2)*nb, i), v( 1+(j*(nblocks**2)*nb) : (j+1)*(nblocks**2)*nb, i))
+    !             factor = ((epoints(ie)- d(i)))/eta2
+    !             ! if(ie==1)print *, epoints(ie)-d(i)
+    !             ! if(ie==1)print*, p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
+
+    !             dos(j+1) = dos(j+1) + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta2**2)
+    !         enddo
+    !     enddo
+    !     write(200, '(7(1x,f15.10))') real(epoints(ie)),dos
+    ! enddo
+
+    count=0
+    do i=1,NEV
         count = count + 1
         print*, ie, eres
 
@@ -214,53 +251,16 @@ Program Projected_band_structure
                                 ' item', matsize, ' data follows'
         !----Spectral DOS
         do j=0,matsize-1
-            a_spec = 0d0
-            do i=1,N
-                p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
-
-                factor = ((epoints(ie)- d(i)))/eta1
-                ! if(ie==1)print *, epoints(ie)-d(i)
-                ! if(ie==1)print*, p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta**2)
-
-                a_spec = a_spec + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta1**2)
-            enddo
-            write(100, '(3(1x,f12.10))') a_spec
+            p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
+            write(100, '(3(1x,f15.10))') p_l
         enddo
         write(100, '(a)') 'attribute "dep" string "positions"' 
+
+        do j=0,nblocks-1
+            p_l = dot_product(v( 1+(j*(nblocks**2)*nb) : (j+1)*(nblocks**2)*nb, i), v( 1+(j*(nblocks**2)*nb) : (j+1)*(nblocks**2)*nb, i))
+        enddo
+        write(200, '(7(1x,f15.10))') real(d(i)),p_l
     enddo
-    ! count = 0 
-    ! do ie=1,N
-    !     count = count + 1
-
-    !     write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
-    !                             ' item', matsize, ' data follows'
-    !     !----Spectral DOS
-    !     do j=0,matsize-1
-    !         p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, ie), v( 1+(j*nb) : (j+1)*nb, ie))
-
-    !         write(100, '(3(1x,f12.10))') p_l
-    !     enddo
-    !     print*, real(v(1,ie))
-    !     write(100, '(a)') 'attribute "dep" string "positions"' 
-    ! enddo
-
-    ! do j=1,nblocks
-    !     do ie=1,eres
-    !         dos=0d0
-    !         do i=1,N
-    !             p_l = dot_product(v(1+j*(nblocks**2)*nb:1+j*((nblocks**2)+1)*nb,i),v(1+j*(nblocks**2)*nb:1+j*((nblocks**2)+1)*nb,i))
-
-    !             factor = ((epoints(ie)- d(i)))/eta2
-    !             ! if(ie==1)print *, epoints(ie)-d(i)
-
-    !             dos = dos + p_l* (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta2**2)
-    !         enddo
-    !         write(200, '(3(i8,1x,f12.6,1x,f12.10))') j,epoints(ie),dos
-    !     enddo
-    ! enddo
-            
-
-
 
 !------Computes surface DOS for each Z layer
     ! do i=1,N
@@ -287,28 +287,29 @@ Program Projected_band_structure
     !     enddo 
     ! enddo
 
-    do i=0,eres-1
-        write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-        'object',eres+3+i,' class field', &
-        'component "positions" value 1', &
-        'component "connections" value 2', &
-        'component "data" value ',3+i
-    enddo
-    write(100, '(a)') 'object "series" class series'
-    do i=0,eres-1
-        write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
-    enddo
-    ! do i=0,N-1
+    ! do i=0,eres-1
     !     write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-    !     'object',N+3+i,' class field', &
+    !     'object',eres+3+i,' class field', &
     !     'component "positions" value 1', &
     !     'component "connections" value 2', &
     !     'component "data" value ',3+i
     ! enddo
     ! write(100, '(a)') 'object "series" class series'
-    ! do i=0,N-1
-    !     write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+N+3), ' position', i
+    ! do i=0,eres-1
+    !     write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
     ! enddo
+
+    do i=0,NEV-1
+        write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
+        'object',NEV+3+i,' class field', &
+        'component "positions" value 1', &
+        'component "connections" value 2', &
+        'component "data" value ',3+i
+    enddo
+    write(100, '(a)') 'object "series" class series'
+    do i=0,NEV-1
+        write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+NEV+3), ' position', i
+    enddo
 
     write(100, '(A)') 'end'
 
