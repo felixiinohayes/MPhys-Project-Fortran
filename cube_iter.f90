@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=0,emin=3.6,emax=4.8,eta1=0.3,TOL=0.0001,Bx=0.0
-    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=70
+    real*8,parameter::ef= 4.18903772,a=0,emin=3.5,emax=4.5,eta1=2,TOL=0.00001,Bx=0.0
+    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=150
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -143,21 +143,44 @@ Program Projected_band_structure
     select=.true.
 
 !----- Lone pair passivation
-    extrarow = dcmplx(0.0d0, 0.0d0)
-    extracol = dcmplx(0.0d0, 0.0d0)
-
-    ! do k = 0, nblocks-1
-    !     do j = 0, nblocks-1
-    !         do i = 0, nblocks-1
-    !             ! Check if the point is on the x-y edges (i.e., at the boundary of the x-y plane)
-    !             if (i == 0 .or. i == nblocks-1 .or. j == 0 .or. j == nblocks-1) then
-    !                 index = i + j*(nblocks) + k*(nblocks)*(nblocks)
-    !                 extrarow(index*nb+1:(index+1)*nb+1) = dcmplx(3d-1, 0.0d0)
-    !                 extracol(index*nb+1:(index+1)*nb+1) = dcmplx(3d-1, 0.0d0)
-    !             endif
-    !         enddo
-    !     enddo
-    ! enddo
+    extrarow = dcmplx(0d0, 0d0)
+    do k = 0, nblocks-1
+        do j = 0, nblocks-1
+            do i = 0, nblocks-1
+                    index = i + j*(nblocks) + k*(nblocks)*(nblocks)
+                ! Check if the point is on the x-y edges (i.e., at the boundary of the x-y plane)
+                if (i == 0) then
+                    ! Passivate Bi with I
+                    ! Using average of contributions from same-spin atom
+                    do l = 0, 2
+                        extrarow(index*nb+4+l) = sum(interp_Hr(4:6, 7+l, -1, 0, 0))/3
+                        extrarow(index*nb+13+l) = sum(interp_Hr(13:15, 16+l, -1, 0, 0))/3
+                    enddo
+                endif
+                if (i == nblocks-1) then
+                    ! Passivate I with Bi
+                    do l = 0, 2
+                        extrarow(index*nb+7+l) = sum(interp_Hr(7:9, 4+l, 1, 0, 0))/3
+                        extrarow(index*nb+16+l) = sum(interp_Hr(16:18, 13+l, 1, 0, 0))/3
+                    enddo
+                endif
+                if (j == 0) then
+                    ! Passivate Bi with Te
+                    do l = 0, 2
+                        extrarow(index*nb+4+l) = sum(interp_Hr(4:6, 1+l, 0, 1, 0))/3
+                        extrarow(index*nb+13+l) = sum(interp_Hr(13:15, 10+l, 0, 1, 0))/3
+                    enddo
+                endif
+                if (j == nblocks-1) then
+                    ! Passivate Te with Bi
+                    do l = 0, 2
+                        extrarow(index*nb+1+l) = sum(interp_Hr(1:3, 4+l, 0, -1, 0))/3
+                        extrarow(index*nb+10+l) = sum(interp_Hr(10:12, 13+l, 0, -1, 0))/3
+                    enddo
+                endif
+            enddo
+        enddo
+    enddo
     ! do i=1,N
     !     if(mod(i,N/matsize)==0) print*, extrarow(i)
     ! enddo
@@ -171,7 +194,7 @@ Program Projected_band_structure
         
         if(IDO==-1 .or. IDO==1) then
             !WORKD(IPNTR(2):IPNTR(2)+N-1) = matmul(super_H,WORKD(IPNTR(1):IPNTR(1)+N-1))
-            call matmul_chunk(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),extrarow,extracol,N)
+            call matmul_chunk(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),extrarow,N)
             ! call matmul_(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),N,nblocks)
             ! print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
             continue
@@ -227,6 +250,7 @@ Program Projected_band_structure
                 p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
                 factor = ((epoints(ie)- d(i)))/eta1
                 a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/sqrt(2*pi2*eta1**2)
+                ! if(ie==1) print *, d(i), p_l, factor, a_spec
             enddo
             write(100, '(3(1x,f12.10))') a_spec
         enddo
@@ -258,13 +282,13 @@ Program Projected_band_structure
     print *, 'End time: ', values_end(5), ':', values_end(6), ':', values_end(7)
 
     contains
-        subroutine matmul_chunk(interp_Hr,vec_in,vec_out,extrarow,extracol,N)  
+        subroutine matmul_chunk(interp_Hr,vec_in,vec_out,extrarow,N)  
             integer*4,intent(in)::N
             complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
             complex*16,intent(in):: vec_in(N*3)
             complex*16,intent(out)::vec_out(N*3)
             complex*16,intent(in)::extrarow(N)
-            complex*16,intent(in)::extracol(N)
+            complex*16 extracol(N)
             complex*16::tempvec(N)
 
             tempvec=0d0
@@ -291,10 +315,12 @@ Program Projected_band_structure
                 enddo
             enddo
 
+            extracol = conjg(extrarow)
             tempvec(N)=dot_product(extrarow, vec_in)
             do i = 1, N-1
                 tempvec(i) = tempvec(i) + extracol(i) * vec_in(N-1)  ! Use the extra column to adjust existing elements
             enddo
+
             vec_out=tempvec
 
         end subroutine matmul_chunk
