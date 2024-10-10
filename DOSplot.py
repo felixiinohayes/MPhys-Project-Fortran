@@ -3,7 +3,7 @@ from mpl_toolkits.mplot3d import axes3d
 from matplotlib.colors import LightSource
 import numpy as np
 
-file = 'ene_total.dat'
+file = 'cube_eigenvalues_7.dat'
 
 # Open the input file in read mode
 with open(file, 'r') as input_file:
@@ -12,7 +12,7 @@ with open(file, 'r') as input_file:
 
 data = []
 bins=180
-histrange=[0,10]
+histrange=[-1,10]
 
 for line in lines:
     data.append(float(line.split()[0]))
@@ -22,6 +22,6 @@ for line in lines:
     #     data.append(val)
 
 fig = plt.figure()
-plt.hist(data,bins,histrange,density=True)
+plt.hist(data,bins,histrange,density=False)
 
 plt.show()

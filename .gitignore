@@ -32,3 +32,10 @@ cube_iter_mpi
 fermi_surface.dx
 testmod.f90
 testmod
+nohup.out
+plot_DOS.py
+btp_2fold.f90
+cube_iter_mpi_shift
+cube_iter_mpi_shift.f90
+.DS_Store
+*.ai
