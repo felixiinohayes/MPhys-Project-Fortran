@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 4.18903772,a=0,emin=3.5,emax=4.5,eta1=2,TOL=0.00001,Bx=0.0
-    integer*8,parameter::nblocks=6,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=150
+    real*8,parameter::ef= 4.18903772,a=0,emin=2.5,emax=6.5,eta1=2,TOL=0.00001,Bx=0.0
+    integer*8,parameter::nblocks=4,matsize=(nblocks)**3,maxiter=100000,ishift=1,mode=1,eres=150
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -25,7 +25,7 @@ Program Projected_band_structure
     real*8,allocatable:: rvec(:,:),rwork(:)
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),surface_vec(:),B_pt(:,:)
-    complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:),extracol(:)
+    complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:,:),extracol(:,:)
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     complex*16 SIGMA,b_sigma(2,2)
     logical:: rvecmat
@@ -121,12 +121,12 @@ Program Projected_band_structure
     enddo
 !------ARPACK
  
-    N=nb*matsize+1
+    N=nb*matsize+18
     NEV=N-2
     NCV=NEV+2
     allocate(RESID(N),V(N,NCV),WORKD(N*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),Z(N,NEV),WORKEV(2*NCV))
-    allocate(extracol(N),extrarow(N))
+    allocate(extracol(N,18),extrarow(18,N))
 
     iparam(1)=ishift
     iparam(3)=maxiter
@@ -152,35 +152,73 @@ Program Projected_band_structure
                 if (i == 0) then
                     ! Passivate Bi with I
                     ! Using average of contributions from same-spin atom
-                    do l = 0, 2
-                        extrarow(index*nb+4+l) = sum(interp_Hr(4:6, 7+l, -1, 0, 0))/3
-                        extrarow(index*nb+13+l) = sum(interp_Hr(13:15, 16+l, -1, 0, 0))/3
-                    enddo
+                    extrarow(7:9, index*nb+4:index*nb+6) = interp_Hr(7:9, 4:6, 1, 0, 0)
+                    extrarow(16:18, index*nb+4:index*nb+6) = interp_Hr(16:18, 4:6, 1, 0, 0)
+                    extrarow(7:9, index*nb+13:index*nb+15) = interp_Hr(7:9, 13:15, 1, 0, 0)
+                    extrarow(16:18, index*nb+13:index*nb+15) = interp_Hr(16:18, 13:15, 1, 0, 0)
                 endif
                 if (i == nblocks-1) then
                     ! Passivate I with Bi
-                    do l = 0, 2
-                        extrarow(index*nb+7+l) = sum(interp_Hr(7:9, 4+l, 1, 0, 0))/3
-                        extrarow(index*nb+16+l) = sum(interp_Hr(16:18, 13+l, 1, 0, 0))/3
-                    enddo
+                    extrarow(4:6, index*nb+7:index*nb+9) = interp_Hr(4:6, 7:9, -1, 0, 0)
+                    extrarow(13:15, index*nb+7:index*nb+9) = interp_Hr(13:15, 7:9, -1, 0, 0)
+                    extrarow(4:6, index*nb+16:index*nb+18) = interp_Hr(4:6, 16:18, -1, 0, 0)
+                    extrarow(13:15, index*nb+16:index*nb+18) = interp_Hr(13:15, 16:18, -1, 0, 0)
                 endif
                 if (j == 0) then
                     ! Passivate Bi with Te
-                    do l = 0, 2
-                        extrarow(index*nb+4+l) = sum(interp_Hr(4:6, 1+l, 0, 1, 0))/3
-                        extrarow(index*nb+13+l) = sum(interp_Hr(13:15, 10+l, 0, 1, 0))/3
-                    enddo
+                    extrarow(1:3, index*nb+4:index*nb+6) = interp_Hr(1:3, 4:6, 0, 1, 0)
+                    extrarow(10:12, index*nb+4:index*nb+6) = interp_Hr(10:12, 4:6, 0, 1, 0)
+                    extrarow(1:3, index*nb+13:index*nb+15) = interp_Hr(1:3, 13:15, 0, 1, 0)
+                    extrarow(10:12, index*nb+13:index*nb+15) = interp_Hr(10:12, 13:15, 0, 1, 0)
                 endif
                 if (j == nblocks-1) then
                     ! Passivate Te with Bi
-                    do l = 0, 2
-                        extrarow(index*nb+1+l) = sum(interp_Hr(1:3, 4+l, 0, -1, 0))/3
-                        extrarow(index*nb+10+l) = sum(interp_Hr(10:12, 13+l, 0, -1, 0))/3
-                    enddo
+                    extrarow(4:6, index*nb+1:index*nb+3) = interp_Hr(4:6, 1:3, 0, -1, 0)
+                    extrarow(13:15, index*nb+1:index*nb+3) = interp_Hr(13:15, 1:3, 0, -1, 0)
+                    extrarow(4:6, index*nb+10:index*nb+12) = interp_Hr(4:6, 10:12, 0, -1, 0)
+                    extrarow(13:15, index*nb+10:index*nb+12) = interp_Hr(13:15, 10:12, 0, -1, 0)
                 endif
             enddo
         enddo
     enddo
+
+    ! do k = 0, nblocks-1
+    !     do j = 0, nblocks-1
+    !         do i = 0, nblocks-1
+    !                 index = i + j*(nblocks) + k*(nblocks)*(nblocks)
+    !             ! Check if the point is on the x-y edges (i.e., at the boundary of the x-y plane)
+    !             if (i == 0) then
+    !                 ! Passivate Bi with I
+    !                 ! Using average of contributions from same-spin atom
+    !                 do l = 0, 2
+    !                     extrarow(index*nb+4+l) = sum(interp_Hr(4:6, 7+l, -1, 0, 0))
+    !                     extrarow(index*nb+13+l) = sum(interp_Hr(13:15, 16+l, -1, 0, 0))
+    !                 enddo
+    !             endif
+    !             if (i == nblocks-1) then
+    !                 ! Passivate I with Bi
+    !                 do l = 0, 2
+    !                     extrarow(index*nb+7+l) = sum(interp_Hr(7:9, 4+l, 1, 0, 0))
+    !                     extrarow(index*nb+16+l) = sum(interp_Hr(16:18, 13+l, 1, 0, 0))
+    !                 enddo
+    !             endif
+    !             if (j == 0) then
+    !                 ! Passivate Bi with Te
+    !                 do l = 0, 2
+    !                     extrarow(index*nb+4+l) = sum(interp_Hr(4:6, 1+l, 0, 1, 0))
+    !                     extrarow(index*nb+13+l) = sum(interp_Hr(13:15, 10+l, 0, 1, 0))
+    !                 enddo
+    !             endif
+    !             if (j == nblocks-1) then
+    !                 ! Passivate Te with Bi
+    !                 do l = 0, 2
+    !                     extrarow(index*nb+1+l) = sum(interp_Hr(1:3, 4+l, 0, -1, 0))
+    !                     extrarow(index*nb+10+l) = sum(interp_Hr(10:12, 13+l, 0, -1, 0))
+    !                 enddo
+    !             endif
+    !         enddo
+    !     enddo
+    ! enddo
     ! do i=1,N
     !     if(mod(i,N/matsize)==0) print*, extrarow(i)
     ! enddo
@@ -287,8 +325,8 @@ Program Projected_band_structure
             complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
             complex*16,intent(in):: vec_in(N*3)
             complex*16,intent(out)::vec_out(N*3)
-            complex*16,intent(in)::extrarow(N)
-            complex*16 extracol(N)
+            complex*16,intent(in)::extrarow(18,N)
+            complex*16 extracol(N,18)
             complex*16::tempvec(N)
 
             tempvec=0d0
@@ -315,10 +353,10 @@ Program Projected_band_structure
                 enddo
             enddo
 
-            extracol = conjg(extrarow)
-            tempvec(N)=dot_product(extrarow, vec_in)
-            do i = 1, N-1
-                tempvec(i) = tempvec(i) + extracol(i) * vec_in(N-1)  ! Use the extra column to adjust existing elements
+            extracol = conjg(transpose(extrarow))
+            tempvec(N-17:N)=matmul(extrarow, vec_in)
+            do i = 0, matsize-1
+                tempvec(1+i*nb:nb*(i+1)) = tempvec(1+i*nb:nb*(i+1)) + matmul(extracol(1+i*nb:nb*(i+1),:),vec_in(N-nb+1:N))
             enddo
 
             vec_out=tempvec
