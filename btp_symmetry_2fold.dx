@@ -1,7 +1,0 @@
-object 1 class gridpositions counts       31       31       31
-origin     0.000000     0.000000     0.452235
-delta     0.000000     0.000000     0.000000
-delta     0.000000     0.000000     0.000000
-delta     0.000000     0.000000     0.000333
-object 2 class gridconnections counts       31       31       31
-object       3 class array type float rank 1 shape       2 item     29791 data follows

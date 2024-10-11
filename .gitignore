@@ -39,3 +39,4 @@ cube_iter_mpi_shift
 cube_iter_mpi_shift.f90
 .DS_Store
 *.ai
+.venv
