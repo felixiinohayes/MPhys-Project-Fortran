@@ -128,15 +128,15 @@ Program Projected_band_structure
     allocate(npminlist(nprocs),npmaxlist(nprocs),nloclist(nprocs))
  
     N=nb*matsize
-    NEV=50
-    NCV=100
+    NEV=N-2
+    NCV=N
 
     do i=1,nprocs
         nloc = matsize/nprocs
         if (mod(matsize,nprocs).ne.0) nloc= nloc +1 
         npminlist(i)=1+(i-1)*nloc
         npmaxlist(i)=min(i*nloc,matsize)
-        nloclist(i) = (npmaxlist(i)-npminlist(i)+1)
+        nloclist(i) = (npmaxlist(i)-npminlist(i)+1)*nb
     enddo
 
     nloc = nloclist(myid+1)
@@ -145,8 +145,8 @@ Program Projected_band_structure
     if(myid.eq.0) print *, "npmin:", npminlist
     if(myid.eq.0) print *, "npmax:", npmaxlist
 
-    allocate(RESID(nloc*nb),V(nloc*nb,NCV),WORKD(nloc*nb*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
-    allocate(select(NCV),D(NEV),WORKEV(2*NCV))
+    allocate(RESID(N),V(N,NCV),Z(N,NEV),WORKD(N*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
+    allocate(select(NCV),D(NEV+1),WORKEV(2*NCV))
 
     iparam(1)=ishift
     iparam(3)=maxiter
@@ -155,7 +155,7 @@ Program Projected_band_structure
     iter=0
     IDO=0
     INFO=0
-    LDV=nloc*nb
+    LDV=N
     WORKL=0d0
     WORKD=0d0
     RWORK=0d0
@@ -165,16 +165,13 @@ Program Projected_band_structure
 
     do while (iter<maxiter)
         iter=iter+1
-        if(myid.eq.0) print *, 'Iterations: ', iter
-        call pznaupd(comm,IDO,bmat,nloc*nb,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
+        ! if(myid.eq.0) print *, 'Iterations: ', iter
+        call pznaupd(comm,IDO,bmat,nloc,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
         
         if(IDO==99) exit
         
         if(IDO==-1 .or. IDO==1) then
-            !WORKD(IPNTR(2):IPNTR(2)+N-1) = matmul(super_H,WORKD(IPNTR(1):IPNTR(1)+N-1))
-            call matmul_(WORKD(IPNTR(1):IPNTR(1)+(nloc*nb)-1), WORKD(IPNTR(2):IPNTR(2)+(nloc*nb)-1))
-            ! call matmul_(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),N,nblocks)
-            ! print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
+            call matmul_(comm,WORKD(IPNTR(1):IPNTR(1)+nloc-1), WORKD(IPNTR(2):IPNTR(2)+nloc-1))
             continue
         endif
     enddo
@@ -188,24 +185,25 @@ Program Projected_band_structure
         rvecmat = .true.
         print *, "Finished iterations, calling zneupd..."
         call pzneupd (comm,rvecmat, 'A', select, d, v, ldv, sigma,&
-             workev, bmat, n, which, nev, tol, resid, ncv,&
+             workev, bmat, nloc, which, nev, tol, resid, ncv,&
              v, ldv, iparam, ipntr, workd, workl, lworkl, &
              rwork, info)
-        ! print*, v(1,:)
     endif
 
     deallocate(RESID,WORKD,WORKL,RWORK)
-
-
-    ! if(myid.eq.0) then
-    !     do i=1,10
-    !         real_d(i) = real(d(i))
-    !     enddo
-    !     do i=1,10
-    !         write(150, '(1(1x,f12.6))') real_d(i)
-    !         write(200, *) v(:,i)
-    !     enddo
-    ! endif
+    
+    if(myid.eq.0) then
+    !     print *, v(1,1)
+        print *, d(1)
+        ! do i=1,10
+        !     real_d(i) = real(d(i))
+        !     print *, real_d(i)
+        ! enddo
+        ! do i=1,10
+        !     write(150, '(1(1x,f12.6))') real_d(i)
+        !     write(200, *) v(:,i)
+        ! enddo
+    endif
 
 !     allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
 
@@ -227,23 +225,23 @@ Program Projected_band_structure
     call MPI_FINALIZE(ierr)
 
     contains
-    subroutine matmul_(vec_in, vec_out)
+    subroutine matmul_(comm,vec_in, vec_out)
         use mpi
         use parameters
         implicit none
         ! Declare intent and input/output parameters
-        complex*16, intent(in) :: vec_in(nloc*nb)  ! Global input vector
-        complex*16, intent(out) :: vec_out(nloc*nb) ! Output vector for this process
-        integer*4 :: next, prev, status(MPI_STATUS_SIZE)
+        complex*16, intent(in) :: vec_in(nloc)  ! Global input vector
+        complex*16, intent(out) :: vec_out(nloc) ! Output vector for this process
+        integer*4 :: comm, next, prev, status(MPI_STATUS_SIZE)
         integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3, rowcount, colcount, reqsend, reqrec
-        complex*16 :: mv_buf(nloclist(1)*nb)
+        complex*16 :: mv_buf(nloclist(1))
         integer :: ierr, i_start, i_end
         integer*8 npmin,npmax
 
         call MPI_COMM_RANK( comm, myid, ierr )
         call MPI_COMM_SIZE( comm, nprocs, ierr )
     
-        ! call mpi_barrier(comm,ierr)
+        call mpi_barrier(comm,ierr)
         call tv(myid,vec_in,vec_out)
 
         do i=1,nprocs-1
@@ -252,10 +250,12 @@ Program Projected_band_structure
 
             ! print *, "myid=", myid, "received from prev=", prev
             ! print *, "myid=", myid, " sending to next=", next, "receiving from prev=", prev
-            call mpi_sendrecv(vec_in(1), nloclist(myid+1)*nb, MPI_DOUBLE_COMPLEX, next, 0, &
-                              mv_buf(1), nloclist(prev+1)*nb, MPI_DOUBLE_COMPLEX, prev, 0, comm, status, ierr)
+            call mpi_sendrecv(vec_in(1), nloclist(myid+1), MPI_DOUBLE_COMPLEX, next, 0, &
+                              mv_buf(1), nloclist(prev+1), MPI_DOUBLE_COMPLEX, prev, 0, comm, status, ierr)
 
-            call tv(prev,mv_buf(1:nloclist(prev)*nb),vec_out)
+            ! if(i==2 .and. myid.eq.0 .and. iter==1) print *, vec_in(nloclist(next+1)*nb)
+            ! if(i==2 .and. myid.eq.2 .and. iter==1) print *, mv_buf(nloc*nb)
+            call tv(prev,mv_buf(1),vec_out(1))
 
         enddo
     
@@ -266,30 +266,34 @@ Program Projected_band_structure
         implicit none
         ! Declare intent and input/output parameters
         integer*4,intent(in):: id
-        complex*16, intent(in) :: vec_in(nloclist(id+1)*nb)
-        complex*16, intent(out) :: vec_out(nloclist(myid+1)*nb)
+        complex*16, intent(in) :: vec_in(nloclist(id+1))
+        complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3
         integer :: rowcount, colcount
+
 
         rowcount=0
         colcount=0
         do irow = npminlist(myid+1),npmaxlist(myid+1)
             f3 = (irow-1) / (N2)
-            f2 = mod((irow-1) / nblocks, 3)
-            f1 = mod(irow-1, 3)
+            f2 = mod((irow-1) / nblocks, nblocks)
+            f1 = mod(irow-1, nblocks)
             do icol = npminlist(id+1),npmaxlist(id+1)
                 r3 = ((icol-1) / N2) - f3
-                r2 = mod((icol-1) / nblocks, 3) - f2
-                r1 = mod(icol-1, 3) - f1
+                r2 = mod((icol-1) / nblocks, nblocks) - f2
+                r1 = mod(icol-1, nblocks) - f1
                 if ((abs(r1) .lt. 6) .or. (abs(r2) .lt. 6) .or. (abs(r3) .lt. 6)) then
                     vec_out(1+colcount*nb : nb*(colcount+1)) = vec_out(1+colcount*nb : nb*(colcount+1)) + &
                         matmul(interp_Hr(:,:,r1,r2,r3), vec_in(1+rowcount*nb : nb*(rowcount+1)))
+                    if(myid.eq.2 .and. iter==1) print *, myid, vec_out(1+colcount*nb), irow, icol, r1,r2,r3
                 endif
                 colcount = colcount + 1
             enddo
             rowcount = rowcount + 1
         enddo
+        ! if(myid.eq.0 .and. iter==1) print *, id, vec_out(1)
 
+        ! print *, myid, vec_in(1), vec_out(1)
     end subroutine tv
 
 end Program Projected_band_structure
