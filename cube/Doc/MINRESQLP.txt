@@ -1,0 +1,1444 @@
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =    0.0000000000000000        b =    0.0000000000000000        relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =    1.0000000000000000        0.0000000000000000        0.0000000000000000     
+ true [c,s,r] =    1.0000000000000000        0.0000000000000000        0.0000000000000000     
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 0.0E+00
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =    0.0000000000000000        b =    2.0000000000000000        relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =    0.0000000000000000        1.0000000000000000        2.0000000000000000     
+ true [c,s,r] =    0.0000000000000000        1.0000000000000000        2.0000000000000000     
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 0.0E+00
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =    6.0000000000000000        b =   -8.0000000000000000        relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =   0.60000000000000009      -0.80000000000000004        10.000000000000000     
+ true [c,s,r] =   0.59999999999999998      -0.80000000000000004        10.000000000000000     
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 1.1E-17
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =    8.0000000000000000        b =    6.0000000000000000        relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =   0.80000000000000004       0.60000000000000009        10.000000000000000     
+ true [c,s,r] =   0.80000000000000004       0.59999999999999998        10.000000000000000     
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 1.1E-17
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =   -5.3930794045869475E+307   b =   -7.1907725394492630E+307   relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =  -0.60000000000000009      -0.80000000000000004        8.9884656743115785E+307
+ true [c,s,r] =  -0.60000000000000009      -0.80000000000000004        8.9884656743115785E+307
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 0.0E+00
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =   -6.6752215755216041E-308   b =   -8.9002954340288055E-308   relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =  -0.60000000000000009      -0.80000000000000004        1.1125369292536007E-307
+ true [c,s,r] =  -0.59999999999999998      -0.80000000000000004        1.1125369292536007E-307
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 1.1E-16
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =   -5.3930794045869475E+307   b =   -4.0000000000000000        relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =   -1.0000000000000000       -7.4169128616906716E-308   5.3930794045869475E+307
+ true [c,s,r] =   -1.0000000000000000       -7.4169128616906716E-308   5.3930794045869475E+307
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 0.0E+00
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =   -4.0000000000000000        b =   -5.3930794045869475E+307   relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =   -7.4169128616906716E-308  -1.0000000000000000        5.3930794045869475E+307
+ true [c,s,r] =   -7.4169128616906716E-308  -1.0000000000000000        5.3930794045869475E+307
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 0.0E+00
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =   -3.0000000000000000        b =   -8.9002954340288055E-308   relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =   -1.0000000000000000       -2.9667651446762683E-308   3.0000000000000000     
+ true [c,s,r] =   -1.0000000000000000       -2.9667651446762683E-308   3.0000000000000000     
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 0.0E+00
+  
+ -----------------------------------------------------
+ Test of  SYMORTHO.
+ -----------------------------------------------------
+ a =   -6.6752215755216041E-308   b =   -4.0000000000000000        relTol =    2.2204460492503131E-016
+  
+ [c,s,r]      =   -1.6688053938804010E-308  -1.0000000000000000        4.0000000000000000     
+ true [c,s,r] =   -1.6688053938804010E-308  -1.0000000000000000        4.0000000000000000     
+
+
+  symortho  appears to be successful.  Relative error in [c,s,r] = 0.0E+00
+  
+  MINRESQLP tests with use_default =  F
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      1      ||b||    =   1.00E+00   precon   =   F
+ itnlim   =      3      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.00E+00  1.00E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.0000000000E+00  1.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  1.00E+00  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  1.0000E+00     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  0.0000E+00
+ Exit  MINRES-QLP.       xnorm =  1.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      1  Itns =      1  Relative error in x = 0.0E+00
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      1      ||b||    =   9.90E-01   precon   =   F
+ itnlim   =      3      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  9.90E-01  9.80E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.0000000000E+00  1.00E+00  0.00E+00  8.59E-18  0.00E+00  0.00E+00  9.90E-01  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  9.9000E-01     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  8.5869E-18
+ Exit  MINRES-QLP.       xnorm =  1.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      1  Itns =      1  Relative error in x = 0.0E+00
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.41E+00   precon   =   F
+ itnlim   =      6      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.41E+00  1.12E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.2000000000E+00  1.70E+00  4.47E-01  2.83E-01  1.62E-01  6.86E-01  7.91E-01  1.00E+00  
+       2   2.0000000000E+00  2.24E+00  1.11E-16  1.11E-16  3.19E-17  1.08E+00  9.22E-01  1.70E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  9.2195E-01     Acond  =  1.7000E+00
+ Exit  MINRES-QLP.       rnorm =  1.1102E-16     Arnorm =  1.1102E-16
+ Exit  MINRES-QLP.       xnorm =  2.2361E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      2  Relative error in x = 5.0E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.39E+00   precon   =   F
+ itnlim   =      6      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.39E+00  1.09E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.1854359184E+00  1.69E+00  4.44E-01  2.75E-01  1.64E-01  6.77E-01  7.83E-01  1.00E+00  
+       2   2.0000000000E+00  2.24E+00  0.00E+00  2.47E-16  0.00E+00  0.00E+00  9.15E-01  1.73E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  9.1479E-01     Acond  =  1.7251E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  2.4721E-16
+ Exit  MINRES-QLP.       xnorm =  2.2361E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      2  Relative error in x = 2.2E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      3      ||b||    =   1.94E+00   precon   =   F
+ itnlim   =      9      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.94E+00  1.38E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.3246753247E+00  2.57E+00  6.64E-01  3.88E-01  1.76E-01  6.90E-01  7.09E-01  1.00E+00  
+       2   2.4024896266E+00  3.40E+00  2.58E-01  1.37E-01  5.34E-02  6.27E-01  8.47E-01  1.71E+00  
+       3   3.0000000000E+00  3.74E+00  6.02E-17  9.93E-16  1.18E-17  1.95E+01  8.47E-01  2.11E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       3
+ Exit  MINRES-QLP.       Anorm =  8.4686E-01     Acond  =  2.1087E+00
+ Exit  MINRES-QLP.       rnorm =  6.0210E-17     Arnorm =  9.9301E-16
+ Exit  MINRES-QLP.       xnorm =  3.7417E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      3  Itns =      3  Relative error in x = 3.6E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      3      ||b||    =   1.91E+00   precon   =   F
+ itnlim   =      9      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.91E+00  1.34E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.2952305177E+00  2.55E+00  6.57E-01  3.78E-01  1.77E-01  6.84E-01  7.03E-01  1.00E+00  
+       2   2.3714135587E+00  3.38E+00  2.60E-01  1.34E-01  5.46E-02  6.13E-01  8.40E-01  1.72E+00  
+       3   3.0000000000E+00  3.74E+00  8.39E-17  2.35E-16  1.66E-17  3.34E+00  8.40E-01  2.17E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       3
+ Exit  MINRES-QLP.       Anorm =  8.4016E-01     Acond  =  2.1713E+00
+ Exit  MINRES-QLP.       rnorm =  8.3912E-17     Arnorm =  2.3522E-16
+ Exit  MINRES-QLP.       xnorm =  3.7417E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      3  Itns =      3  Relative error in x = 1.3E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   2.55E+00   precon   =   F
+ itnlim   =     12      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  2.55E+00  1.70E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.4054054054E+00  3.58E+00  8.89E-01  4.94E-01  1.80E-01  6.93E-01  6.67E-01  1.00E+00  
+       2   2.6666666667E+00  4.73E+00  3.92E-01  1.93E-01  6.19E-02  6.15E-01  8.01E-01  1.70E+00  
+       3   3.6011080332E+00  5.28E+00  1.58E-01  7.88E-02  2.33E-02  6.23E-01  8.01E-01  2.22E+00  
+       4   4.0000000000E+00  5.48E+00  7.24E-17  1.11E-16  1.04E-17  1.91E+00  8.01E-01  2.31E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       4
+ Exit  MINRES-QLP.       Anorm =  8.0139E-01     Acond  =  2.3113E+00
+ Exit  MINRES-QLP.       rnorm =  7.2378E-17     Arnorm =  1.1102E-16
+ Exit  MINRES-QLP.       xnorm =  5.4772E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      4  Relative error in x = 8.1E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   2.50E+00   precon   =   F
+ itnlim   =     12      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  2.50E+00  1.65E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.3603238653E+00  3.54E+00  8.76E-01  4.80E-01  1.81E-01  6.89E-01  6.61E-01  1.00E+00  
+       2   2.6029907054E+00  4.69E+00  3.92E-01  1.88E-01  6.30E-02  6.03E-01  7.95E-01  1.71E+00  
+       3   3.5600394552E+00  5.26E+00  1.63E-01  7.84E-02  2.44E-02  6.06E-01  7.95E-01  2.27E+00  
+       4   4.0000000000E+00  5.48E+00  5.05E-17  4.07E-16  7.37E-18  1.01E+01  7.95E-01  2.42E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       4
+ Exit  MINRES-QLP.       Anorm =  7.9483E-01     Acond  =  2.4183E+00
+ Exit  MINRES-QLP.       rnorm =  5.0485E-17     Arnorm =  4.0662E-16
+ Exit  MINRES-QLP.       xnorm =  5.4772E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      4  Relative error in x = 3.6E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.70E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7156869083E+00  1.16E+02  2.40E+01  1.10E+01  1.83E-01  6.97E-01  5.45E-01  1.00E+00  
+       2   3.8523730865E+00  1.53E+02  1.15E+01  4.64E+00  6.80E-02  6.15E-01  6.58E-01  1.70E+00  
+       3   6.3612950999E+00  1.72E+02  6.41E+00  2.35E+00  3.54E-02  5.57E-01  6.58E-01  2.25E+00  
+       4   9.1862129329E+00  1.82E+02  3.96E+00  1.34E+00  2.11E-02  5.14E-01  6.58E-01  2.85E+00  
+       5   1.2265258670E+01  1.89E+02  2.62E+00  8.25E-01  1.36E-02  4.79E-01  6.58E-01  3.51E+00  
+       6   1.5532966561E+01  1.94E+02  1.82E+00  5.40E-01  9.32E-03  4.51E-01  6.58E-01  4.21E+00  
+       7   1.8922387753E+01  1.97E+02  1.32E+00  3.71E-01  6.67E-03  4.28E-01  6.58E-01  4.95E+00  
+       8   2.2367150076E+01  1.99E+02  9.82E-01  2.64E-01  4.94E-03  4.08E-01  6.58E-01  5.73E+00  
+       9   2.5803271968E+01  2.01E+02  7.50E-01  1.94E-01  3.75E-03  3.93E-01  6.58E-01  6.55E+00  
+
+      10   2.9170501199E+01  2.02E+02  5.84E-01  1.46E-01  2.90E-03  3.80E-01  6.58E-01  7.39E+00  
+      20   4.9241903593E+01  2.07E+02  4.33E-02  1.27E-02  2.12E-04  4.46E-01  6.58E-01  1.16E+01  
+      30   4.9999933783E+01  2.07E+02  2.65E-04  1.02E-04  1.30E-06  5.86E-01  6.58E-01  1.16E+01  
+      40   5.0000000000E+01  2.07E+02  4.50E-08  2.04E-08  2.20E-10  6.87E-01  6.58E-01  1.16E+01  
+      44   5.0000000000E+01  2.07E+02  3.14E-10  1.49E-10  1.54E-12  7.22E-01  6.58E-01  1.16E+01  
+      45   5.0000000000E+01  2.07E+02  7.35E-11  3.53E-11  3.60E-13  7.30E-01  6.58E-01  1.17E+01  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =      45
+ Exit  MINRES-QLP.       Anorm =  6.5841E-01     Acond  =  1.1664E+01
+ Exit  MINRES-QLP.       rnorm =  7.3492E-11     Arnorm =  3.5325E-11
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     45  Relative error in x = 8.9E-13
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.62E+01   precon   =   F
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.62E+01  3.57E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   8.6633684178E-01  1.15E+02  2.34E+01  1.06E+01  1.83E-01  6.97E-01  5.40E-01  1.00E+00  
+       2   1.9625553305E+00  1.51E+02  1.12E+01  4.48E+00  6.80E-02  6.15E-01  6.52E-01  1.70E+00  
+       3   3.2758289221E+00  1.69E+02  6.25E+00  2.27E+00  3.55E-02  5.57E-01  6.52E-01  2.25E+00  
+       4   4.7909221574E+00  1.80E+02  3.86E+00  1.29E+00  2.11E-02  5.13E-01  6.52E-01  2.85E+00  
+       5   6.4904351588E+00  1.86E+02  2.55E+00  7.97E-01  1.36E-02  4.79E-01  6.52E-01  3.51E+00  
+       6   8.3550675130E+00  1.91E+02  1.78E+00  5.22E-01  9.34E-03  4.50E-01  6.52E-01  4.21E+00  
+       7   1.0363892512E+01  1.94E+02  1.29E+00  3.58E-01  6.70E-03  4.25E-01  6.52E-01  4.96E+00  
+       8   1.2494651039E+01  1.96E+02  9.67E-01  2.55E-01  4.98E-03  4.04E-01  6.52E-01  5.75E+00  
+       9   1.4724115229E+01  1.98E+02  7.45E-01  1.87E-01  3.82E-03  3.84E-01  6.52E-01  6.59E+00  
+
+      10   1.7028636091E+01  1.99E+02  5.88E-01  1.40E-01  3.00E-03  3.65E-01  6.52E-01  7.49E+00  
+      20   4.1554012121E+01  2.06E+02  1.18E-01  2.45E-02  5.88E-04  3.20E-01  6.52E-01  2.28E+01  
+      30   4.9996790634E+01  2.07E+02  1.82E-03  6.69E-04  9.04E-06  5.64E-01  6.52E-01  2.36E+01  
+      40   5.0000000000E+01  2.07E+02  4.36E-07  1.92E-07  2.17E-09  6.75E-01  6.52E-01  2.36E+01  
+      45   5.0000000000E+01  2.07E+02  8.10E-10  3.80E-10  4.02E-12  7.20E-01  6.52E-01  2.39E+01  
+      46   5.0000000000E+01  2.07E+02  1.72E-10  8.19E-11  8.56E-13  7.29E-01  6.52E-01  2.36E+01  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =      46
+ Exit  MINRES-QLP.       Anorm =  6.5195E-01     Acond  =  2.3632E+01
+ Exit  MINRES-QLP.       rnorm =  1.7223E-10     Arnorm =  8.1861E-11
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     46  Relative error in x = 2.0E-12
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.41E+00   precon   =   T
+ itnlim   =      6      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.73E+00  1.73E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   2.0000000000E+00  1.73E+00  3.33E-16  1.24E-16  9.61E-17  3.73E-01  1.00E+00  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  1.0000E+00     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  3.3307E-16     Arnorm =  1.2413E-16
+ Exit  MINRES-QLP.       xnorm =  1.7321E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      1  Relative error in x = 1.1E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.39E+00   precon   =   T
+ itnlim   =      6      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.72E+00  1.72E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   2.0000000000E+00  1.72E+00  0.00E+00  1.21E-17  0.00E+00  0.00E+00  1.00E+00  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  1.0000E+00     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  1.2083E-17
+ Exit  MINRES-QLP.       xnorm =  1.7176E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      1  Relative error in x = 0.0E+00
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   T
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.06E+02  1.06E+02  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   5.0000000000E+01  1.06E+02  4.24E-14  1.23E-14  2.00E-16  2.90E-01  1.00E+00  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  1.0000E+00     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  4.2450E-14     Arnorm =  1.2305E-14
+ Exit  MINRES-QLP.       xnorm =  1.0616E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =      1  Relative error in x = 3.6E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.62E+01   precon   =   T
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.04E+02  1.04E+02  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   5.0000000000E+01  1.04E+02  5.80E-14  1.81E-14  2.78E-16  3.12E-01  1.00E+00  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  1.0000E+00     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  5.7955E-14     Arnorm =  1.8094E-14
+ Exit  MINRES-QLP.       xnorm =  1.0412E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =      1  Relative error in x = 5.2E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.1000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   T
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.05E+02  1.04E+02  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   5.0631333932E+01  1.06E+02  6.42E+00  4.78E+00  3.06E-02  7.51E-01  9.86E-01  1.00E+00  
+       2   4.9974146953E+01  1.08E+02  6.94E-01  5.29E-01  3.28E-03  7.69E-01  9.91E-01  1.34E+00  
+       3   5.0000435082E+01  1.08E+02  3.95E-02  3.29E-02  1.87E-04  8.41E-01  9.91E-01  1.33E+00  
+       4   4.9999997940E+01  1.08E+02  1.04E-03  9.07E-04  4.91E-06  8.79E-01  9.91E-01  1.34E+00  
+       5   5.0000000001E+01  1.08E+02  5.81E-06  5.27E-06  2.74E-08  9.16E-01  9.91E-01  1.33E+00  
+       6   5.0000000000E+01  1.08E+02  6.37E-18  7.49E-15  3.01E-20  1.19E+03  9.91E-01  1.34E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       6
+ Exit  MINRES-QLP.       Anorm =  9.9134E-01     Acond  =  1.3394E+00
+ Exit  MINRES-QLP.       rnorm =  6.3677E-18     Arnorm =  7.4852E-15
+ Exit  MINRES-QLP.       xnorm =  1.0766E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =     50  Itns =      6  Relative error in x = 2.2E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.1000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.62E+01   precon   =   T
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.03E+02  1.01E+02  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   5.0639995903E+01  1.04E+02  6.43E+00  4.74E+00  3.13E-02  7.44E-01  9.85E-01  1.00E+00  
+       2   4.9971600206E+01  1.06E+02  7.39E-01  5.58E-01  3.56E-03  7.61E-01  9.91E-01  1.35E+00  
+       3   5.0000512834E+01  1.06E+02  4.40E-02  3.66E-02  2.12E-04  8.38E-01  9.91E-01  1.35E+00  
+       4   4.9999997479E+01  1.06E+02  1.19E-03  1.04E-03  5.73E-06  8.78E-01  9.91E-01  1.35E+00  
+       5   5.0000000001E+01  1.06E+02  6.72E-06  6.10E-06  3.24E-08  9.15E-01  9.91E-01  1.35E+00  
+       6   5.0000000000E+01  1.06E+02  2.26E-17  6.07E-15  1.09E-19  2.70E+02  9.91E-01  1.35E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       6
+ Exit  MINRES-QLP.       Anorm =  9.9129E-01     Acond  =  1.3526E+00
+ Exit  MINRES-QLP.       rnorm =  2.2641E-17     Arnorm =  6.0675E-15
+ Exit  MINRES-QLP.       xnorm =  1.0565E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =     50  Itns =      6  Relative error in x = 2.2E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   1.80E+00   precon   =   F
+ itnlim   =     12      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.80E+00  7.91E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   2.2000000000E+00  3.97E+00  4.74E-01  1.35E-01  1.34E-01  5.93E-01  4.39E-01  1.00E+00  
+       2   4.0000000000E+00  5.00E+00  9.24E-17  2.78E-17  2.20E-17  6.25E-01  4.81E-01  1.85E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  4.8088E-01     Acond  =  1.8500E+00
+ Exit  MINRES-QLP.       rnorm =  9.2376E-17     Arnorm =  2.7756E-17
+ Exit  MINRES-QLP.       xnorm =  5.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      2  Relative error in x = 8.9E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.3000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   6.32E-01   precon   =   F
+ itnlim   =     12      rtol     =   1.00E-12   shift    =   3.00000000000000E-01
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.32E-01  1.20E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1  -9.6551724138E-01  3.05E+00  2.49E-01  1.31E-02  2.05E-01  2.63E-01  1.90E-01  1.00E+00  
+       2   4.0000000000E+00  5.00E+00  3.68E-17  0.00E+00  2.26E-17  0.00E+00  1.99E-01  3.97E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  1.9935E-01     Acond  =  3.9741E+00
+ Exit  MINRES-QLP.       rnorm =  3.6799E-17     Arnorm =  0.0000E+00
+ Exit  MINRES-QLP.       xnorm =  5.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      2  Relative error in x = 8.9E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.69E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7180943901E+00  1.16E+02  2.39E+01  1.09E+01  1.82E-01  6.95E-01  5.45E-01  1.00E+00  
+       2   3.8644538109E+00  1.53E+02  1.14E+01  4.58E+00  6.77E-02  6.11E-01  6.57E-01  1.70E+00  
+       3   6.3954779963E+00  1.72E+02  6.36E+00  2.30E+00  3.52E-02  5.50E-01  6.57E-01  2.26E+00  
+       4   9.2579303917E+00  1.82E+02  3.91E+00  1.29E+00  2.08E-02  5.04E-01  6.57E-01  2.88E+00  
+       5   1.2389816033E+01  1.89E+02  2.57E+00  7.91E-01  1.34E-02  4.68E-01  6.57E-01  3.55E+00  
+       6   1.5722893791E+01  1.94E+02  1.78E+00  5.14E-01  9.14E-03  4.38E-01  6.57E-01  4.27E+00  
+       7   1.9185796048E+01  1.97E+02  1.29E+00  3.50E-01  6.52E-03  4.14E-01  6.57E-01  5.05E+00  
+       8   2.2706980590E+01  1.99E+02  9.55E-01  2.48E-01  4.80E-03  3.95E-01  6.57E-01  5.86E+00  
+       9   2.6217158315E+01  2.01E+02  7.27E-01  1.81E-01  3.63E-03  3.79E-01  6.57E-01  6.71E+00  
+
+      10   2.9651001936E+01  2.03E+02  5.63E-01  1.36E-01  2.80E-03  3.66E-01  6.57E-01  7.58E+00  
+      20   4.9405101158E+01  2.07E+02  3.75E-02  1.08E-02  1.84E-04  4.38E-01  6.57E-01  1.17E+01  
+      30   4.9999971981E+01  2.07E+02  1.69E-04  6.37E-05  8.27E-07  5.75E-01  6.57E-01  1.17E+01  
+      40   5.0000000000E+01  2.07E+02  1.47E-08  6.52E-09  7.22E-11  6.74E-01  6.57E-01  1.17E+01  
+      43   5.0000000000E+01  2.07E+02  2.66E-10  1.22E-10  1.30E-12  7.00E-01  6.57E-01  1.18E+01  
+      44   5.0000000000E+01  2.07E+02  5.65E-11  2.63E-11  2.77E-13  7.08E-01  6.57E-01  1.17E+01  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =      44
+ Exit  MINRES-QLP.       Anorm =  6.5701E-01     Acond  =  1.1737E+01
+ Exit  MINRES-QLP.       rnorm =  5.6494E-11     Arnorm =  2.6284E-11
+ Exit  MINRES-QLP.       xnorm =  2.0717E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     44  Relative error in x = 6.8E-13
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   2.29E+00   precon   =   F
+ itnlim   =     12      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  2.29E+00  7.91E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   2.2000000000E+00  5.04E+00  1.49E+00  1.35E-01  3.70E-01  1.88E-01  3.45E-01  1.00E+00  
+       1   4.0000000000E+00  9.85E+00  1.41E+00  4.41E-16  2.01E-01  6.49E-16  4.81E-01  5.75E+00  
+       2   4.0000000000E+00  5.00E+00  1.41E+00  3.33E-16  2.01E-01  4.90E-16  4.81E-01  5.75E+00  
+
+ Exit  MINRES-QLP.       istop =  6              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  4.8088E-01     Acond  =  5.7537E+00
+ Exit  MINRES-QLP.       rnorm =  1.4142E+00     Arnorm =  3.3307E-16
+ Exit  MINRES-QLP.       xnorm =  5.0000E+00
+ Exit  MINRES-QLP.       Pseudoinverse solution for singular LS problem, given rtol.      
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      2  Relative error in x = 1.4E-15
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    150      rtol     =   1.00E-12   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+08  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.69E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7180943901E+00  1.16E+02  2.40E+01  1.09E+01  1.83E-01  6.94E-01  5.44E-01  1.00E+00  
+       2   3.8644538109E+00  1.53E+02  1.15E+01  4.58E+00  6.82E-02  6.06E-01  6.57E-01  1.70E+00  
+       3   6.3954779963E+00  1.72E+02  6.51E+00  2.30E+00  3.60E-02  5.37E-01  6.57E-01  2.27E+00  
+       4   9.2579303917E+00  1.83E+02  4.16E+00  1.29E+00  2.21E-02  4.74E-01  6.57E-01  2.94E+00  
+       5   1.2389816033E+01  1.90E+02  2.94E+00  7.91E-01  1.52E-02  4.10E-01  6.57E-01  3.74E+00  
+       6   1.5722893791E+01  1.95E+02  2.28E+00  5.14E-01  1.16E-02  3.43E-01  6.57E-01  4.78E+00  
+       7   1.9185796048E+01  2.00E+02  1.91E+00  3.50E-01  9.61E-03  2.79E-01  6.57E-01  6.20E+00  
+       8   2.2706980590E+01  2.03E+02  1.71E+00  2.48E-01  8.47E-03  2.21E-01  6.57E-01  8.20E+00  
+       9   2.6217158315E+01  2.07E+02  1.59E+00  1.81E-01  7.81E-03  1.73E-01  6.57E-01  1.10E+01  
+
+      10   2.9651001936E+01  2.10E+02  1.52E+00  1.36E-01  7.39E-03  1.36E-01  6.57E-01  1.50E+01  
+      20   4.9405101158E+01  2.71E+02  1.41E+00  1.08E-02  5.76E-03  1.16E-02  6.57E-01  1.92E+02  
+      30   4.9999971981E+01  3.22E+02  1.41E+00  6.37E-05  5.06E-03  6.86E-05  6.57E-01  1.18E+04  
+      39   5.0000000000E+01  3.53E+02  1.41E+00  2.15E-08  4.72E-03  2.31E-08  6.57E-01  1.81E+07 P
+
+      40   5.0000000000E+01  3.56E+02  1.41E+00  8.52E-09  4.68E-03  9.17E-09  6.57E-01  5.29E+07  
+      45   5.0000000000E+01  7.78E+06  1.41E+00  1.15E-05  2.77E-07  1.23E-05  6.57E-01  2.01E+11  
+      46   5.0000000000E+01  2.07E+02  1.41E+00  1.21E-05  2.77E-07  1.31E-05  6.57E-01  2.01E+11  
+
+ Exit  MINRES-QLP.       istop = 12              itn    =      46
+ Exit  MINRES-QLP.       Anorm =  6.5701E-01     Acond  =  2.0123E+11
+ Exit  MINRES-QLP.       rnorm =  1.4142E+00     Arnorm =  1.2149E-05
+ Exit  MINRES-QLP.       xnorm =  2.0717E+02
+ Exit  MINRES-QLP.       xnorm has exceeded maxxnorm or will exceed it next iteration.    
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     46  Relative error in x = 2.9E-07
+  
+  MINRESQLP tests with use_default =  T
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      1      ||b||    =   1.00E+00   precon   =   F
+ itnlim   =      4      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.00E+00  1.00E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.0000000000E+00  1.00E+00  0.00E+00  0.00E+00  0.00E+00  0.00E+00  1.00E+00  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  1.0000E+00     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  0.0000E+00
+ Exit  MINRES-QLP.       xnorm =  1.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      1  Itns =      1  Relative error in x = 0.0E+00
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      1      ||b||    =   9.90E-01   precon   =   F
+ itnlim   =      4      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  9.90E-01  9.80E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.0000000000E+00  1.00E+00  0.00E+00  8.59E-18  0.00E+00  0.00E+00  9.90E-01  1.00E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       1
+ Exit  MINRES-QLP.       Anorm =  9.9000E-01     Acond  =  1.0000E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  8.5869E-18
+ Exit  MINRES-QLP.       xnorm =  1.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      1  Itns =      1  Relative error in x = 0.0E+00
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.41E+00   precon   =   F
+ itnlim   =      8      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.41E+00  1.12E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.2000000000E+00  1.70E+00  4.47E-01  2.83E-01  1.62E-01  6.86E-01  7.91E-01  1.00E+00  
+       2   2.0000000000E+00  2.24E+00  1.11E-16  1.11E-16  3.19E-17  1.08E+00  9.22E-01  1.70E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  9.2195E-01     Acond  =  1.7000E+00
+ Exit  MINRES-QLP.       rnorm =  1.1102E-16     Arnorm =  1.1102E-16
+ Exit  MINRES-QLP.       xnorm =  2.2361E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      2  Relative error in x = 5.0E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.39E+00   precon   =   F
+ itnlim   =      8      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.39E+00  1.09E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.1854359184E+00  1.69E+00  4.44E-01  2.75E-01  1.64E-01  6.77E-01  7.83E-01  1.00E+00  
+       2   2.0000000000E+00  2.24E+00  0.00E+00  2.47E-16  0.00E+00  0.00E+00  9.15E-01  1.73E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  9.1479E-01     Acond  =  1.7251E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  2.4721E-16
+ Exit  MINRES-QLP.       xnorm =  2.2361E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      2  Relative error in x = 2.2E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      3      ||b||    =   1.94E+00   precon   =   F
+ itnlim   =     12      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.94E+00  1.38E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.3246753247E+00  2.57E+00  6.64E-01  3.88E-01  1.76E-01  6.90E-01  7.09E-01  1.00E+00  
+       2   2.4024896266E+00  3.40E+00  2.58E-01  1.37E-01  5.34E-02  6.27E-01  8.47E-01  1.71E+00  
+       3   3.0000000000E+00  3.74E+00  6.02E-17  9.93E-16  1.18E-17  1.95E+01  8.47E-01  2.11E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       3
+ Exit  MINRES-QLP.       Anorm =  8.4686E-01     Acond  =  2.1087E+00
+ Exit  MINRES-QLP.       rnorm =  6.0210E-17     Arnorm =  9.9301E-16
+ Exit  MINRES-QLP.       xnorm =  3.7417E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      3  Itns =      3  Relative error in x = 3.6E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      3      ||b||    =   1.91E+00   precon   =   F
+ itnlim   =     12      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.91E+00  1.34E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.2952305177E+00  2.55E+00  6.57E-01  3.78E-01  1.77E-01  6.84E-01  7.03E-01  1.00E+00  
+       2   2.3714135587E+00  3.38E+00  2.60E-01  1.34E-01  5.46E-02  6.13E-01  8.40E-01  1.72E+00  
+       3   3.0000000000E+00  3.74E+00  8.39E-17  2.35E-16  1.66E-17  3.34E+00  8.40E-01  2.17E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       3
+ Exit  MINRES-QLP.       Anorm =  8.4016E-01     Acond  =  2.1713E+00
+ Exit  MINRES-QLP.       rnorm =  8.3912E-17     Arnorm =  2.3522E-16
+ Exit  MINRES-QLP.       xnorm =  3.7417E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      3  Itns =      3  Relative error in x = 1.3E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   2.55E+00   precon   =   F
+ itnlim   =     16      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  2.55E+00  1.70E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.4054054054E+00  3.58E+00  8.89E-01  4.94E-01  1.80E-01  6.93E-01  6.67E-01  1.00E+00  
+       2   2.6666666667E+00  4.73E+00  3.92E-01  1.93E-01  6.19E-02  6.15E-01  8.01E-01  1.70E+00  
+       3   3.6011080332E+00  5.28E+00  1.58E-01  7.88E-02  2.33E-02  6.23E-01  8.01E-01  2.22E+00  
+       4   4.0000000000E+00  5.48E+00  7.24E-17  1.11E-16  1.04E-17  1.91E+00  8.01E-01  2.31E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       4
+ Exit  MINRES-QLP.       Anorm =  8.0139E-01     Acond  =  2.3113E+00
+ Exit  MINRES-QLP.       rnorm =  7.2378E-17     Arnorm =  1.1102E-16
+ Exit  MINRES-QLP.       xnorm =  5.4772E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      4  Relative error in x = 8.1E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   2.50E+00   precon   =   F
+ itnlim   =     16      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  2.50E+00  1.65E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.3603238653E+00  3.54E+00  8.76E-01  4.80E-01  1.81E-01  6.89E-01  6.61E-01  1.00E+00  
+       2   2.6029907054E+00  4.69E+00  3.92E-01  1.88E-01  6.30E-02  6.03E-01  7.95E-01  1.71E+00  
+       3   3.5600394552E+00  5.26E+00  1.63E-01  7.84E-02  2.44E-02  6.06E-01  7.95E-01  2.27E+00  
+       4   4.0000000000E+00  5.48E+00  5.05E-17  4.07E-16  7.37E-18  1.01E+01  7.95E-01  2.42E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       4
+ Exit  MINRES-QLP.       Anorm =  7.9483E-01     Acond  =  2.4183E+00
+ Exit  MINRES-QLP.       rnorm =  5.0485E-17     Arnorm =  4.0662E-16
+ Exit  MINRES-QLP.       xnorm =  5.4772E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      4  Relative error in x = 3.6E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.70E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7156869083E+00  1.16E+02  2.40E+01  1.10E+01  1.83E-01  6.97E-01  5.45E-01  1.00E+00  
+       2   3.8523730865E+00  1.53E+02  1.15E+01  4.64E+00  6.80E-02  6.15E-01  6.58E-01  1.70E+00  
+       3   6.3612950999E+00  1.72E+02  6.41E+00  2.35E+00  3.54E-02  5.57E-01  6.58E-01  2.25E+00  
+       4   9.1862129329E+00  1.82E+02  3.96E+00  1.34E+00  2.11E-02  5.14E-01  6.58E-01  2.85E+00  
+       5   1.2265258670E+01  1.89E+02  2.62E+00  8.25E-01  1.36E-02  4.79E-01  6.58E-01  3.51E+00  
+       6   1.5532966561E+01  1.94E+02  1.82E+00  5.40E-01  9.32E-03  4.51E-01  6.58E-01  4.21E+00  
+       7   1.8922387753E+01  1.97E+02  1.32E+00  3.71E-01  6.67E-03  4.28E-01  6.58E-01  4.95E+00  
+       8   2.2367150076E+01  1.99E+02  9.82E-01  2.64E-01  4.94E-03  4.08E-01  6.58E-01  5.73E+00  
+       9   2.5803271968E+01  2.01E+02  7.50E-01  1.94E-01  3.75E-03  3.93E-01  6.58E-01  6.55E+00  
+
+      10   2.9170501199E+01  2.02E+02  5.84E-01  1.46E-01  2.90E-03  3.80E-01  6.58E-01  7.39E+00  
+      20   4.9241903593E+01  2.07E+02  4.33E-02  1.27E-02  2.12E-04  4.46E-01  6.58E-01  1.16E+01  
+      30   4.9999933783E+01  2.07E+02  2.65E-04  1.02E-04  1.30E-06  5.86E-01  6.58E-01  1.16E+01  
+      40   5.0000000000E+01  2.07E+02  4.50E-08  2.04E-08  2.20E-10  6.87E-01  6.58E-01  1.16E+01  
+      48   5.0000000000E+01  2.07E+02  3.97E-13  1.97E-13  1.94E-15  7.55E-01  6.58E-01  1.16E+01  
+      49   5.0000000000E+01  2.07E+02  4.05E-14  2.51E-14  1.98E-16  9.39E-01  6.58E-01  1.17E+01  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =      49
+ Exit  MINRES-QLP.       Anorm =  6.5841E-01     Acond  =  1.1664E+01
+ Exit  MINRES-QLP.       rnorm =  4.0517E-14     Arnorm =  2.5061E-14
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     49  Relative error in x = 5.7E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.62E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.62E+01  3.57E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   8.6633684178E-01  1.15E+02  2.34E+01  1.06E+01  1.83E-01  6.97E-01  5.40E-01  1.00E+00  
+       2   1.9625553305E+00  1.51E+02  1.12E+01  4.48E+00  6.80E-02  6.15E-01  6.52E-01  1.70E+00  
+       3   3.2758289221E+00  1.69E+02  6.25E+00  2.27E+00  3.55E-02  5.57E-01  6.52E-01  2.25E+00  
+       4   4.7909221574E+00  1.80E+02  3.86E+00  1.29E+00  2.11E-02  5.13E-01  6.52E-01  2.85E+00  
+       5   6.4904351588E+00  1.86E+02  2.55E+00  7.97E-01  1.36E-02  4.79E-01  6.52E-01  3.51E+00  
+       6   8.3550675130E+00  1.91E+02  1.78E+00  5.22E-01  9.34E-03  4.50E-01  6.52E-01  4.21E+00  
+       7   1.0363892512E+01  1.94E+02  1.29E+00  3.58E-01  6.70E-03  4.25E-01  6.52E-01  4.96E+00  
+       8   1.2494651039E+01  1.96E+02  9.67E-01  2.55E-01  4.98E-03  4.04E-01  6.52E-01  5.75E+00  
+       9   1.4724115229E+01  1.98E+02  7.45E-01  1.87E-01  3.82E-03  3.84E-01  6.52E-01  6.59E+00  
+
+      10   1.7028636091E+01  1.99E+02  5.88E-01  1.40E-01  3.00E-03  3.65E-01  6.52E-01  7.49E+00  
+      20   4.1554012121E+01  2.06E+02  1.18E-01  2.45E-02  5.88E-04  3.20E-01  6.52E-01  2.28E+01  
+      30   4.9996790634E+01  2.07E+02  1.82E-03  6.69E-04  9.04E-06  5.64E-01  6.52E-01  2.36E+01  
+      40   5.0000000000E+01  2.07E+02  4.36E-07  1.92E-07  2.17E-09  6.75E-01  6.52E-01  2.36E+01  
+      49   5.0000000000E+01  2.07E+02  4.89E-13  2.40E-13  2.43E-15  7.54E-01  6.52E-01  2.39E+01  
+
+      50   5.0000000000E+01  2.07E+02  5.67E-17  2.30E-14  2.82E-19  6.21E+02  6.52E-01  2.36E+01  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =      50
+ Exit  MINRES-QLP.       Anorm =  6.5195E-01     Acond  =  2.3632E+01
+ Exit  MINRES-QLP.       rnorm =  5.6736E-17     Arnorm =  2.2983E-14
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     50  Relative error in x = 5.1E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.41E+00   precon   =   F
+ itnlim   =      8      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.41E+00  1.12E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.2000000000E+00  1.70E+00  4.47E-01  2.83E-01  1.62E-01  6.86E-01  7.91E-01  1.00E+00  
+       2   2.0000000000E+00  2.24E+00  1.11E-16  1.11E-16  3.19E-17  1.08E+00  9.22E-01  1.70E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  9.2195E-01     Acond  =  1.7000E+00
+ Exit  MINRES-QLP.       rnorm =  1.1102E-16     Arnorm =  1.1102E-16
+ Exit  MINRES-QLP.       xnorm =  2.2361E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      2  Relative error in x = 5.0E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      2      ||b||    =   1.39E+00   precon   =   F
+ itnlim   =      8      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.39E+00  1.09E+00  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.1854359184E+00  1.69E+00  4.44E-01  2.75E-01  1.64E-01  6.77E-01  7.83E-01  1.00E+00  
+       2   2.0000000000E+00  2.24E+00  0.00E+00  2.47E-16  0.00E+00  0.00E+00  9.15E-01  1.73E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  9.1479E-01     Acond  =  1.7251E+00
+ Exit  MINRES-QLP.       rnorm =  0.0000E+00     Arnorm =  2.4721E-16
+ Exit  MINRES-QLP.       xnorm =  2.2361E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      2  Itns =      2  Relative error in x = 2.2E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.70E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7156869083E+00  1.16E+02  2.40E+01  1.10E+01  1.83E-01  6.97E-01  5.45E-01  1.00E+00  
+       2   3.8523730865E+00  1.53E+02  1.15E+01  4.64E+00  6.80E-02  6.15E-01  6.58E-01  1.70E+00  
+       3   6.3612950999E+00  1.72E+02  6.41E+00  2.35E+00  3.54E-02  5.57E-01  6.58E-01  2.25E+00  
+       4   9.1862129329E+00  1.82E+02  3.96E+00  1.34E+00  2.11E-02  5.14E-01  6.58E-01  2.85E+00  
+       5   1.2265258670E+01  1.89E+02  2.62E+00  8.25E-01  1.36E-02  4.79E-01  6.58E-01  3.51E+00  
+       6   1.5532966561E+01  1.94E+02  1.82E+00  5.40E-01  9.32E-03  4.51E-01  6.58E-01  4.21E+00  
+       7   1.8922387753E+01  1.97E+02  1.32E+00  3.71E-01  6.67E-03  4.28E-01  6.58E-01  4.95E+00  
+       8   2.2367150076E+01  1.99E+02  9.82E-01  2.64E-01  4.94E-03  4.08E-01  6.58E-01  5.73E+00  
+       9   2.5803271968E+01  2.01E+02  7.50E-01  1.94E-01  3.75E-03  3.93E-01  6.58E-01  6.55E+00  
+
+      10   2.9170501199E+01  2.02E+02  5.84E-01  1.46E-01  2.90E-03  3.80E-01  6.58E-01  7.39E+00  
+      20   4.9241903593E+01  2.07E+02  4.33E-02  1.27E-02  2.12E-04  4.46E-01  6.58E-01  1.16E+01  
+      30   4.9999933783E+01  2.07E+02  2.65E-04  1.02E-04  1.30E-06  5.86E-01  6.58E-01  1.16E+01  
+      40   5.0000000000E+01  2.07E+02  4.50E-08  2.04E-08  2.20E-10  6.87E-01  6.58E-01  1.16E+01  
+      48   5.0000000000E+01  2.07E+02  3.97E-13  1.97E-13  1.94E-15  7.55E-01  6.58E-01  1.16E+01  
+      49   5.0000000000E+01  2.07E+02  4.05E-14  2.51E-14  1.98E-16  9.39E-01  6.58E-01  1.17E+01  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =      49
+ Exit  MINRES-QLP.       Anorm =  6.5841E-01     Acond  =  1.1664E+01
+ Exit  MINRES-QLP.       rnorm =  4.0517E-14     Arnorm =  2.5061E-14
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     49  Relative error in x = 5.7E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.62E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.62E+01  3.57E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   8.6633684178E-01  1.15E+02  2.34E+01  1.06E+01  1.83E-01  6.97E-01  5.40E-01  1.00E+00  
+       2   1.9625553305E+00  1.51E+02  1.12E+01  4.48E+00  6.80E-02  6.15E-01  6.52E-01  1.70E+00  
+       3   3.2758289221E+00  1.69E+02  6.25E+00  2.27E+00  3.55E-02  5.57E-01  6.52E-01  2.25E+00  
+       4   4.7909221574E+00  1.80E+02  3.86E+00  1.29E+00  2.11E-02  5.13E-01  6.52E-01  2.85E+00  
+       5   6.4904351588E+00  1.86E+02  2.55E+00  7.97E-01  1.36E-02  4.79E-01  6.52E-01  3.51E+00  
+       6   8.3550675130E+00  1.91E+02  1.78E+00  5.22E-01  9.34E-03  4.50E-01  6.52E-01  4.21E+00  
+       7   1.0363892512E+01  1.94E+02  1.29E+00  3.58E-01  6.70E-03  4.25E-01  6.52E-01  4.96E+00  
+       8   1.2494651039E+01  1.96E+02  9.67E-01  2.55E-01  4.98E-03  4.04E-01  6.52E-01  5.75E+00  
+       9   1.4724115229E+01  1.98E+02  7.45E-01  1.87E-01  3.82E-03  3.84E-01  6.52E-01  6.59E+00  
+
+      10   1.7028636091E+01  1.99E+02  5.88E-01  1.40E-01  3.00E-03  3.65E-01  6.52E-01  7.49E+00  
+      20   4.1554012121E+01  2.06E+02  1.18E-01  2.45E-02  5.88E-04  3.20E-01  6.52E-01  2.28E+01  
+      30   4.9996790634E+01  2.07E+02  1.82E-03  6.69E-04  9.04E-06  5.64E-01  6.52E-01  2.36E+01  
+      40   5.0000000000E+01  2.07E+02  4.36E-07  1.92E-07  2.17E-09  6.75E-01  6.52E-01  2.36E+01  
+      49   5.0000000000E+01  2.07E+02  4.89E-13  2.40E-13  2.43E-15  7.54E-01  6.52E-01  2.39E+01  
+
+      50   5.0000000000E+01  2.07E+02  5.67E-17  2.30E-14  2.82E-19  6.21E+02  6.52E-01  2.36E+01  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =      50
+ Exit  MINRES-QLP.       Anorm =  6.5195E-01     Acond  =  2.3632E+01
+ Exit  MINRES-QLP.       rnorm =  5.6736E-17     Arnorm =  2.2983E-14
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     50  Relative error in x = 5.1E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.1000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.70E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7156869083E+00  1.16E+02  2.40E+01  1.10E+01  1.83E-01  6.97E-01  5.45E-01  1.00E+00  
+       2   3.8523730865E+00  1.53E+02  1.15E+01  4.64E+00  6.80E-02  6.15E-01  6.58E-01  1.70E+00  
+       3   6.3612950999E+00  1.72E+02  6.41E+00  2.35E+00  3.54E-02  5.57E-01  6.58E-01  2.25E+00  
+       4   9.1862129329E+00  1.82E+02  3.96E+00  1.34E+00  2.11E-02  5.14E-01  6.58E-01  2.85E+00  
+       5   1.2265258670E+01  1.89E+02  2.62E+00  8.25E-01  1.36E-02  4.79E-01  6.58E-01  3.51E+00  
+       6   1.5532966561E+01  1.94E+02  1.82E+00  5.40E-01  9.32E-03  4.51E-01  6.58E-01  4.21E+00  
+       7   1.8922387753E+01  1.97E+02  1.32E+00  3.71E-01  6.67E-03  4.28E-01  6.58E-01  4.95E+00  
+       8   2.2367150076E+01  1.99E+02  9.82E-01  2.64E-01  4.94E-03  4.08E-01  6.58E-01  5.73E+00  
+       9   2.5803271968E+01  2.01E+02  7.50E-01  1.94E-01  3.75E-03  3.93E-01  6.58E-01  6.55E+00  
+
+      10   2.9170501199E+01  2.02E+02  5.84E-01  1.46E-01  2.90E-03  3.80E-01  6.58E-01  7.39E+00  
+      20   4.9241903593E+01  2.07E+02  4.33E-02  1.27E-02  2.12E-04  4.46E-01  6.58E-01  1.16E+01  
+      30   4.9999933783E+01  2.07E+02  2.65E-04  1.02E-04  1.30E-06  5.86E-01  6.58E-01  1.16E+01  
+      40   5.0000000000E+01  2.07E+02  4.50E-08  2.04E-08  2.20E-10  6.87E-01  6.58E-01  1.16E+01  
+      48   5.0000000000E+01  2.07E+02  3.97E-13  1.97E-13  1.94E-15  7.55E-01  6.58E-01  1.16E+01  
+      49   5.0000000000E+01  2.07E+02  4.05E-14  2.51E-14  1.98E-16  9.39E-01  6.58E-01  1.17E+01  
+
+ Exit  MINRES-QLP.       istop =  4              itn    =      49
+ Exit  MINRES-QLP.       Anorm =  6.5841E-01     Acond  =  1.1664E+01
+ Exit  MINRES-QLP.       rnorm =  4.0517E-14     Arnorm =  2.5061E-14
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given rtol.         
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     49  Relative error in x = 5.7E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0100      pertM  =      0.1000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.62E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   1.00000000000000E-02
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.62E+01  3.57E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   8.6633684178E-01  1.15E+02  2.34E+01  1.06E+01  1.83E-01  6.97E-01  5.40E-01  1.00E+00  
+       2   1.9625553305E+00  1.51E+02  1.12E+01  4.48E+00  6.80E-02  6.15E-01  6.52E-01  1.70E+00  
+       3   3.2758289221E+00  1.69E+02  6.25E+00  2.27E+00  3.55E-02  5.57E-01  6.52E-01  2.25E+00  
+       4   4.7909221574E+00  1.80E+02  3.86E+00  1.29E+00  2.11E-02  5.13E-01  6.52E-01  2.85E+00  
+       5   6.4904351588E+00  1.86E+02  2.55E+00  7.97E-01  1.36E-02  4.79E-01  6.52E-01  3.51E+00  
+       6   8.3550675130E+00  1.91E+02  1.78E+00  5.22E-01  9.34E-03  4.50E-01  6.52E-01  4.21E+00  
+       7   1.0363892512E+01  1.94E+02  1.29E+00  3.58E-01  6.70E-03  4.25E-01  6.52E-01  4.96E+00  
+       8   1.2494651039E+01  1.96E+02  9.67E-01  2.55E-01  4.98E-03  4.04E-01  6.52E-01  5.75E+00  
+       9   1.4724115229E+01  1.98E+02  7.45E-01  1.87E-01  3.82E-03  3.84E-01  6.52E-01  6.59E+00  
+
+      10   1.7028636091E+01  1.99E+02  5.88E-01  1.40E-01  3.00E-03  3.65E-01  6.52E-01  7.49E+00  
+      20   4.1554012121E+01  2.06E+02  1.18E-01  2.45E-02  5.88E-04  3.20E-01  6.52E-01  2.28E+01  
+      30   4.9996790634E+01  2.07E+02  1.82E-03  6.69E-04  9.04E-06  5.64E-01  6.52E-01  2.36E+01  
+      40   5.0000000000E+01  2.07E+02  4.36E-07  1.92E-07  2.17E-09  6.75E-01  6.52E-01  2.36E+01  
+      49   5.0000000000E+01  2.07E+02  4.89E-13  2.40E-13  2.43E-15  7.54E-01  6.52E-01  2.39E+01  
+
+      50   5.0000000000E+01  2.07E+02  5.67E-17  2.30E-14  2.82E-19  6.21E+02  6.52E-01  2.36E+01  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =      50
+ Exit  MINRES-QLP.       Anorm =  6.5195E-01     Acond  =  2.3632E+01
+ Exit  MINRES-QLP.       rnorm =  5.6736E-17     Arnorm =  2.2983E-14
+ Exit  MINRES-QLP.       xnorm =  2.0718E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     50  Relative error in x = 5.1E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   1.80E+00   precon   =   F
+ itnlim   =     16      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  1.80E+00  7.91E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   2.2000000000E+00  3.97E+00  4.74E-01  1.35E-01  1.34E-01  5.93E-01  4.39E-01  1.00E+00  
+       2   4.0000000000E+00  5.00E+00  9.24E-17  2.78E-17  2.20E-17  6.25E-01  4.81E-01  1.85E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  4.8088E-01     Acond  =  1.8500E+00
+ Exit  MINRES-QLP.       rnorm =  9.2376E-17     Arnorm =  2.7756E-17
+ Exit  MINRES-QLP.       xnorm =  5.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      2  Relative error in x = 8.9E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.3000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   6.32E-01   precon   =   F
+ itnlim   =     16      rtol     =   2.22E-16   shift    =   3.00000000000000E-01
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.32E-01  1.20E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1  -9.6551724138E-01  3.05E+00  2.49E-01  1.31E-02  2.05E-01  2.63E-01  1.90E-01  1.00E+00  
+       2   4.0000000000E+00  5.00E+00  3.68E-17  0.00E+00  2.26E-17  0.00E+00  1.99E-01  3.97E+00  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  1.9935E-01     Acond  =  3.9741E+00
+ Exit  MINRES-QLP.       rnorm =  3.6799E-17     Arnorm =  0.0000E+00
+ Exit  MINRES-QLP.       xnorm =  5.0000E+00
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      2  Relative error in x = 8.9E-17
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.69E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7180943901E+00  1.16E+02  2.39E+01  1.09E+01  1.82E-01  6.95E-01  5.45E-01  1.00E+00  
+       2   3.8644538109E+00  1.53E+02  1.14E+01  4.58E+00  6.77E-02  6.11E-01  6.57E-01  1.70E+00  
+       3   6.3954779963E+00  1.72E+02  6.36E+00  2.30E+00  3.52E-02  5.50E-01  6.57E-01  2.26E+00  
+       4   9.2579303917E+00  1.82E+02  3.91E+00  1.29E+00  2.08E-02  5.04E-01  6.57E-01  2.88E+00  
+       5   1.2389816033E+01  1.89E+02  2.57E+00  7.91E-01  1.34E-02  4.68E-01  6.57E-01  3.55E+00  
+       6   1.5722893791E+01  1.94E+02  1.78E+00  5.14E-01  9.14E-03  4.38E-01  6.57E-01  4.27E+00  
+       7   1.9185796048E+01  1.97E+02  1.29E+00  3.50E-01  6.52E-03  4.14E-01  6.57E-01  5.05E+00  
+       8   2.2706980590E+01  1.99E+02  9.55E-01  2.48E-01  4.80E-03  3.95E-01  6.57E-01  5.86E+00  
+       9   2.6217158315E+01  2.01E+02  7.27E-01  1.81E-01  3.63E-03  3.79E-01  6.57E-01  6.71E+00  
+
+      10   2.9651001936E+01  2.03E+02  5.63E-01  1.36E-01  2.80E-03  3.66E-01  6.57E-01  7.58E+00  
+      20   4.9405101158E+01  2.07E+02  3.75E-02  1.08E-02  1.84E-04  4.38E-01  6.57E-01  1.17E+01  
+      30   4.9999971981E+01  2.07E+02  1.69E-04  6.37E-05  8.27E-07  5.75E-01  6.57E-01  1.17E+01  
+      40   5.0000000000E+01  2.07E+02  1.47E-08  6.52E-09  7.22E-11  6.74E-01  6.57E-01  1.17E+01  
+      47   5.0000000000E+01  2.07E+02  1.60E-13  7.70E-14  7.85E-16  7.33E-01  6.57E-01  1.18E+01  
+      48   5.0000000000E+01  2.07E+02  2.43E-17  2.67E-14  1.19E-19  1.67E+03  6.57E-01  1.17E+01  
+
+ Exit  MINRES-QLP.       istop =  5              itn    =      48
+ Exit  MINRES-QLP.       Anorm =  6.5701E-01     Acond  =  1.1737E+01
+ Exit  MINRES-QLP.       rnorm =  2.4346E-17     Arnorm =  2.6677E-14
+ Exit  MINRES-QLP.       xnorm =  2.0717E+02
+ Exit  MINRES-QLP.       A solution to (poss. singular) Ax = b found, given eps.          
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     48  Relative error in x = 6.9E-16
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =      4      ||b||    =   2.29E+00   precon   =   F
+ itnlim   =     16      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  2.29E+00  7.91E-01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   2.2000000000E+00  5.04E+00  1.49E+00  1.35E-01  3.70E-01  1.88E-01  3.45E-01  1.00E+00  
+       1   4.0000000000E+00  9.85E+00  1.41E+00  4.41E-16  2.01E-01  6.49E-16  4.81E-01  5.75E+00  
+       2   4.0000000000E+00  5.00E+00  1.41E+00  3.33E-16  2.01E-01  4.90E-16  4.81E-01  5.75E+00  
+
+ Exit  MINRES-QLP.       istop = 13              itn    =       2
+ Exit  MINRES-QLP.       Anorm =  4.8088E-01     Acond  =  5.7537E+00
+ Exit  MINRES-QLP.       rnorm =  1.4142E+00     Arnorm =  3.3307E-16
+ Exit  MINRES-QLP.       xnorm =  5.0000E+00
+ Exit  MINRES-QLP.       Acond has exceeded Acondlim or 0.1/eps.                          
+
+
+  minresqlp appears to be successful.  n =      4  Itns =      2  Relative error in x = 1.4E-15
+
+
+-----------------------------------------------------
+Test of  MINRESQLP.
+-----------------------------------------------------
+shift  =      0.0000      pertM  =      0.0000
+
+
+ Enter MINRES-QLP.      Solution of symmetric   Ax = b
+ n        =     50      ||b||    =   6.78E+01   precon   =   F
+ itnlim   =    200      rtol     =   2.22E-16   shift    =   0.00000000000000E+00
+ maxxnorm =   1.00E+07  Acondlim =   1.00E+15   trancond =   1.00E+07
+
+
+    iter   x(1)              xnorm     rnorm     Arnorm   Compatible   LS      norm(A)   cond(A)
+       0   0.0000000000E+00  0.00E+00  6.78E+01  3.69E+01  1.00E+00  1.00E+00  0.00E+00  1.00E+00  
+       1   1.7180943901E+00  1.16E+02  2.40E+01  1.09E+01  1.83E-01  6.94E-01  5.44E-01  1.00E+00  
+       2   3.8644538109E+00  1.53E+02  1.15E+01  4.58E+00  6.82E-02  6.06E-01  6.57E-01  1.70E+00  
+       3   6.3954779963E+00  1.72E+02  6.51E+00  2.30E+00  3.60E-02  5.37E-01  6.57E-01  2.27E+00  
+       4   9.2579303917E+00  1.83E+02  4.16E+00  1.29E+00  2.21E-02  4.74E-01  6.57E-01  2.94E+00  
+       5   1.2389816033E+01  1.90E+02  2.94E+00  7.91E-01  1.52E-02  4.10E-01  6.57E-01  3.74E+00  
+       6   1.5722893791E+01  1.95E+02  2.28E+00  5.14E-01  1.16E-02  3.43E-01  6.57E-01  4.78E+00  
+       7   1.9185796048E+01  2.00E+02  1.91E+00  3.50E-01  9.61E-03  2.79E-01  6.57E-01  6.20E+00  
+       8   2.2706980590E+01  2.03E+02  1.71E+00  2.48E-01  8.47E-03  2.21E-01  6.57E-01  8.20E+00  
+       9   2.6217158315E+01  2.07E+02  1.59E+00  1.81E-01  7.81E-03  1.73E-01  6.57E-01  1.10E+01  
+
+      10   2.9651001936E+01  2.10E+02  1.52E+00  1.36E-01  7.39E-03  1.36E-01  6.57E-01  1.50E+01  
+      20   4.9405101158E+01  2.71E+02  1.41E+00  1.08E-02  5.76E-03  1.16E-02  6.57E-01  1.92E+02  
+      30   4.9999971981E+01  3.22E+02  1.41E+00  6.37E-05  5.06E-03  6.86E-05  6.57E-01  1.18E+04  
+      39   5.0000000000E+01  3.53E+02  1.41E+00  2.15E-08  4.72E-03  2.31E-08  6.57E-01  1.81E+07 P
+
+      40   5.0000000000E+01  3.56E+02  1.41E+00  8.52E-09  4.68E-03  9.17E-09  6.57E-01  5.29E+07  
+      45   5.0000000000E+01  7.78E+06  1.41E+00  1.15E-05  2.77E-07  1.23E-05  6.57E-01  2.01E+11  
+      46   5.0000000000E+01  2.07E+02  1.41E+00  1.21E-05  2.77E-07  1.31E-05  6.57E-01  2.01E+11  
+
+ Exit  MINRES-QLP.       istop = 12              itn    =      46
+ Exit  MINRES-QLP.       Anorm =  6.5701E-01     Acond  =  2.0123E+11
+ Exit  MINRES-QLP.       rnorm =  1.4142E+00     Arnorm =  1.2149E-05
+ Exit  MINRES-QLP.       xnorm =  2.0717E+02
+ Exit  MINRES-QLP.       xnorm has exceeded maxxnorm or will exceed it next iteration.    
+
+
+  minresqlp appears to be successful.  n =     50  Itns =     46  Relative error in x = 2.9E-07
+  
+  MINRESQLP tests on MM CDS examples
+
+
+---------------------------------------
+ Test of MINRESQLP on an MM CDS matrix 
+---------------------------------------

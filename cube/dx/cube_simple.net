@@ -1,0 +1,699 @@
+//
+// time: Thu Oct 10 18:17:10 2024
+//
+// version: 3.2.0 (format), 4.4.4 (DX)
+//
+//
+// MODULE main
+// workspace: width = 420, height = 621
+// layout: snap = 0, width = 50, height = 50, align = NN
+//
+macro main(
+) -> (
+) {
+    // 
+    // node FileSelector[1]: x = 28, y = 10, inputs = 0, label = FileSelector
+    // output[1]: visible = 1, type = 32, value = "/Users/felixiinohayes/Documents/Programming/GitHub/MPhys-Project-Fortran/cube6pass35-45.dx"
+    // output[2]: visible = 1, type = 32, value = "cube6pass35-45.dx"
+    //
+    // 
+    // node Import[1]: x = 231, y = 31, inputs = 6, label = Import
+    // input[4]: defaulting = 0, visible = 0, type = 1, value = 0
+    // input[5]: defaulting = 0, visible = 0, type = 1, value = 199
+    //
+main_Import_1_out_1 = 
+    Import(
+    main_FileSelector_1_out_1,
+    main_Import_1_in_2,
+    main_Import_1_in_3,
+    main_Import_1_in_4,
+    main_Import_1_in_5,
+    main_Import_1_in_6
+    ) [instance: 1, cache: 1];
+    // 
+    // node Sequencer[1]: x = 323, y = 102, inputs = 7, label = Sequencer
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "Sequencer_1"
+    // input[4]: defaulting = 1, visible = 1, type = 1, value = 1
+    // input[5]: defaulting = 1, visible = 1, type = 1, value = 149
+    // input[6]: defaulting = 1, visible = 0, type = 1, value = 3
+    // input[7]: defaulting = 0, visible = 0, type = 16777217, value = { 1 149 3 1 149 1 }
+    // vcr[1]: min = 1, max = 149, beg = 1, end = 149, cur = 149, inc = 3, loop = on, step = on, pal = off
+    // window: position = (0.2193,0.8554), size = 0.1786x0.0945, screen = 1
+    //
+    main_Sequencer_1_out_1 = @frame;
+    // 
+    // node Integer[2]: x = 278, y = 166, inputs = 11, label = Integer
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "Integer_2"
+    // input[3]: defaulting = 0, visible = 0, type = 1, value = 149
+    // input[5]: defaulting = 1, visible = 0, type = 1, value = 149
+    // input[6]: defaulting = 1, visible = 0, type = 1, value = 149
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 1.0
+    // input[9]: defaulting = 1, visible = 0, type = 1, value = 0
+    // output[1]: visible = 1, type = 1, value = 149
+    //
+main_Integer_2_out_1[cache: 2] = 
+    Integer(
+    main_Integer_2_in_1,
+    main_Sequencer_1_out_1,
+    main_Integer_2_in_3,
+    main_Integer_2_in_4,
+    main_Integer_2_in_5,
+    main_Integer_2_in_6,
+    main_Integer_2_in_7,
+    main_Integer_2_in_8,
+    main_Integer_2_in_9,
+    main_Integer_2_in_10,
+    main_Integer_2_in_11
+    ) [instance: 2, cache: 1];
+    // 
+    // node Select[1]: x = 156, y = 144, inputs = 3, label = Select
+    // input[2]: defaulting = 1, visible = 1, type = 1, value = 1
+    //
+main_Select_1_out_1 = 
+    Select(
+    main_Import_1_out_1,
+    main_Integer_2_out_1,
+    main_Select_1_in_3
+    ) [instance: 1, cache: 1];
+    // 
+    // node Sample[7]: x = 73, y = 372, inputs = 2, label = Sample
+    // input[2]: defaulting = 0, visible = 1, type = 1, value = 200
+    //
+main_Sample_7_out_1 = 
+    Sample(
+    main_Select_1_out_1,
+    main_Sample_7_in_2
+    ) [instance: 7, cache: 1];
+    // 
+    // node AutoGlyph[1]: x = 12, y = 453, inputs = 7, label = AutoGlyph
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "cube"
+    // input[4]: defaulting = 0, visible = 1, type = 5, value = 1.5
+    // input[5]: defaulting = 0, visible = 1, type = 5, value = 1.0
+    //
+main_AutoGlyph_1_out_1 = 
+    AutoGlyph(
+    main_Sample_7_out_1,
+    main_AutoGlyph_1_in_2,
+    main_AutoGlyph_1_in_3,
+    main_AutoGlyph_1_in_4,
+    main_AutoGlyph_1_in_5,
+    main_AutoGlyph_1_in_6,
+    main_AutoGlyph_1_in_7
+    ) [instance: 1, cache: 1];
+    // 
+    // node Colormap[1]: x = 224, y = 414, inputs = 19, label = Colormap
+    // input[1]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.0] [1.0 0.059322034] }
+    // input[2]: defaulting = 0, visible = 0, type = 16777224, value = { [1.0 0.87288136] }
+    // input[3]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 0.0] [1.0 1.0] }
+    // input[4]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] [1.0 1.0] }
+    // input[5]: defaulting = 0, visible = 0, type = 32, value = "Colormap_1"
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 1.1365802
+    // input[8]: defaulting = 1, visible = 0, type = 5, value = 1.484519
+    // input[9]: defaulting = 1, visible = 0, type = 1, value = 20
+    // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 1.1365802 1.484519 }
+    // input[17]: defaulting = 0, visible = 0, type = 5, value = 1.1365802
+    // input[18]: defaulting = 0, visible = 0, type = 5, value = 1.484519
+    // window: position = (0.0188,0.1880), size = 0.4146x0.5313, screen = 1
+    //
+main_Colormap_1_out_1[cache: 2],
+main_Colormap_1_out_2[cache: 2] = 
+    Colormap(
+    main_Colormap_1_in_1,
+    main_Colormap_1_in_2,
+    main_Colormap_1_in_3,
+    main_Colormap_1_in_4,
+    main_Colormap_1_in_5,
+    main_Select_1_out_1,
+    main_Colormap_1_in_7,
+    main_Colormap_1_in_8,
+    main_Colormap_1_in_9,
+    main_Colormap_1_in_10,
+    main_Colormap_1_in_11,
+    main_Colormap_1_in_12,
+    main_Colormap_1_in_13,
+    main_Colormap_1_in_14,
+    main_Colormap_1_in_15,
+    main_Colormap_1_in_16,
+    main_Colormap_1_in_17,
+    main_Colormap_1_in_18,
+    main_Colormap_1_in_19
+    ) [instance: 1, cache: 1];
+    // 
+    // node Color[1]: x = 226, y = 505, inputs = 5, label = Color
+    //
+main_Color_1_out_1 = 
+    Color(
+    main_AutoGlyph_1_out_1,
+    main_Colormap_1_out_1,
+    main_Colormap_1_out_2,
+    main_Color_1_in_4,
+    main_Color_1_in_5
+    ) [instance: 1, cache: 1];
+    // 
+    // node Shade[1]: x = 348, y = 515, inputs = 8, label = Shade
+    // input[4]: defaulting = 1, visible = 0, type = 5, value = 10.0
+    // input[5]: defaulting = 0, visible = 0, type = 1, value = 1000
+    // input[6]: defaulting = 0, visible = 0, type = 5, value = 0.5
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 5.0
+    //
+main_Shade_1_out_1 = 
+    Shade(
+    main_Color_1_out_1,
+    main_Shade_1_in_2,
+    main_Shade_1_in_3,
+    main_Shade_1_in_4,
+    main_Shade_1_in_5,
+    main_Shade_1_in_6,
+    main_Shade_1_in_7,
+    main_Shade_1_in_8
+    ) [instance: 1, cache: 1];
+    // 
+    // node Image[1]: x = 132, y = 559, inputs = 49, label = Image
+    // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
+    // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [2.5 2.5 2.5]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-8.2372 -13.7836 9.15781]
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 11.0448
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 1061
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.744
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.0922291 0.324135 0.941504]
+    // input[11]: defaulting = 0, visible = 0, type = 5, value = 30.0
+    // input[12]: defaulting = 0, visible = 0, type = 1, value = 1
+    // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
+    // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
+    // input[16]: defaulting = 1, visible = 0, type = 32, value = "none"
+    // input[17]: defaulting = 1, visible = 0, type = 1, value = 1
+    // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
+    // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
+    // input[22]: defaulting = 0, visible = 0, type = 32, value = "grey90"
+    // input[25]: defaulting = 0, visible = 0, type = 32, value = "/Users/James/Desktop/cube_slab_lightgrey.tiff"
+    // input[26]: defaulting = 0, visible = 0, type = 32, value = "tiff gamma=1"
+    // input[27]: defaulting = 0, visible = 0, type = 1, value = 2000
+    // input[28]: defaulting = 0, visible = 0, type = 5, value = 1.0
+    // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[30]: defaulting = 0, visible = 0, type = 16777248, value = {"x", "y", "z"}
+    // input[31]: defaulting = 0, visible = 0, type = 1, value = -15
+    // input[32]: defaulting = 0, visible = 0, type = 16777224, value = {[-0.5 -0.5 -0.5] [6.5 6.5 6.5]}
+    // input[34]: defaulting = 0, visible = 0, type = 3, value = 0
+    // input[36]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"grey30", "grey5", "black", "white"}
+    // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background", "grid", "ticks", "labels"}
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
+    // depth: value = 24
+    // window: position = (0.4177,0.0550), size = 0.5599x0.8014, screen = 1
+    // internal caching: 1
+    //
+main_Image_1_out_1,
+main_Image_1_out_2,
+main_Image_1_out_3 = 
+    Image(
+    main_Image_1_in_1,
+    main_Shade_1_out_1,
+    main_Image_1_in_3,
+    main_Image_1_in_4,
+    main_Image_1_in_5,
+    main_Image_1_in_6,
+    main_Image_1_in_7,
+    main_Image_1_in_8,
+    main_Image_1_in_9,
+    main_Image_1_in_10,
+    main_Image_1_in_11,
+    main_Image_1_in_12,
+    main_Image_1_in_13,
+    main_Image_1_in_14,
+    main_Image_1_in_15,
+    main_Image_1_in_16,
+    main_Image_1_in_17,
+    main_Image_1_in_18,
+    main_Image_1_in_19,
+    main_Image_1_in_20,
+    main_Image_1_in_21,
+    main_Image_1_in_22,
+    main_Image_1_in_23,
+    main_Image_1_in_24,
+    main_Image_1_in_25,
+    main_Image_1_in_26,
+    main_Image_1_in_27,
+    main_Image_1_in_28,
+    main_Image_1_in_29,
+    main_Image_1_in_30,
+    main_Image_1_in_31,
+    main_Image_1_in_32,
+    main_Image_1_in_33,
+    main_Image_1_in_34,
+    main_Image_1_in_35,
+    main_Image_1_in_36,
+    main_Image_1_in_37,
+    main_Image_1_in_38,
+    main_Image_1_in_39,
+    main_Image_1_in_40,
+    main_Image_1_in_41,
+    main_Image_1_in_42,
+    main_Image_1_in_43,
+    main_Image_1_in_44,
+    main_Image_1_in_45,
+    main_Image_1_in_46,
+    main_Image_1_in_47,
+    main_Image_1_in_48,
+    main_Image_1_in_49
+    ) [instance: 1, cache: 1];
+// network: end of macro body
+CacheScene(main_Image_1_in_1, main_Image_1_out_1, main_Image_1_out_2);
+}
+main_FileSelector_1_out_1 = "/Users/felixiinohayes/Documents/Programming/GitHub/MPhys-Project-Fortran/cube6pass35-45.dx";
+main_Import_1_in_2 = NULL;
+main_Import_1_in_3 = NULL;
+main_Import_1_in_4 = 0;
+main_Import_1_in_5 = 199;
+main_Import_1_in_6 = NULL;
+main_Import_1_out_1 = NULL;
+main_Sequencer_1_in_1 = "Sequencer_1";
+main_Sequencer_1_in_2 = NULL;
+main_Sequencer_1_in_3 = NULL;
+main_Sequencer_1_in_4 = NULL;
+main_Sequencer_1_in_5 = NULL;
+main_Sequencer_1_in_6 = NULL;
+main_Sequencer_1_in_7 = { 1 149 3 1 149 1 };
+main_Sequencer_1_out_1 = NULL;
+
+@startframe = 1;
+@nextframe  = @startframe;
+@endframe   = 149;
+@deltaframe = 3;
+main_Integer_2_in_1 = "Integer_2";
+main_Integer_2_in_3 = 149;
+main_Integer_2_in_4 = NULL;
+main_Integer_2_in_5 = NULL;
+main_Integer_2_in_6 = NULL;
+main_Integer_2_in_7 = NULL;
+main_Integer_2_in_8 = NULL;
+main_Integer_2_in_9 = NULL;
+main_Integer_2_in_10 = NULL;
+main_Integer_2_in_11 = NULL;
+main_Integer_2_out_1 = 149;
+main_Select_1_in_3 = NULL;
+main_Select_1_out_1 = NULL;
+main_Sample_7_in_2 = 200;
+main_Sample_7_out_1 = NULL;
+main_AutoGlyph_1_in_2 = "cube";
+main_AutoGlyph_1_in_3 = NULL;
+main_AutoGlyph_1_in_4 = 1.5;
+main_AutoGlyph_1_in_5 = 1.0;
+main_AutoGlyph_1_in_6 = NULL;
+main_AutoGlyph_1_in_7 = NULL;
+main_AutoGlyph_1_out_1 = NULL;
+main_Colormap_1_in_1 = { [0.0 0.0] [1.0 0.059322034] };
+main_Colormap_1_in_2 = { [1.0 0.87288136] };
+main_Colormap_1_in_3 = { [0.0 0.0] [1.0 1.0] };
+main_Colormap_1_in_4 = { [0.0 1.0] [1.0 1.0] };
+main_Colormap_1_in_5 = "Colormap_1";
+main_Colormap_1_in_7 = NULL;
+main_Colormap_1_in_8 = NULL;
+main_Colormap_1_in_9 = NULL;
+main_Colormap_1_in_10 = NULL;
+main_Colormap_1_in_11 = NULL;
+main_Colormap_1_in_12 = { 1.1365802 1.484519 };
+main_Colormap_1_in_13 = NULL;
+main_Colormap_1_in_14 = NULL;
+main_Colormap_1_in_15 = NULL;
+main_Colormap_1_in_16 = NULL;
+main_Colormap_1_in_17 = 1.1365802;
+main_Colormap_1_in_18 = 1.484519;
+main_Colormap_1_in_19 = NULL;
+main_Colormap_1_out_1 = NULL;
+main_Colormap_1_out_2 = NULL;
+main_Color_1_in_4 = NULL;
+main_Color_1_in_5 = NULL;
+main_Color_1_out_1 = NULL;
+main_Shade_1_in_2 = NULL;
+main_Shade_1_in_3 = NULL;
+main_Shade_1_in_4 = NULL;
+main_Shade_1_in_5 = 1000;
+main_Shade_1_in_6 = 0.5;
+main_Shade_1_in_7 = 5.0;
+main_Shade_1_in_8 = NULL;
+main_Shade_1_out_1 = NULL;
+macro Image(
+        id,
+        object,
+        where,
+        useVector,
+        to,
+        from,
+        width,
+        resolution,
+        aspect,
+        up,
+        viewAngle,
+        perspective,
+        options,
+        buttonState = 1,
+        buttonUpApprox = "none",
+        buttonDownApprox = "none",
+        buttonUpDensity = 1,
+        buttonDownDensity = 1,
+        renderMode = 0,
+        defaultCamera,
+        reset,
+        backgroundColor,
+        throttle,
+        RECenable = 0,
+        RECfile,
+        RECformat,
+        RECresolution,
+        RECaspect,
+        AAenable = 0,
+        AAlabels,
+        AAticks,
+        AAcorners,
+        AAframe,
+        AAadjust,
+        AAcursor,
+        AAgrid,
+        AAcolors,
+        AAannotation,
+        AAlabelscale,
+        AAfont,
+        interactionMode,
+        title,
+        AAxTickLocs,
+        AAyTickLocs,
+        AAzTickLocs,
+        AAxTickLabels,
+        AAyTickLabels,
+        AAzTickLabels,
+        webOptions) -> (
+        object,
+        camera,
+        where)
+{
+    ImageMessage(
+        id,
+        backgroundColor,
+        throttle,
+        RECenable,
+        RECfile,
+        RECformat,
+        RECresolution,
+        RECaspect,
+        AAenable,
+        AAlabels,
+        AAticks,
+        AAcorners,
+        AAframe,
+        AAadjust,
+        AAcursor,
+        AAgrid,
+        AAcolors,
+        AAannotation,
+        AAlabelscale,
+        AAfont,
+        AAxTickLocs,
+        AAyTickLocs,
+        AAzTickLocs,
+        AAxTickLabels,
+        AAyTickLabels,
+        AAzTickLabels,
+        interactionMode,
+        title,
+        renderMode,
+        buttonUpApprox,
+        buttonDownApprox,
+        buttonUpDensity,
+        buttonDownDensity) [instance: 1, cache: 1];
+    autoCamera =
+        AutoCamera(
+            object,
+            "front",
+            object,
+            resolution,
+            aspect,
+            [0,1,0],
+            perspective,
+            viewAngle,
+            backgroundColor) [instance: 1, cache: 1];
+    realCamera =
+        Camera(
+            to,
+            from,
+            width,
+            resolution,
+            aspect,
+            up,
+            perspective,
+            viewAngle,
+            backgroundColor) [instance: 1, cache: 1];
+    coloredDefaultCamera = 
+	 UpdateCamera(defaultCamera,
+            background=backgroundColor) [instance: 1, cache: 1];
+    nullDefaultCamera =
+        Inquire(defaultCamera,
+            "is null + 1") [instance: 1, cache: 1];
+    resetCamera =
+        Switch(
+            nullDefaultCamera,
+            coloredDefaultCamera,
+            autoCamera) [instance: 1, cache: 1];
+    resetNull = 
+        Inquire(
+            reset,
+            "is null + 1") [instance: 2, cache: 1];
+    reset =
+        Switch(
+            resetNull,
+            reset,
+            0) [instance: 2, cache: 1];
+    whichCamera =
+        Compute(
+            "($0 != 0 || $1 == 0) ? 1 : 2",
+            reset,
+            useVector) [instance: 1, cache: 1];
+    camera = Switch(
+            whichCamera,
+            resetCamera,
+            realCamera) [instance: 3, cache: 1];
+    AAobject =
+        AutoAxes(
+            object,
+            camera,
+            AAlabels,
+            AAticks,
+            AAcorners,
+            AAframe,
+            AAadjust,
+            AAcursor,
+            AAgrid,
+            AAcolors,
+            AAannotation,
+            AAlabelscale,
+            AAfont,
+            AAxTickLocs,
+            AAyTickLocs,
+            AAzTickLocs,
+            AAxTickLabels,
+            AAyTickLabels,
+            AAzTickLabels) [instance: 1, cache: 1];
+    switchAAenable = Compute("$0+1",
+	     AAenable) [instance: 2, cache: 1];
+    object = Switch(
+	     switchAAenable,
+	     object,
+	     AAobject) [instance:4, cache: 1];
+    SWapproximation_options =
+        Switch(
+            buttonState,
+            buttonUpApprox,
+            buttonDownApprox) [instance: 5, cache: 1];
+    SWdensity_options =
+        Switch(
+            buttonState,
+            buttonUpDensity,
+            buttonDownDensity) [instance: 6, cache: 1];
+    HWapproximation_options =
+        Format(
+            "%s,%s",
+            buttonDownApprox,
+            buttonUpApprox) [instance: 1, cache: 1];
+    HWdensity_options =
+        Format(
+            "%d,%d",
+            buttonDownDensity,
+            buttonUpDensity) [instance: 2, cache: 1];
+    switchRenderMode = Compute(
+	     "$0+1",
+	     renderMode) [instance: 3, cache: 1];
+    approximation_options = Switch(
+	     switchRenderMode,
+            SWapproximation_options,
+	     HWapproximation_options) [instance: 7, cache: 1];
+    density_options = Switch(
+	     switchRenderMode,
+            SWdensity_options,
+            HWdensity_options) [instance: 8, cache: 1];
+    renderModeString = Switch(
+            switchRenderMode,
+            "software",
+            "hardware")[instance: 9, cache: 1];
+    object_tag = Inquire(
+            object,
+            "object tag")[instance: 3, cache: 1];
+    annoted_object =
+        Options(
+            object,
+            "send boxes",
+            0,
+            "cache",
+            1,
+            "object tag",
+            object_tag,
+            "ddcamera",
+            whichCamera,
+            "rendering approximation",
+            approximation_options,
+            "render every",
+            density_options,
+            "button state",
+            buttonState,
+            "rendering mode",
+            renderModeString) [instance: 1, cache: 1];
+    RECresNull =
+        Inquire(
+            RECresolution,
+            "is null + 1") [instance: 4, cache: 1];
+    ImageResolution =
+        Inquire(
+            camera,
+            "camera resolution") [instance: 5, cache: 1];
+    RECresolution =
+        Switch(
+            RECresNull,
+            RECresolution,
+            ImageResolution) [instance: 10, cache: 1];
+    RECaspectNull =
+        Inquire(
+            RECaspect,
+            "is null + 1") [instance: 6, cache: 1];
+    ImageAspect =
+        Inquire(
+            camera,
+            "camera aspect") [instance: 7, cache: 1];
+    RECaspect =
+        Switch(
+            RECaspectNull,
+            RECaspect,
+            ImageAspect) [instance: 11, cache: 1];
+    switchRECenable = Compute(
+          "$0 == 0 ? 1 : (($2 == $3) && ($4 == $5)) ? ($1 == 1 ? 2 : 3) : 4",
+            RECenable,
+            switchRenderMode,
+            RECresolution,
+            ImageResolution,
+            RECaspect,
+	     ImageAspect) [instance: 4, cache: 1];
+    NoRECobject, RECNoRerenderObject, RECNoRerHW, RECRerenderObject = Route(switchRECenable, annoted_object);
+    Display(
+        NoRECobject,
+        camera,
+        where,
+        throttle) [instance: 1, cache: 1];
+    image =
+        Render(
+            RECNoRerenderObject,
+            camera) [instance: 1, cache: 1];
+    Display(
+        image,
+        NULL,
+        where,
+        throttle) [instance: 2, cache: 1];
+    WriteImage(
+        image,
+        RECfile,
+        RECformat) [instance: 1, cache: 1];
+    rec_where = Display(
+        RECNoRerHW,
+        camera,
+        where,
+        throttle) [instance: 1, cache: 0];
+    rec_image = ReadImageWindow(
+        rec_where) [instance: 1, cache: 1];
+    WriteImage(
+        rec_image,
+        RECfile,
+        RECformat) [instance: 1, cache: 1];
+    RECupdateCamera =
+	UpdateCamera(
+	    camera,
+	    resolution=RECresolution,
+	    aspect=RECaspect) [instance: 2, cache: 1];
+    Display(
+        RECRerenderObject,
+        camera,
+        where,
+        throttle) [instance: 1, cache: 1];
+    RECRerenderObject =
+	ScaleScreen(
+	    RECRerenderObject,
+	    NULL,
+	    RECresolution,
+	    camera) [instance: 1, cache: 1];
+    image =
+        Render(
+            RECRerenderObject,
+            RECupdateCamera) [instance: 2, cache: 1];
+    WriteImage(
+        image,
+        RECfile,
+        RECformat) [instance: 2, cache: 1];
+}
+main_Image_1_in_1 = "Image_1";
+main_Image_1_in_3 = "X24,,";
+main_Image_1_in_4 = 1;
+main_Image_1_in_5 = [2.5 2.5 2.5];
+main_Image_1_in_6 = [-8.2372 -13.7836 9.15781];
+main_Image_1_in_7 = NULL;
+main_Image_1_in_8 = 1061;
+main_Image_1_in_9 = 0.744;
+main_Image_1_in_10 = [0.0922291 0.324135 0.941504];
+main_Image_1_in_11 = 30.0;
+main_Image_1_in_12 = 1;
+main_Image_1_in_13 = NULL;
+main_Image_1_in_14 = 1;
+main_Image_1_in_15 = NULL;
+main_Image_1_in_16 = NULL;
+main_Image_1_in_17 = NULL;
+main_Image_1_in_18 = NULL;
+main_Image_1_in_19 = 0;
+main_Image_1_in_20 = NULL;
+main_Image_1_in_21 = NULL;
+main_Image_1_in_22 = "grey90";
+main_Image_1_in_23 = NULL;
+main_Image_1_in_25 = "/Users/James/Desktop/cube_slab_lightgrey.tiff";
+main_Image_1_in_26 = "tiff gamma=1";
+main_Image_1_in_27 = 2000;
+main_Image_1_in_28 = 1.0;
+main_Image_1_in_29 = 1;
+main_Image_1_in_30 = {"x", "y", "z"};
+main_Image_1_in_31 = -15;
+main_Image_1_in_32 = {[-0.5 -0.5 -0.5] [6.5 6.5 6.5]};
+main_Image_1_in_33 = NULL;
+main_Image_1_in_34 = 0;
+main_Image_1_in_35 = NULL;
+main_Image_1_in_36 = 1;
+main_Image_1_in_37 = {"grey30", "grey5", "black", "white"};
+main_Image_1_in_38 = {"background", "grid", "ticks", "labels"};
+main_Image_1_in_39 = NULL;
+main_Image_1_in_40 = NULL;
+main_Image_1_in_41 = "rotate";
+main_Image_1_in_42 = NULL;
+main_Image_1_in_43 = NULL;
+main_Image_1_in_44 = NULL;
+main_Image_1_in_45 = NULL;
+main_Image_1_in_46 = NULL;
+main_Image_1_in_47 = NULL;
+main_Image_1_in_48 = NULL;
+main_Image_1_in_49 = NULL;
+Executive("product version 4 4 4");
+$sync
+
+sequence main();
+play;
