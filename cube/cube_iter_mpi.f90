@@ -4,8 +4,9 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 3.95903772,a=0,TOL=0.01,Bx=0.0
+    real*8,parameter::ef= 3.95903772,a=0,TOL=0.0001,Bx=0.0
     integer*4,parameter::nblocks=4,maxiter=100000,N2=nblocks**2,N3=nblocks**3
+    integer*8,parameter::NEV=50,NCV=100
     integer*4 nb,nloc,myid,nprocs
 
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
@@ -21,14 +22,14 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size,matsize
     integer*4 IPARAM(11),IPNTR(14),IDO,LDV,LDZ
-    integer*8 LWORKL,NEV,NCV,N,ishift
+    integer*8 LWORKL,N,ishift
     integer*4 ierr,comm,rx
     integer*8 npmin,npmax,leng,iter
     real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,a_spec,factor,p_l,de,dos
     real*8,allocatable:: rvec(:,:),rwork(:),real_d(:)
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),surface_vec(:),B_pt(:,:)
-    complex*16,allocatable::RESID(:),Vloc(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:,:),extracol(:,:)
+    complex*16,allocatable::RESID(:),Vloc(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:,:),extracol(:,:),vloc_flat(:),vloc_flatg(:),v(:,:)
     complex*16 SIGMA,b_sigma(2,2)
     logical:: rvecmat
     logical,allocatable:: select(:)
@@ -135,21 +136,19 @@ Program Projected_band_structure
 
     do i=1,nprocs
         nloc = matsize/nprocs
-        if (mod(matsize,nprocs).ne.0) nloc= nloc +1 
+        if (mod(matsize,nprocs).ne.0) nloc = nloc +1 
         npminlist(i)=1+(i-1)*nloc
         npmaxlist(i)=min(i*nloc,matsize)
         nloclist(i) = (npmaxlist(i)-npminlist(i)+1)*nb
     enddo
 
     nloc = nloclist(myid+1)
-    NEV=50
-    NCV=100
 
     if(myid.eq.0) print *, "nloc:", nloclist
     if(myid.eq.0) print *, "npmin:", npminlist
     if(myid.eq.0) print *, "npmax:", npmaxlist
 
-    allocate(RESID(nloc),Vloc(nloc,NCV),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
+    allocate(RESID(nloc),Vloc(nloc,NCV),vloc_flat(nloc*ncv),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),real_d(NEV),WORKEV(2*NCV))
 
     iparam(1)=1
@@ -166,13 +165,12 @@ Program Projected_band_structure
     rvecmat=.true.
     select=.true.
 
-
     ! Arnoldi iterations using pznaupd
     do while (iter < maxiter)
         iter = iter + 1
         if (myid == 0) print *, 'Iterations: ', iter
 
-        call pznaupd(comm, IDO, 'I', nloc, 'LM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
+        call pznaupd(comm, IDO, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
 
         if (IDO == 99) exit
         if (IDO == -1 .or. IDO == 1) then
@@ -191,30 +189,45 @@ Program Projected_band_structure
         stop
     end if
 
-    ! Call pzneupd to compute the eigenvalues and eigenvectors
     rvecmat = .true.
-    ! if(myid==0) print *, vloc(5,1), d(1)
-    call pzneupd(comm, rvecmat, 'A', select, D, Vloc, LDV, (0.0d0, 0.0d0), WORKEV, 'I', nloc, 'LM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
 
-    ! if(myid==0) print *, vloc(5,1), d(1)
-    ! Check for errors
+    call pzneupd(comm, rvecmat, 'A', select, D, Vloc, LDV, (0.0d0, 0.0d0), WORKEV, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
+
     if (INFO .ne. 0) then
         if (myid == 0) print *, 'Error with pzneupd, info =', INFO
         call MPI_FINALIZE(ierr)
         stop
     end if
 
+    allocate(v(N,NCV))
+    vloc_flat = reshape(Vloc,[nloc*ncv])
+
+    ! Root process will gather all the data into a single large 1D array
+    if (myid == 0) then
+        allocate(vloc_flatg(N*NCV))
+    end if
+
+    if(myid.eq.1) print*,'vloc(1,1):',vloc(1,1)
+
+    ! Gather all the local 1D arrays into the root process
+    call MPI_GATHER(vloc_flat, nloc*ncv, MPI_DOUBLE_COMPLEX, vloc_flatg, nloc*ncv, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
+    ! If root process, reshape the gathered 1D array back into a large 2D array
+    if (myid == 0) then
+        print *, 'Gathered data on root process:'
+        v = reshape(vloc_flatg, [N, ncv])
+    end if
+
+    if(myid.eq.0) print*,'v:',v(nloclist(1)+1,1)
+    
     ! Print eigenvalues on root process
     if (myid == 0) then
         print *, 'Eigenvalues:'
         do i = 1, NEV
             real_d(i) = real(d(i))
-            print *, real_d(i)
+            ! print *, real_d(i)
             write(150, '(1(1x,f12.6))') real_d(i)
-            write(200, *) vloc(:,i)
+            write(200, *) v(:,i)
         end do
-        do i=1,NEV
-        enddo
     endif
 
     ! Finalize MPI
@@ -223,9 +236,9 @@ Program Projected_band_structure
     contains
 
     subroutine matmul_(comm,vec_in, vec_out)
-        use mpi
         use parameters
         implicit none
+        include 'mpif.h'
         ! Declare intent and input/output parameters
         complex*16, intent(in) :: vec_in(nloclist(myid+1))  ! Global input vector
         complex*16, intent(out) :: vec_out(nloclist(myid+1)) ! Output vector for this process
