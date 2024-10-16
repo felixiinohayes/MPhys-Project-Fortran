@@ -1,17 +1,17 @@
       Program Wannier_band_structure
       Implicit None
 !--------to be midified by the usere
-      character(len=80):: prefix="BiTeI"
+      character(len=80):: prefix="../BiTeI"
       integer,parameter::nkpath=3,np=600
 !------------------------------------------------------
       integer*4 ik,ikmax, skip,sign
-      real*8 kz,ef 
+      real*8 kz,ef,eg
       real*8 :: Te_sum, Bi_sum, I_sum
       character(len=30)::klabel(nkpath)
       character(len=80) nnkp,line,top_file,triv_file
       integer*4,parameter::nk=(nkpath-1)*np+1
       integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,j1,j2,nb,l
-      real*8,parameter::third=1d0/3d0, alpha = 1
+      real*8,parameter::third=1d0/3d0, alpha = 0
       real*8 phase,pi2,jk,a,b,x1,y1
       real*8 xk(nk),bvec(3,3),avec(3,3),ktemp1(3),ktemp2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
       real*8,allocatable:: rvec(:,:),rvec_data(:,:),ene(:,:),rwork(:),od(:,:,:)
@@ -121,7 +121,9 @@
 
 !-----Fermi level:
       ef = (MAXVAL(ene(12, :)) + MINVAL(ene(13, :)))/2.0d0
-      print * , ef
+      eg = MINVAL(ene(13, :)) - MAXVAL(ene(12, :))
+
+      print * , ef,eg
 
 !-----Orbital probability:
 

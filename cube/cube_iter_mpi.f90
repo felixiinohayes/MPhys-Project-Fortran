@@ -4,13 +4,13 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 3.95903772,a=0,TOL=0.0001,Bx=0.0
-    integer*4,parameter::nblocks=4,maxiter=100000,N2=nblocks**2,N3=nblocks**3
-    integer*8,parameter::NEV=50,NCV=100
+    real*8,parameter::ef_triv= 4.0462578,ef_top=5.997542,a=0,TOL=0.0001,Bx=0.0
+    integer*4,parameter::nblocks=10,maxiter=100000,N2=nblocks**2,N3=nblocks**3
+    integer*8,parameter::NEV=100,NCV=200
     integer*4 nb,nloc,myid,nprocs
 
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
-    integer*4,allocatable :: npminlist(:),npmaxlist(:),nloclist(:)
+    integer*8,allocatable :: npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:)
     
 end module parameters
 
@@ -29,7 +29,7 @@ Program Projected_band_structure
     real*8,allocatable:: rvec(:,:),rwork(:),real_d(:)
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),surface_vec(:),B_pt(:,:)
-    complex*16,allocatable::RESID(:),Vloc(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:,:),extracol(:,:),vloc_flat(:),vloc_flatg(:),v(:,:)
+    complex*16,allocatable::RESID(:),Vloc(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:,:),extracol(:,:),vloc_flat(:),vloc_flatg(:),v(:,:),Zloc(:,:)
     complex*16 SIGMA,b_sigma(2,2)
     logical:: rvecmat
     logical,allocatable:: select(:)
@@ -120,7 +120,12 @@ Program Projected_band_structure
     deallocate(rvec,top_Hr,triv_Hr,ndeg)
 
     do i=1,18
-        interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef
+        if(a==0) then 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
+        else 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+        endif
+         
     enddo
 
 ! !------ARPACK
@@ -130,7 +135,7 @@ Program Projected_band_structure
     call MPI_COMM_RANK(comm, myid, ierr)
     call MPI_COMM_SIZE(comm, nprocs, ierr)
 
-    allocate(npminlist(nprocs),npmaxlist(nprocs),nloclist(nprocs))
+    allocate(npminlist(nprocs),npmaxlist(nprocs),nloclist(nprocs),nloc_sum(nprocs+1),nev_sum(nprocs+1))
  
     N=nb*matsize
 
@@ -142,13 +147,24 @@ Program Projected_band_structure
         nloclist(i) = (npmaxlist(i)-npminlist(i)+1)*nb
     enddo
 
-    nloc = nloclist(myid+1)
+    nloc_sum(1) = 1
+    nev_sum(1) = 1
+    do i=1,nprocs
+        nloc_sum(i+1) = nloc_sum(i) + nloclist(i)
+    enddo
 
+    do i=2,nprocs+1
+        nev_sum(i) = (nloc_sum(i)-1)*nev +1
+    enddo
+    
+    nloc = nloclist(myid+1) 
     if(myid.eq.0) print *, "nloc:", nloclist
     if(myid.eq.0) print *, "npmin:", npminlist
     if(myid.eq.0) print *, "npmax:", npmaxlist
+    if(myid.eq.0) print *, "nloc_sum:", nloc_sum
+    if(myid.eq.0) print *, "nev_sum:", nev_sum
 
-    allocate(RESID(nloc),Vloc(nloc,NCV),vloc_flat(nloc*ncv),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
+    allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),vloc_flat(nloc*ncv),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),real_d(NEV),WORKEV(2*NCV))
 
     iparam(1)=1
@@ -185,36 +201,38 @@ Program Projected_band_structure
     ! Check for errors
     if (INFO .ne. 0) then
         if (myid == 0) print *, 'Error with pznaupd, info =', INFO
-        call MPI_FINALIZE(ierr)
+            call MPI_FINALIZE(ierr)
         stop
     end if
 
     rvecmat = .true.
 
-    call pzneupd(comm, rvecmat, 'A', select, D, Vloc, LDV, (0.0d0, 0.0d0), WORKEV, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
+    call pzneupd(comm, rvecmat, 'A', select, D, Zloc, LDV, (0.0d0, 0.0d0), WORKEV, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
 
     if (INFO .ne. 0) then
         if (myid == 0) print *, 'Error with pzneupd, info =', INFO
-        call MPI_FINALIZE(ierr)
+            call MPI_FINALIZE(ierr)
         stop
     end if
 
-    allocate(v(N,NCV))
-    vloc_flat = reshape(Vloc,[nloc*ncv])
+    allocate(v(N,NEV))
+    vloc_flat = reshape(Zloc,[nloc*nev])
 
     ! Root process will gather all the data into a single large 1D array
     if (myid == 0) then
-        allocate(vloc_flatg(N*NCV))
+        allocate(vloc_flatg(N*NEV))
     end if
 
-    if(myid.eq.1) print*,'vloc(1,1):',vloc(1,1)
+    if(myid.eq.1) print*,'vloc(1,1):',Zloc(1,1)
 
     ! Gather all the local 1D arrays into the root process
-    call MPI_GATHER(vloc_flat, nloc*ncv, MPI_DOUBLE_COMPLEX, vloc_flatg, nloc*ncv, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
+    call MPI_GATHER(vloc_flat, nloc*nev, MPI_DOUBLE_COMPLEX, vloc_flatg, nloc*nev, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
     ! If root process, reshape the gathered 1D array back into a large 2D array
     if (myid == 0) then
         print *, 'Gathered data on root process:'
-        v = reshape(vloc_flatg, [N, ncv])
+        do i=1,nprocs
+            v(nloc_sum(i):nloc_sum(i+1)-1,1:nev) = reshape(vloc_flatg(nev_sum(i):nev_sum(i+1)-1), [nloclist(i), nev])
+        enddo
     end if
 
     if(myid.eq.0) print*,'v:',v(nloclist(1)+1,1)
@@ -229,6 +247,11 @@ Program Projected_band_structure
             write(200, *) v(:,i)
         end do
     endif
+
+    call date_and_time(VALUES=time_end)
+
+        print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
+        print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
 
     ! Finalize MPI
     call MPI_FINALIZE(ierr)
@@ -251,30 +274,19 @@ Program Projected_band_structure
 
         vec_out = 0d0
     
-        ! if(myid==0 .and. iter==1) print *, vec_in(nloclist(myid+1))
         call tv(myid, vec_in, vec_out)
-        ! if(myid==0 .and. iter==1) print *, vec_in(nloclist(myid+1))
 
         do i=1,nprocs-1
             mv_buf=0d0
             next = mod(myid + i, nprocs)
             prev = mod(myid - i + nprocs, nprocs)
 
-            ! print *, "myid=", myid, "received from prev=", prev
-            ! print *, "myid=", myid, " sending to next=", next, "receiving from prev=", prev
+
             call mpi_sendrecv(vec_in(1), nloclist(myid+1), MPI_DOUBLE_COMPLEX, next, 0, &
                               mv_buf(1), nloclist(prev+1), MPI_DOUBLE_COMPLEX, prev, 0, comm, status, ierr)
 
-            ! if(i==1 .and. myid.eq.0 .and. iter==1) print *, vec_in(1:10)
-            ! if(i==1 .and. myid.eq.0 .and. iter==1) print *, vec_in(1:nloclist(myid+1))
-            ! if(i==1 .and. myid.eq.1 .and. iter==1) print *, mv_buf(1:10)
-            ! if(i==1 .and. myid.eq.1 .and. iter==1) print *, mv_buf(1:nloclist(prev+1))
-            if(myid==0 .and. iter==1) print *, i,next,prev,vec_out(nloclist(myid+1))
             call tv(prev,mv_buf(1:nloclist(prev+1)),vec_out)
-            if(myid==0 .and. iter==1) print *, i,next,prev,vec_out(nloclist(myid+1))
-            ! if(myid==0 .and. iter==1) print *, vec_out(nloclist(myid+1))
         enddo
-        ! call mpi_barrier(comm,ierr)
     
     end subroutine matmul_
 
@@ -285,10 +297,6 @@ Program Projected_band_structure
         integer*4, intent(in) :: id
         complex*16, intent(in) :: vec_in(nloclist(id+1))
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
-    
-        ! Create a temporary copy of vec_in to avoid modifying the original
-        complex*16 :: vec_in_copy(nloclist(id+1))
-    
         ! Declare other local variables
         integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3
         integer :: rowcount, colcount
@@ -311,28 +319,5 @@ Program Projected_band_structure
             rowcount = rowcount + 1
         enddo
     end subroutine tv
-
-    ! subroutine matmul_(comm, vec_in, vec_out)
-    !     use mpi
-    !     implicit none
-    !     integer*4 comm
-    !     complex*16, intent(in) :: vec_in(nloc)  ! Local part of input vector
-    !     complex*16, intent(out) :: vec_out(nloc)  ! Local part of output vector
-    !     integer*4 ierr, myid, nprocs
-    !     integer*4 i
-
-    !     ! Local variables
-    !     call MPI_COMM_RANK(comm, myid, ierr)
-    !     call MPI_COMM_SIZE(comm, nprocs, ierr)
-
-    !     ! Set output vector to zero
-    !     vec_out = (0.0d0, 0.0d0)
-
-    !     ! Matrix-vector multiplication with the identity matrix scaled by 5
-    !     do i = 1, nloc
-    !         vec_out(i) = i * vec_in(i)
-    !     end do
-
-    ! end subroutine matmul_
 
 end program 
