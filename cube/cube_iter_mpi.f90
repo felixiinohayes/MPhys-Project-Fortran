@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv= 4.0462578,ef_top=5.997542,a=0,TOL=0.0001,Bx=0.0
-    integer*4,parameter::nblocks=10,maxiter=100000,N2=nblocks**2,N3=nblocks**3
+    real*8,parameter::ef_triv= 4.0462578,ef_top=5.997542,a=0,TOL=0.001,Bx=0.0
+    integer*4,parameter::nblocks=5,maxiter=100000,N2=nblocks**2,N3=nblocks**3
     integer*8,parameter::NEV=100,NCV=200
     integer*4 nb,nloc,myid,nprocs
 
@@ -55,8 +55,8 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
 
-    open(150, file='data/parpack_eigenvalues.dat')
-    open(200, file='data/parpack_eigenvectors.dat')
+    open(150, file='data/test_eigenvalues.dat')
+    open(200, file='data/test_eigenvectors.dat')
 
 !------read H(R)
     interp_size=6
@@ -248,11 +248,14 @@ Program Projected_band_structure
         end do
     endif
 
-    call date_and_time(VALUES=time_end)
+    if(myid.eq.0) then
+
+        call date_and_time(VALUES=time_end)
 
         print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
         print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
 
+    endif
     ! Finalize MPI
     call MPI_FINALIZE(ierr)
 
