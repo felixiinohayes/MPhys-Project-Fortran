@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=0,emin=5.5,emax=6.5,bfactor=0.006
-    integer*8,parameter::nkpath=3,np=150,nr3=11,nk=(nkpath-1)*np+1,eres=5,nepoints=(2*eres)+1,nblocks=5,blocksize=(nblocks+1)**3
+    character(len=80):: prefix="../BiTeI"
+    real*8,parameter::ef_triv=4.0462578,ef_top=5.886,a=1,emin=5.5,emax=6.5,bfactor=0.006
+    integer*8,parameter::nkpath=3,np=150,nr3=11,nk=(nkpath-1)*np+1,eres=5,nepoints=(2*eres)+1,nblocks=5,blocksize=(nblocks)**3
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -136,18 +136,28 @@ Program Projected_band_structure
 
 !----- Construct supercell hamiltonian
 
+    ! do i=1,18
+    !     if(a==0) then 
+    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
+    !     else 
+    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+    !     endif
+         
+    ! enddo
+    print *, "here"
+
     super_H=0d0
-    do i3=0,nblocks
-        do j3=0,nblocks
+    do i3=0,nblocks-1
+        do j3=0,nblocks-1
             r3=i3-j3
-            do i2=0,nblocks
-                do j2=0,nblocks
+            do i2=0,nblocks-1
+                do j2=0,nblocks-1
                     r2=i2-j2
-                    do i1=0,nblocks
-                        do j1=0,nblocks
+                    do i1=0,nblocks-1
+                        do j1=0,nblocks-1
                             r1=i1-j1
-                            xindex = i3*((nblocks+1)**2)+i2*(nblocks+1)+i1
-                            yindex = j3*((nblocks+1)**2)+j2*(nblocks+1)+j1
+                            xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
+                            yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
                             super_H((1+nb*xindex):(nb*(xindex+1)),(1+nb*yindex):(nb*(yindex+1))) = interp_Hr(:,:,r1,r2,r3)
                             ! print *, xindex, yindex,r1,r2,r3
                         enddo
@@ -156,6 +166,8 @@ Program Projected_band_structure
             enddo
         enddo
     enddo
+
+    print *, "here"
 
     call zheev('V','U',nb*blocksize,super_H,nb*blocksize,ene,work,lwork,rwork,info)
     ! call dsaupd()
