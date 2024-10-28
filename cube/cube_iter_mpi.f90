@@ -4,13 +4,13 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv= 4.0462578,ef_top=5.997542,a=0,TOL=0.001,Bx=0.0
-    integer*4,parameter::nblocks=5,maxiter=100000,N2=nblocks**2,N3=nblocks**3
-    integer*8,parameter::NEV=100,NCV=200
+    real*8,parameter::ef_triv= 4.0462578,ef_top=5.886,a=1,TOL=0.01,Bx=0.0
+    integer*4,parameter::nxblocks=14,nyblocks=14,nzblocks=5,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=150,NCV=300
     integer*4 nb,nloc,myid,nprocs
 
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
-    integer*8,allocatable :: npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:)
+    integer*4,allocatable :: npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:)
     
 end module parameters
 
@@ -18,13 +18,14 @@ Program Projected_band_structure
     use parameters
     Implicit None
     include 'mpif.h'
+    ! include 'debug.h'
 !------------------------------------------------------
-    character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size,matsize
+    character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,achar
+    integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size
     integer*4 IPARAM(11),IPNTR(14),IDO,LDV,LDZ
     integer*8 LWORKL,N,ishift
     integer*4 ierr,comm,rx
-    integer*8 npmin,npmax,leng,iter
+    integer*4 npmin,npmax,leng,iter
     real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,a_spec,factor,p_l,de,dos
     real*8,allocatable:: rvec(:,:),rwork(:),real_d(:)
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
@@ -55,13 +56,15 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
 
-    open(150, file='data/test_eigenvalues.dat')
-    open(200, file='data/test_eigenvectors.dat')
+    write(v_file,'(a,I2,a)') "data/slab_",nxblocks,"_top_eigenvectors.dat"
+    write(d_file,'(a,I2,a)') "data/slab_",nxblocks,"_top_eigenvalues.dat"
+
+    open(150, file=trim(adjustl(d_file)))
+    open(200, file=trim(adjustl(v_file)))
 
 !------read H(R)
     interp_size=6
-    if(abs(nblocks) > interp_size) interp_size = abs(nblocks)
-    matsize=(nblocks)**3
+    ! if((nxblocks > interp_size).or.(nyblocks > interp_size).or.(nzblocks > interp_size)) interp_size = max(max(nxblocks,nyblocks),nzblocks)
 
     read(99,*)
     read(99,*)nb,nr
@@ -137,13 +140,13 @@ Program Projected_band_structure
 
     allocate(npminlist(nprocs),npmaxlist(nprocs),nloclist(nprocs),nloc_sum(nprocs+1),nev_sum(nprocs+1))
  
-    N=nb*matsize
+    N=nb*N3
 
     do i=1,nprocs
-        nloc = matsize/nprocs
-        if (mod(matsize,nprocs).ne.0) nloc = nloc +1 
+        nloc = N3/nprocs
+        if (mod(N3,nprocs).ne.0) nloc = nloc +1 
         npminlist(i)=1+(i-1)*nloc
-        npmaxlist(i)=min(i*nloc,matsize)
+        npmaxlist(i)=min(i*nloc,N3)
         nloclist(i) = (npmaxlist(i)-npminlist(i)+1)*nb
     enddo
 
@@ -164,7 +167,7 @@ Program Projected_band_structure
     if(myid.eq.0) print *, "nloc_sum:", nloc_sum
     if(myid.eq.0) print *, "nev_sum:", nev_sum
 
-    allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),vloc_flat(nloc*ncv),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
+    allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),real_d(NEV),WORKEV(2*NCV))
 
     iparam(1)=1
@@ -215,15 +218,19 @@ Program Projected_band_structure
         stop
     end if
 
-    allocate(v(N,NEV))
+    allocate(v(N,NEV), vloc_flat(nloc*nev))
     vloc_flat = reshape(Zloc,[nloc*nev])
 
     ! Root process will gather all the data into a single large 1D array
-    if (myid == 0) then
+    if(myid==0) then
         allocate(vloc_flatg(N*NEV))
-    end if
+    endif
 
-    if(myid.eq.1) print*,'vloc(1,1):',Zloc(1,1)
+    ! if(myid.eq.1) print*,'vloc(1,1):',Zloc(1,1)
+    ! if(myid==0) print *, vloc_flat(nloc*nev)
+
+    ! print *, "Process", myid, ": nloc =", nloc, "nev =", nev, "vloc_flat size =", size(vloc_flat)
+    ! print *, nloclist
 
     ! Gather all the local 1D arrays into the root process
     call MPI_GATHER(vloc_flat, nloc*nev, MPI_DOUBLE_COMPLEX, vloc_flatg, nloc*nev, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
@@ -239,11 +246,11 @@ Program Projected_band_structure
     
     ! Print eigenvalues on root process
     if (myid == 0) then
-        print *, 'Eigenvalues:'
+        write(150, *) NEV
+        write(150, '(3(1x,I7))') nxblocks,nyblocks,nzblocks
         do i = 1, NEV
             real_d(i) = real(d(i))
-            ! print *, real_d(i)
-            write(150, '(1(1x,f12.6))') real_d(i)
+            write(150, '(1(1x,f12.8))') real_d(i)
             write(200, *) v(:,i)
         end do
     endif
@@ -263,8 +270,8 @@ Program Projected_band_structure
 
     subroutine matmul_(comm,vec_in, vec_out)
         use parameters
+        use mpi
         implicit none
-        include 'mpif.h'
         ! Declare intent and input/output parameters
         complex*16, intent(in) :: vec_in(nloclist(myid+1))  ! Global input vector
         complex*16, intent(out) :: vec_out(nloclist(myid+1)) ! Output vector for this process
@@ -279,7 +286,7 @@ Program Projected_band_structure
     
         call tv(myid, vec_in, vec_out)
 
-        do i=1,nprocs-1
+       do i=1,nprocs-1
             mv_buf=0d0
             next = mod(myid + i, nprocs)
             prev = mod(myid - i + nprocs, nprocs)
@@ -307,14 +314,15 @@ Program Projected_band_structure
         rowcount = 0
         do irow = npminlist(myid+1), npmaxlist(myid+1)
             colcount = 0
-            f3 = (irow-1) / (N2)
-            f2 = mod((irow-1) / nblocks, nblocks)
-            f1 = mod(irow-1, nblocks)
+            f3 = (irow-1) / (Nxy)
+            f2 = mod((irow-1) / nxblocks, nyblocks)
+            f1 = mod(irow-1, nxblocks)
             do icol = npminlist(id+1), npmaxlist(id+1)
-                r3 = ((icol-1) / N2) - f3
-                r2 = mod((icol-1) / nblocks, nblocks) - f2
-                r1 = mod(icol-1, nblocks) - f1
-                if ((abs(r1) .lt. 6) .or. (abs(r2) .lt. 6) .or. (abs(r3) .lt. 6)) then
+                r3 = ((icol-1) / Nxy) - f3
+                r2 = mod((icol-1) / nxblocks, nyblocks) - f2
+                r1 = mod(icol-1, nxblocks) - f1
+                if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
+                    if(myid==1 .and. iter==1) print *, irow, icol, r1, r2, r3, rowcount, colcount
                     vec_out(1+colcount*nb : nb*(colcount+1)) = vec_out(1+colcount*nb : nb*(colcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in(1+rowcount*nb : nb*(rowcount+1)))
                 endif
                 colcount = colcount + 1
