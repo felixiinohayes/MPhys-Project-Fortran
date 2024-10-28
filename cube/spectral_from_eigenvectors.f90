@@ -2,26 +2,32 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="cube"
-    real*8,parameter::emin=-0.25,emax=0.25,eta=0.02
-    integer*8,parameter::nb=18,nblocks=9,matsize=(nblocks)**3,eres=100,NEV=50
+    real*8,parameter::emin=-0.1,emax=0.1,eta=0.03
+    integer*8,parameter::nb=18,eres=100
     
 end module parameters
 
 Program Projected_band_structure
     use parameters
     Implicit None
-    integer*4 i,j,k,l,nr,ie,count,ierr
+    integer*4 i,j,k,l,nr,ie,count,ierr,NEV,nxblocks,nyblocks,nzblocks,matsize
     character(len=80) v_file,d_file, line
     real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,epoints(eres),a_spec,factor,p_l,de,dos
     real*8,allocatable:: rvec(:,:),rwork(:),real_d(:)
-    complex*16 V(matsize*nb,NEV)
-    real*8 d(NEV)
+    complex*16,allocatable:: V(:,:)
+    real*8,allocatable:: d(:)
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
-    open(98,file='data/cube_9_triv_eigenvalues.dat')
-    open(99,file='data/cube_9_triv_eigenvectors.dat')
-    open(100,file='data/cube_9_triv.dx')
+    open(98,file='data/slab_10_top_eigenvalues.dat')
+    open(99,file='data/slab_10_top_eigenvectors.dat')
+    open(100,file='data/slab_10.dx')
+
+    read(98, *) NEV, nxblocks, nyblocks, nzblocks
+    matsize=nxblocks*nyblocks*nzblocks
+    print *, NEV, nxblocks, nyblocks, nzblocks
+
+    allocate(d(NEV), V(nb*matsize,NEV))
 
     read(98, *) d
     do i=1, NEV
@@ -37,12 +43,12 @@ Program Projected_band_structure
         epoints(i) = emin + de*i
     enddo
 
-    write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nblocks,nblocks,nblocks
+    write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nzblocks,nxblocks,nyblocks
     write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
     write(100, '(a,3(1x,f12.8))') 'delta',0d0,0d0,1d0
     write(100, '(a,3(1x,f12.8))') 'delta',0d0,1d0,0d0
     write(100, '(a,3(1x,f12.6))') 'delta',1d0,0d0,0d0
-    write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nblocks,nblocks,nblocks
+    write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nzblocks,nxblocks,nyblocks
 
     ! write(100, '(a,i10,a)') 'object 3 class array type float rank 1 shape 1 item', matsize, ' data follows'
 
@@ -72,7 +78,7 @@ Program Projected_band_structure
                 p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
                 factor = ((epoints(ie) - d(i)))/eta
                 a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
-                if(ie==1) print *, d(i), p_l, factor, a_spec
+                ! if(ie==1) print *, d(i), p_l, factor, a_spec
                 ! if(j==1) print *, a_spec
             enddo
             write(100, '(1(1x,f12.8))') a_spec
