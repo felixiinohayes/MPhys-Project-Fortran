@@ -4,9 +4,9 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv= 4.0462578,ef_top=5.886,a=0,TOL=0.00001,Bx=0.0
-    integer*4,parameter::nxblocks=16,nyblocks=16,nzblocks=16,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=600,NCV=1200
+    real*8,parameter::ef_triv= 4.0462578,ef_top=5.886,a=0,TOL=0.001,Bx=0.0
+    integer*4,parameter::nxblocks=11,nyblocks=11,nzblocks=11,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=160,NCV=320
     integer*4 nb,nloc,myid,nprocs
 
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
@@ -42,8 +42,8 @@ Program Projected_band_structure
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
-    write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
-    write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
+    write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological_4band.dat"
+    write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial_4band.dat"
     write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
     open(98,file=trim(adjustl(nnkp)))
 111 read(98,'(a)')line
@@ -56,11 +56,8 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
 
-    write(d_file,'(a)') "data/cube_16_triv_eigenvalues.dat"
-    write(v_file,'(a)') "data/cube_16_triv_eigenvectors.dat"
-
-    open(150, file=trim(adjustl(d_file)))
-    open(200, file=trim(adjustl(v_file)))
+    open(150, file="data/S16_TR_EVALS.dat")
+    open(200, file="data/S16_TR_EVECS.dat")
 
 !------read H(R)
     interp_size=6
@@ -122,13 +119,13 @@ Program Projected_band_structure
     enddo
     deallocate(rvec,top_Hr,triv_Hr,ndeg)
 
-    do i=1,18
-        if(a==0) then 
-            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
-        else 
-            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
-        endif
-    enddo
+    ! do i=1,18
+    !     if(a==0) then 
+    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
+    !     else 
+    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+    !     endif
+    ! enddo
 
 ! !------ARPACK
 
@@ -225,13 +222,22 @@ Program Projected_band_structure
         displs(i) = nev_sum(i) - 1
     enddo
 
-    print *, displs
-    print *, myid, vloc_flat(nloc*nev)
+    ! print *, displs
+    ! print *, myid, vloc_flat(nloc*nev)
+
+    
+    do i=0,nprocs-1
+        if(myid==i) print*,myid,'start: ',vloc_flat(1), 'end: ',vloc_flat(nloc*nev)
+    enddo
+
     call MPI_GATHERV(vloc_flat, nloc*nev, MPI_DOUBLE_COMPLEX, &
                     vloc_flatg, nloclist_nev, displs, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
-    if(myid==0) print *, vloc_flatg(5041+4679)
-
+    
     if (myid == 0) then
+        print*,"POST GATHER"
+        do i=1,nprocs
+            print*, i-1, 'start: ',vloc_flatg(nev_sum(i)),'end: ',vloc_flatg(nev_sum(i+1)-1)
+        enddo
         do i=1,nprocs
             v(nloc_sum(i):nloc_sum(i+1)-1,1:nev) = reshape(vloc_flatg(nev_sum(i):nev_sum(i+1)-1), [nloclist(i), nev])
         enddo
@@ -243,7 +249,7 @@ Program Projected_band_structure
         write(150, '(3(1x,I7))') nxblocks,nyblocks,nzblocks
         do i = 1, NEV
             real_d(i) = real(d(i))
-            write(150, '(1(1x,f12.8))') real_d(i)
+            write(150, '(1(1x,f20.12))') real_d(i)
             write(200, *) v(:,i)
         end do
     endif
@@ -263,8 +269,8 @@ Program Projected_band_structure
 
     subroutine matmul_(comm,vec_in, vec_out)
         use parameters
-        use mpi
         implicit none
+        include 'mpif.h'
         complex*16, intent(in) :: vec_in(nloclist(myid+1))
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: comm, next, prev, status(MPI_STATUS_SIZE)
