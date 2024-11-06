@@ -4,75 +4,89 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv= 4.0462578,ef_top=5.886,a=0,TOL=0.001,Bx=0.0
-    integer*4,parameter::nxblocks=11,nyblocks=11,nzblocks=11,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=160,NCV=320
+    real*8,parameter::ef_triv=4.28,ef_top=6.5,a=0,TOL=0.001,Bx=0.0
+    integer*4,parameter::nxblocks=20,nyblocks=20,nzblocks=20,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=500,NCV=1000
     integer*4 nb,nloc,myid,nprocs
-
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     integer*4,allocatable :: npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
-    
 end module parameters
 
 Program Projected_band_structure
     use parameters
     Implicit None
     include 'mpif.h'
-    ! include 'debug.h'
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,achar
-    integer*4 i,j,k,l,nr,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r1,r2,r3,sign,il,i1,j1,i2,j2,i3,j3,xindex,yindex,rvec_data(3),index,interp_size
-    integer*4 IPARAM(11),IPNTR(14),IDO,LDV,LDZ
-    integer*8 LWORKL,N,ishift
-    integer*4 ierr,comm,rx
-    integer*4 npmin,npmax,leng,iter
-    real*8 avec(3,3),bvec(3,3),pi2,x1,x2,y1,y2,a_spec,factor,p_l,de,dos
-    real*8,allocatable:: rvec(:,:),rwork(:),real_d(:)
-    integer*4,allocatable:: ndeg(:),vec_ind(:,:)
-    complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),surface_vec(:),B_pt(:,:)
-    complex*16,allocatable::RESID(:),Vloc(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:,:),extracol(:,:),vloc_flat(:),vloc_flatg(:),v(:,:),Zloc(:,:)
-    complex*16 SIGMA,b_sigma(2,2)
-    logical:: rvecmat
-    logical,allocatable:: select(:)
+    character(len=5) suffix
+    integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3, xindex, yindex, rvec(3), index, interp_size
+    integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ
+    integer*8 LWORKL, N, ishift
+    integer*4 ierr, comm, rx
+    integer*4 npmin, npmax, leng, iter
+    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, p_l, de, dos
+    real*8, allocatable :: rwork(:), real_d(:)
+    integer*4, allocatable :: vec_ind(:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
+    complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
+    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), Z(:,:), extrarow(:,:), extracol(:,:), vloc_flat(:), vloc_flatg(:), v(:,:), Zloc(:,:)
+    complex*16 SIGMA, b_sigma(2,2)
+    logical :: rvecmat
+    logical, allocatable :: select(:)
+    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
+    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
 !----Date and Time
-    integer,dimension(8)::time_start
-    integer,dimension(8)::time_end
+    integer, dimension(8) :: time_start
+    integer, dimension(8) :: time_end
 
     call date_and_time(VALUES=time_start)
 
-    pi2=4.0d0*atan(1.0d0)*2.0d0
+    pi2 = 4.0d0 * atan(1.0d0) * 2.0d0
 
-    write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological_4band.dat"
-    write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial_4band.dat"
-    write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
-    open(98,file=trim(adjustl(nnkp)))
-111 read(98,'(a)')line
-    if(trim(adjustl(line)).ne."begin real_lattice") goto 111
-    read(98,*)avec
-    read(98,'(a)')line
-    read(98,'(a)')line
-    read(98,'(a)')line
-    read(98,*)bvec
-    open(99,file=trim(adjustl(top_file)))
-    open(97,file=trim(adjustl(triv_file)))
+    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
+    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
+    write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
+    open(98, file=trim(adjustl(nnkp)))
+111 read(98, '(a)') line
+    if (trim(adjustl(line)) .ne. "begin real_lattice") goto 111
+    read(98, *) avec
+    read(98, '(a)') line
+    read(98, '(a)') line
+    read(98, '(a)') line
+    read(98, *) bvec
+    open(99, file=trim(adjustl(top_file)))
+    open(97, file=trim(adjustl(triv_file)))
 
-    open(150, file="data/S16_TR_EVALS.dat")
-    open(200, file="data/S16_TR_EVECS.dat")
+    ! Determine the suffix based on the value of a
+    if (a == 1.0d0) then
+        suffix = "TOP"
+    else
+        suffix = "TRIV"
+    endif
+
+    ! Construct d_file and v_file names based on nxblocks and suffix
+    write(d_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVALS_test.dat"
+    write(v_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVECS_test.dat"
+
+    ! Open files with dynamically constructed names
+    open(150, file=trim(adjustl(d_file)))
+    open(200, file=trim(adjustl(v_file)))
 
 !------read H(R)
     interp_size=6
     ! if((nxblocks > interp_size).or.(nyblocks > interp_size).or.(nzblocks > interp_size)) interp_size = max(max(nxblocks,nyblocks),nzblocks)
-
     read(99,*)
-    read(99,*)nb,nr
-    allocate(rvec(2,nr),top_Hr(nb,nb),triv_Hr(nb,nb),ndeg(nr))
-    allocate(interp_Hr(nb,nb,-interp_size:interp_size,-interp_size:interp_size,-interp_size:interp_size))
-    read(99,*)ndeg
-    do i=1,80
-      read(97,*)
-    enddo
+    read(99,*)nb,nr_top
+    read(97,*)
+    read(97,*)nb,nr_triv
 
+    allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv))
+    allocate(rvec_top(nr_top,3))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
+
+    read(99,*)ndeg_top
+    read(97,*)ndeg_triv
     allocate(B_pt(nb,nb))
+    print *, nb, nr_top, nr_triv
 
     !B along X-axis
     ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
@@ -83,49 +97,60 @@ Program Projected_band_structure
     ! B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 
     !B along Z-axis
-    B_sigma(1,:) = [dcmplx(Bx,0d0),  dcmplx(0d0,0d0)]
-    B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-Bx,0d0)]
+    ! B_sigma(1,:) = [dcmplx(Bx,0d0),  dcmplx(0d0,0d0)]
+    ! B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-Bx,0d0)]
 
-	B_pt=0d0
-	do i=1,nb
-		do j=1,nb
-			if (i==j) then
-				if (i<10) then
-					B_pt(i,j) = B_sigma(1,1)
-				else
-					B_pt(i,j) = B_sigma(2,2)
-				endif
-			else if (i==j+9) then
-				B_pt(i,j) = B_sigma(2,1)
-			else if (j==i+9) then
-				B_pt(i,j) = B_sigma(1,2)
-			endif
-		enddo
-	enddo
-    do ir=1,nr
+	! B_pt=0d0
+	! do i=1,nb
+	! 	do j=1,nb
+	! 		if (i==j) then
+	! 			if (i<10) then
+	! 				B_pt(i,j) = B_sigma(1,1)
+	! 			else
+	! 				B_pt(i,j) = B_sigma(2,2)
+	! 			endif
+	! 		else if (i==j+9) then
+	! 			B_pt(i,j) = B_sigma(2,1)
+	! 		else if (j==i+9) then
+	! 			B_pt(i,j) = B_sigma(1,2)
+	! 		endif
+	! 	enddo
+	! enddo
+
+    interp_Hr=0d0
+    do ir=1,nr_top
         do i=1,nb
             do j=1,nb
-               read(99,*)rvec_data(1),rvec_data(2),rvec_data(3),i1,i2,x1,y1
-               top_Hr(i1,i2)=dcmplx(x1,y1)
-               read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
-               triv_Hr(j1,j2)=dcmplx(x2,y2)
-
-               interp_Hr(i1,i2,rvec_data(1),rvec_data(2),rvec_data(3))=(1-a)*triv_Hr(i1,i2) + a*top_Hr(i1,i2) + B_pt(i1,i2)
+               read(99,*)rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3),i1,i2,x1,y1
+               top_Hr_temp(i1,i2)=dcmplx(x1,y1)
             enddo
         enddo
-        rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2)
-        
-        ! print *, ir, nr
+        top_Hr(:,:,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = top_Hr_temp(:,:)
     enddo
-    deallocate(rvec,top_Hr,triv_Hr,ndeg)
+    do ir=1,nr_triv
+        do i=1,nb
+            do j=1,nb
+               read(97,*)rvec(1),rvec(2),rvec(3),i1,i2,x1,y1
+               triv_Hr_temp(i1,i2)=dcmplx(x1,y1)
+            enddo
+        enddo
+        triv_Hr(:,:,rvec(1),rvec(2),rvec(3)) = triv_Hr_temp
+    enddo
+    do ir=1,nr_top
+        do i=1,nb
+            do j=1,nb
+                interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
+            enddo
+        enddo
+    enddo
 
-    ! do i=1,18
-    !     if(a==0) then 
-    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
-    !     else 
-    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
-    !     endif
-    ! enddo
+    do i=1,nb
+        if(a==0) then 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
+        else 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+        endif
+    enddo
 
 ! !------ARPACK
 
@@ -234,10 +259,10 @@ Program Projected_band_structure
                     vloc_flatg, nloclist_nev, displs, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
     
     if (myid == 0) then
-        print*,"POST GATHER"
-        do i=1,nprocs
-            print*, i-1, 'start: ',vloc_flatg(nev_sum(i)),'end: ',vloc_flatg(nev_sum(i+1)-1)
-        enddo
+        ! print*,"POST GATHER"
+        ! do i=1,nprocs
+        !     print*, i-1, 'start: ',vloc_flatg(nev_sum(i)),'end: ',vloc_flatg(nev_sum(i+1)-1)
+        ! enddo
         do i=1,nprocs
             v(nloc_sum(i):nloc_sum(i+1)-1,1:nev) = reshape(vloc_flatg(nev_sum(i):nev_sum(i+1)-1), [nloclist(i), nev])
         enddo
