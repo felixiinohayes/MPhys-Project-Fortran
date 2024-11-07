@@ -1,11 +1,12 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="BiTeI"
+    character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef= 3.95903772,a=0,TOL=0.0001,Bx=0.0
-    integer*8,parameter::nblocks=4,maxiter=100000,ishift=1,mode=1
+    real*8,parameter::ef_triv=4.28,ef_top=6.5,a=1,TOL=0.001,Bx=0.0
+    integer*8,parameter::nxblocks=4,nyblocks=4,nzblocks=4,maxiter=100000,ishift=1,mode=1
+    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -26,7 +27,6 @@ Program Projected_band_structure
     integer*4,allocatable:: ndeg(:),vec_ind(:,:)
     complex*16,allocatable::top_Hr(:,:),triv_Hr(:,:),super_H(:,:),surface_vec(:),B_pt(:,:)
     complex*16,allocatable::RESID(:),V(:,:),WORKD(:),WORKL(:),D(:),WORKEV(:),Z(:,:),extrarow(:,:),extracol(:,:)
-    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     complex*16 SIGMA,b_sigma(2,2)
     logical:: rvecmat
     logical,allocatable:: select(:)
@@ -51,13 +51,13 @@ Program Projected_band_structure
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
 
-    open(150, file='data/cube_5_triv_eigenvalues.dat')
-    open(200, file='data/cube_5_triv_eigenvectors.dat')
+    open(150, file='data/C4_TR_EVALS.dat')
+    open(200, file='data/C4_TR_EVECS.dat')
 
 !------read H(R)
     interp_size=6
-    if(abs(nblocks) > interp_size) interp_size = abs(nblocks)
-    matsize=(nblocks)**3
+    ! if((abs(nxblocks)> interp_size).or.((abs(nyblocks)> interp_size).or.(abs(nzblocks)> interp_size)) interp_size = abs(nblocks)
+    matsize=(nxblocks*nyblocks*nzblocks)
 
     read(99,*)
     read(99,*)nb,nr
@@ -115,15 +115,19 @@ Program Projected_band_structure
     enddo
     deallocate(rvec,top_Hr,triv_Hr,ndeg)
 
-    ! do i=1,18
-    !     interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef
-    ! enddo
+    do i=1,nb
+        if(a==0) then 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
+        else 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+        endif
+    enddo
 
 !------ARPACK
  
     N=nb*matsize
-    NEV=N-2
-    NCV=N
+    NEV=350
+    NCV=700
     allocate(RESID(N),V(N,NCV),WORKD(N*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),Z(N,NEV),WORKEV(2*NCV))
     allocate(extracol(N,18),extrarow(18,N))
@@ -223,18 +227,18 @@ Program Projected_band_structure
     ! do i=1,N
     !     if(mod(i,N/matsize)==0) print*, extrarow(i)
     ! enddo
-
+!
     do while (iter<maxiter)
         iter=iter+1
-        print *, iter
+        print *, "Iterations: ",iter
         call znaupd(IDO,bmat,N,which,NEV,TOL,RESID,NCV,V,LDV,IPARAM,IPNTR,WORKD,WORKL,LWORKL,RWORK,INFO)
         
         if(IDO==99) exit
         
         if(IDO==-1 .or. IDO==1) then
             !WORKD(IPNTR(2):IPNTR(2)+N-1) = matmul(super_H,WORKD(IPNTR(1):IPNTR(1)+N-1))
-            call matmul_chunk(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),extrarow,N)
-            ! call matmul_(interp_Hr, WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1),N,nblocks)
+            ! call matmul_chunk(WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1))
+            call matmul_(WORKD(IPNTR(1):IPNTR(1)+N-1), WORKD(IPNTR(2):IPNTR(2)+N-1))
             ! print *, "input: ", WORKD(IPNTR(1)+2), "output", WORKD(IPNTR(2)+2)
             continue
         endif
@@ -260,13 +264,12 @@ Program Projected_band_structure
     deallocate(extracol,extrarow)
 
 
-    allocate(surface_vec(4*nb*(nblocks-1)),vec_ind(matsize,3))
-
     print *, 'Total iterations: ', iparam(3)
 
     do i=1,NEV
         real_d(i) = real(d(i))
     enddo
+    write(150, * ) NEV, nxblocks,nyblocks,nzblocks
     do i=1,NEV
         write(150, '(1(1x,f12.6))') real_d(i)
         write(200, *) v(:,i)
@@ -278,64 +281,64 @@ Program Projected_band_structure
     print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
 
     contains
-        subroutine matmul_chunk(interp_Hr,vec_in,vec_out,extrarow,N)  
-            integer*4,intent(in)::N
-            complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
-            complex*16,intent(in):: vec_in(N*3)
-            complex*16,intent(out)::vec_out(N*3)
-            complex*16,intent(in)::extrarow(18,N)
+! subroutine matmul_chunk(interp_Hr,vec_in,vec_out,extrarow,N)  
+        !     integer*4,intent(in)::N
+        !     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
+        !     complex*16,intent(in):: vec_in(N*3)
+        !     complex*16,intent(out)::vec_out(N*3)
+        !     complex*16,intent(in)::extrarow(18,N)
 
-            vec_out(1:N)=0d0
-            do i3=0,nblocks-1
-                do j3=0,nblocks-1
-                    r3=i3-j3
-                    do i2=0,nblocks-1
-                        do j2=0,nblocks-1
-                            r2=i2-j2
-                            do i1=0,nblocks-1
-                                do j1=0,nblocks-1
-                                    r1=i1-j1
-                                    xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
-                                    yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
-                                    if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
-                                        vec_out((1+nb*yindex):(nb*(yindex+1))) = vec_out((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
-                                    endif
-                                enddo
-                            enddo
-                        enddo
-                    enddo
-                enddo
-            enddo
+        !     vec_out(1:N)=0d0
+        !     do i3=0,nblocks-1
+        !         do j3=0,nblocks-1
+        !             r3=i3-j3
+        !             do i2=0,nblocks-1
+        !                 do j2=0,nblocks-1
+        !                     r2=i2-j2
+        !                     do i1=0,nblocks-1
+        !                         do j1=0,nblocks-1
+        !                             r1=i1-j1
+        !                             xindex = i3*((nblocks)**2)+i2*(nblocks)+i1
+        !                             yindex = j3*((nblocks)**2)+j2*(nblocks)+j1
+        !                             if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
+        !                                 vec_out((1+nb*yindex):(nb*(yindex+1))) = vec_out((1+nb*yindex):(nb*(yindex+1))) + matmul(interp_Hr(:,:,r1,r2,r3),vec_in((1+nb*xindex):(nb*(xindex+1))))
+        !                             endif
+        !                         enddo
+        !                     enddo
+        !                 enddo
+        !             enddo
+        !         enddo
+        !     enddo
 
-            ! extracol = conjg(transpose(extrarow))
-            ! tempvec(N-17:N)=matmul(extrarow, vec_in)
-            ! do i = 0, matsize-1
-            !     tempvec(1+i*nb:nb*(i+1)) = tempvec(1+i*nb:nb*(i+1)) + matmul(extracol(1+i*nb:nb*(i+1),:),vec_in(N-nb+1:N))
-            ! enddo
+        !     ! extracol = conjg(transpose(extrarow))
+        !     ! tempvec(N-17:N)=matmul(extrarow, vec_in)
+        !     ! do i = 0, matsize-1
+        !     !     tempvec(1+i*nb:nb*(i+1)) = tempvec(1+i*nb:nb*(i+1)) + matmul(extracol(1+i*nb:nb*(i+1),:),vec_in(N-nb+1:N))
+        !     ! enddo
 
-        end subroutine matmul_chunk
+! end subroutine matmul_chunk
 
-        subroutine matmul_(interp_Hr,vec_in,vec_out,N,nblocks)  
-            integer*4,intent(in)::N,nblocks
-            complex*16,dimension(18,18,-nblocks:nblocks,-nblocks:nblocks,-nblocks:nblocks), intent(in):: interp_Hr
+        subroutine matmul_(vec_in,vec_out)
+            use parameters
             complex*16,intent(in):: vec_in(N*3)
             complex*16,intent(out)::vec_out(N*3)
             complex*16::tempvec(N)
             integer*4::irow,icol,r1,r2,r3,f1,f2,f3,N2,N3,count,count1
 
-            N3 = nblocks**3
-            N2 = nblocks**2
+            N3 = (nxblocks*nyblocks*nzblocks)
+            N2 = (nxblocks*nyblocks)
             tempvec=0d0
 
             count1 =0
             do irow = 1,N3
                 f3 = (irow-1)/(N2)
-                f2 = mod((irow-1)/nblocks,3)
-                f1 = mod(irow-1,3)
+                f2 = mod((irow-1)/nxblocks,nyblocks)
+                f1 = mod(irow-1,nxblocks)
                 do icol = 1,N3
                     r3 = ((icol-1)/N2)- f3
-                    r2 = mod((icol-1)/nblocks,3) - f2
-                    r1 = mod(icol-1,3) - f1
+                    r2 = mod((icol-1)/nxblocks,nyblocks) - f2
+                    r1 = mod(icol-1,nxblocks) - f1
+                    ! if((irow==17).and.(iter==1)) print*, r1,r2,r3
                     if((abs(r1).lt.6).or.(abs(r2).lt.6).or.((abs(r3).lt.6))) then
                         tempvec(1+(icol-1)*nb : nb*(icol)) = tempvec(1+(icol-1)*nb : nb*(icol)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in( 1+(irow-1)*nb : nb*(irow) ))
                     endif
