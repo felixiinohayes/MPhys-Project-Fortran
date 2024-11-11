@@ -4,7 +4,7 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.05
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.02
     integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=10,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4,parameter::NEV=100,NCV=200
     integer*4 nb,nloc,myid,nprocs,icol_mod1,icol_mod2,icol_mod3
@@ -138,7 +138,7 @@ Program Projected_band_structure
             endif
 		enddo
 	enddo
-    print *, B_pt
+    ! print *, B_pt
 
     interp_Hr=0d0
     do ir=1,nr_top
@@ -162,19 +162,16 @@ Program Projected_band_structure
 
     ! Interpolate Hamiltonian and add magnetic field
     do ir=1,nr_top
-        if (rvec_top(ir,1)==0 .and. rvec_top(ir,2)==0 .and. rvec_top(ir,3)==0) then
-            do i=1,nb
-                do j=1,nb
-                    interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + B_pt(i,j)
-                enddo
+        do i=1,nb
+            do j=1,nb
+                interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
             enddo
-        else
-            do i=1,nb
-                do j=1,nb
-                    interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
-                enddo
-            enddo
-        endif
+        enddo
+    enddo
+    do i=1,nb
+        do j=1,nb
+            interp_Hr(i,j,0,0,0) = interp_Hr(i,j,0,0,0) + B_pt(i,j)
+        enddo
     enddo
 
     do i=1,nb
