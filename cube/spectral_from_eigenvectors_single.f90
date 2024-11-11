@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="cube"
-    real*8,parameter::emin=-0.4,emax=0.4,eta=0.006
-    integer*8,parameter::nb=18,eres=200
+    real*8,parameter::emin=-0.3,emax=0.3,eta=0.02
+    integer*8,parameter::nb=4,eres=500
     
 end module parameters
 
@@ -19,9 +19,9 @@ Program Projected_band_structure
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
-    write(v_file,'(a,a)') "data/slab_10_top_eigenvectors.dat"
-    write(d_file,'(a,a)') "data/slab_10_top_eigenvalues.dat"
-    write(out_file,'(a,a)') "data/slab_10_top_bulk.dat"
+    write(v_file,'(a,a)') "data/C30_TOP_B_EVECS.dat"
+    write(d_file,'(a,a)') "data/C30_TOP_B_EVALS.dat"
+    write(out_file,'(a,a)') "data/C30_TOP_B_BULK.dat"
     open(98,file=trim(adjustl(d_file)))
     open(99,file=trim(adjustl(v_file)))
     open(100,file=trim(adjustl(out_file)))

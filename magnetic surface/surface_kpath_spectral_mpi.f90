@@ -1,10 +1,10 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef= 4.18903772,a=1,emin=5.5,emax=6.5,bfactor=0.002
+    character(len=80):: prefix="../BiTeI"
+    real*8,parameter::ef= 4.18903772,a=1,emin=6,emax=7,bfactor=0.002
     ! real*8,parameter::emin=6.04,emax=6.13
-    integer,parameter::nkpath=3,np=150,eres=300,nblocks=60,nr3=11,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    integer,parameter::nkpath=3,np=200,eres=400,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
     
@@ -18,7 +18,7 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum
     integer*4 recv(1)
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.1d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.02d0
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
     real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:),spectral_A_single(:,:)
@@ -28,9 +28,9 @@ Program Projected_band_structure
 !------------------------------------------------------
     call init_mpi
 
-    write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
-    write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
-    write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
+    write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological_4band.dat"
+    write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial_4band.dat"
+    write(nnkp,'(a,a)')trim(adjustl(prefix)),".nnkp"
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
@@ -48,7 +48,7 @@ Program Projected_band_structure
 !------read H(R)
     open(99,file=trim(adjustl(top_file)))
     open(97,file=trim(adjustl(triv_file)))
-    open(100,file='spectral_B10Z_final.dx')
+    open(100,file='spectral_x.dx')
     read(99,*)
     read(99,*)nb,nr
     allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
@@ -66,6 +66,7 @@ Program Projected_band_structure
                top_Hr(i1,i2,ir)=dcmplx(x1,y1)
                read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
                triv_Hr(j1,j2,ir)=dcmplx(x2,y2)
+                print *, rvec_data(1),rvec_data(2),rvec_data(3)
             enddo
         enddo
         rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2)
@@ -75,9 +76,9 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks)-2)))
 
 !-----kpath
-    kpoints(:,1) = [ -0.12d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,1) = [ -0.2d0,  0.0d0,   0.0d0]  !-M
     kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
-    kpoints(:,3) = [  0.12d0,  0.0d0,   0.0d0]  !M    
+    kpoints(:,3) = [  0.2d0,  0.0d0,   0.0d0]  !M   
     
     ! ky -> -ky 
     ! kpoints(:,1) = [ 0.05d0,  -0.1d0,   0.5d0]  !H
@@ -133,27 +134,23 @@ Program Projected_band_structure
     ! B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
 
      !B along X axis
-    ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(B,0d0)]
-    ! B_sigma(2,:) = [dcmplx(B,0d0) ,  dcmplx(0d0,0d0)]
+    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(B,0d0)]
+    B_sigma(2,:) = [dcmplx(B,0d0) ,  dcmplx(0d0,0d0)]
 
-    B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
-    B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
+    ! B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
+    ! B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
     B_pt=0d0
     do i=1,nb
-        do j=1,nb
-            if (i==j) then
-                if (i<10) then
-                    B_pt(i,j) = B_sigma(1,1)
-                else
-                    B_pt(i,j) = B_sigma(2,2)
-                endif
-            else if (i==j+9) then
-                B_pt(i,j) = B_sigma(2,1)
-            else if (j==i+9) then
-                B_pt(i,j) = B_sigma(1,2)
+		do j=1,nb
+			if (i==j) then
+				if (i==1 .or. i==3) then
+					B_pt(i,j) = B_sigma(1,1)
+				else
+					B_pt(i,j) = B_sigma(2,2)
+				endif
             endif
-        enddo
-    enddo
+		enddo
+	enddo
 
     recv(1)=(min(kpmax,nk)-kpmin+1)*nepoints*3
 
@@ -178,6 +175,7 @@ Program Projected_band_structure
         do ik=kpmin,min(kpmax,nk)
             ikp=ikp+1
             do ir3=1,nr3 ! Loop over R3 vectors
+                ! print *, top_Hr(1,1,ir3)
                 Hk=0d0    
                 do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
                     ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr

@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="cube"
-    real*8,parameter::emin=-0.1,emax=0.1,eta=0.03
-    integer*8,parameter::nb=18,eres=100
+    real*8,parameter::emin=-0.3,emax=0.3,eta=0.01
+    integer*8,parameter::nb=4,eres=100
     
 end module parameters
 
@@ -19,9 +19,9 @@ Program Projected_band_structure
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
-    open(98,file='data/slab_10_top_eigenvalues.dat')
-    open(99,file='data/slab_10_top_eigenvectors.dat')
-    open(100,file='data/slab_10.dx')
+    open(98,file='data/C30_TOP_B05_EVALS.dat')
+    open(99,file='data/C30_TOP_B05_EVECS.dat')
+    open(100,file='data/C30_TOP_B05.dx')
 
     read(98, *) NEV, nxblocks, nyblocks, nzblocks
     matsize=nxblocks*nyblocks*nzblocks

@@ -4,12 +4,13 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv=4.28,ef_top=6.5,a=0,TOL=0.001,Bx=0.0
-    integer*4,parameter::nxblocks=20,nyblocks=20,nzblocks=20,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=500,NCV=1000
-    integer*4 nb,nloc,myid,nprocs
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.05
+    integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=10,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=100,NCV=200
+    integer*4 nb,nloc,myid,nprocs,icol_mod1,icol_mod2,icol_mod3
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     integer*4,allocatable :: npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
+    complex*16,allocatable :: extrarow(:,:)
 end module parameters
 
 Program Projected_band_structure
@@ -28,7 +29,7 @@ Program Projected_band_structure
     real*8, allocatable :: rwork(:), real_d(:)
     integer*4, allocatable :: vec_ind(:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
-    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), Z(:,:), extrarow(:,:), extracol(:,:), vloc_flat(:), vloc_flatg(:), v(:,:), Zloc(:,:)
+    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), Z(:,:), vloc_flat(:), vloc_flatg(:), v(:,:), Zloc(:,:)
     complex*16 SIGMA, b_sigma(2,2)
     logical :: rvecmat
     logical, allocatable :: select(:)
@@ -58,14 +59,22 @@ Program Projected_band_structure
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
-        suffix = "TOP"
+        if (B .ne. 0d0) then
+            suffix = "TOP_B"
+        else
+            suffix = "TOP"
+        endif
     else
-        suffix = "TRIV"
+        if (B .ne. 0d0) then
+            suffix = "TRIV_B"
+        else
+            suffix = "TRIV"
+        endif
     endif
 
     ! Construct d_file and v_file names based on nxblocks and suffix
-    write(d_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVALS_test.dat"
-    write(v_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVECS_test.dat"
+    write(d_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "05_EVALS.dat"
+    write(v_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "05_EVECS.dat"
 
     ! Open files with dynamically constructed names
     open(150, file=trim(adjustl(d_file)))
@@ -82,11 +91,12 @@ Program Projected_band_structure
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv))
     allocate(rvec_top(nr_top,3))
     allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
+    allocate(extrarow(nb,N))
 
     read(99,*)ndeg_top
     read(97,*)ndeg_triv
     allocate(B_pt(nb,nb))
-    print *, nb, nr_top, nr_triv
+    ! print *, nb, nr_top, nr_triv
 
     !B along X-axis
     ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
@@ -97,25 +107,38 @@ Program Projected_band_structure
     ! B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 
     !B along Z-axis
-    ! B_sigma(1,:) = [dcmplx(Bx,0d0),  dcmplx(0d0,0d0)]
-    ! B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-Bx,0d0)]
+    B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
+    B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
 
-	! B_pt=0d0
+	B_pt=0d0
 	! do i=1,nb
 	! 	do j=1,nb
 	! 		if (i==j) then
-	! 			if (i<10) then
+	! 			if (i<=nb/2) then
 	! 				B_pt(i,j) = B_sigma(1,1)
 	! 			else
 	! 				B_pt(i,j) = B_sigma(2,2)
 	! 			endif
-	! 		else if (i==j+9) then
+	! 		else if (i==j+nb/2) then
 	! 			B_pt(i,j) = B_sigma(2,1)
-	! 		else if (j==i+9) then
+	! 		else if (j==i+nb/2) then
 	! 			B_pt(i,j) = B_sigma(1,2)
 	! 		endif
 	! 	enddo
 	! enddo
+    
+	do i=1,nb
+		do j=1,nb
+			if (i==j) then
+				if (i==1 .or. i==3) then
+					B_pt(i,j) = B_sigma(1,1)
+				else
+					B_pt(i,j) = B_sigma(2,2)
+				endif
+            endif
+		enddo
+	enddo
+    print *, B_pt
 
     interp_Hr=0d0
     do ir=1,nr_top
@@ -136,12 +159,22 @@ Program Projected_band_structure
         enddo
         triv_Hr(:,:,rvec(1),rvec(2),rvec(3)) = triv_Hr_temp
     enddo
+
+    ! Interpolate Hamiltonian and add magnetic field
     do ir=1,nr_top
-        do i=1,nb
-            do j=1,nb
-                interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
+        if (rvec_top(ir,1)==0 .and. rvec_top(ir,2)==0 .and. rvec_top(ir,3)==0) then
+            do i=1,nb
+                do j=1,nb
+                    interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + B_pt(i,j)
+                enddo
             enddo
-        enddo
+        else
+            do i=1,nb
+                do j=1,nb
+                    interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
+                enddo
+            enddo
+        endif
     enddo
 
     do i=1,nb
@@ -152,7 +185,7 @@ Program Projected_band_structure
         endif
     enddo
 
-! !------ARPACK
+
 
     call MPI_INIT(ierr)
     comm = MPI_COMM_WORLD
@@ -164,7 +197,7 @@ Program Projected_band_structure
     N=nb*N3
 
     do i=1,nprocs
-        nloc = N3/nprocs
+        nloc = (N3)/nprocs
         if (mod(N3,nprocs).ne.0) nloc = nloc +1 
         npminlist(i)=1+(i-1)*nloc
         npmaxlist(i)=min(i*nloc,N3)
@@ -181,6 +214,7 @@ Program Projected_band_structure
     do i=2,nprocs+1
         nev_sum(i) = (nloc_sum(i)-1)*nev +1
     enddo
+    
     
     nloc = nloclist(myid+1) 
     if(myid.eq.0) print *, "nloc:", nloclist
@@ -339,12 +373,14 @@ Program Projected_band_structure
                 r2 = mod((icol-1) / nxblocks, nyblocks) - f2
                 r1 = mod(icol-1, nxblocks) - f1
                 if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
-                    vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in(1+colcount*nb : nb*(colcount+1)))
+                    vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3) + B_pt, vec_in(1+colcount*nb : nb*(colcount+1)))
                 endif
                 colcount = colcount + 1
             enddo
             rowcount = rowcount + 1
         enddo
+
+
     end subroutine tv
 
 end program 
