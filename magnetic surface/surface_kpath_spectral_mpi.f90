@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,emin=6,emax=7,bfactor=0.002, B=0.00d0
-    integer,parameter::nkpath=3,np=200,eres=400,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    character(len=80):: prefix="../BiTeI", ax = 'z'
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,emin=5,emax=10,bfactor=0.02, B=0.00d0
+    integer,parameter::nkpath=3,np=200,eres=100,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -196,13 +196,13 @@ Program Projected_band_structure
     enddo
 
 
-    do i=1,nb
-        if(a==0) then 
-            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
-        else 
-            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
-        endif
-    enddo
+    ! do i=1,nb
+    !     if(a==0) then 
+    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
+    !     else 
+    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+    !     endif
+    ! enddo
 
     recv(1)=(min(kpmax,nk)-kpmin+1)*nepoints*3
 
@@ -235,21 +235,23 @@ Program Projected_band_structure
         ikp=0
         if(myid.eq.0)print *, "block", il+1, "/", nblocks
         do ik=kpmin,min(kpmax,nk)
-            ! ikp=ikp+1
+            ikp=ikp+1
             do ira= -6,6 ! Loop over R_ vectors
                 Hk=0d0    
                 do irb = -6,6
                     do irc = -6,6
-                       
-                        phase = 0d0
-
-                        phase = phase + kpath(kindex(1),ik) * irb + kpath(kindex(2),ik) * irc
 
                         if(ax == 'x') ai = [ira, irb, irc]
                         if(ax == 'y') ai = [irb, ira, irc]
                         if(ax == 'z') ai = [irb, irc, ira]
 
-                        Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
+                        if(ndeg(ai(1),ai(2),ai(3)).ne.0) then 
+                            phase = 0d0
+
+                            phase = phase + kpath(kindex(1),ik) * irb + kpath(kindex(2),ik) * irc
+
+                            Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
+                        endif
                     enddo
                 enddo
                 Hkra(:,:,ira) = Hk
@@ -272,7 +274,7 @@ Program Projected_band_structure
                 do i=1,nb*nblocks
                     p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
                     exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
-                    spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))
+                    spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))*1/(bfactor*sqrt(2*pi2))
                 enddo
                 spectral_A_single(1,(ikp-1)*nepoints + ie) = xk(ik)
                 spectral_A_single(2,(ikp-1)*nepoints + ie) = epoints(ie)
