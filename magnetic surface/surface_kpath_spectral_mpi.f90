@@ -194,7 +194,6 @@ Program Projected_band_structure
         enddo
     enddo
 
-    print *, interp_Hr(1,1,1,0,0)
 
     do i=1,nb
         if(a==0) then 
