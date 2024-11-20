@@ -22,7 +22,7 @@ Program Projected_band_structure
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
     real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
-    integer*4,allocatable:: ndeg(:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
+    integer*4,allocatable:: ndeg(:,:,:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16,allocatable::Hk(:,:),Hkra(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:,:)
     complex*16 B_sigma(2,2),temp1,temp2
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
@@ -71,7 +71,7 @@ Program Projected_band_structure
     read(97,*)
     read(97,*)nb,nr_triv
 
-    allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv))
+    allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
     allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks,nb*nblocks))
     allocate(extrarow(nb,nb*nblocks))
@@ -160,11 +160,13 @@ Program Projected_band_structure
 	enddo
 
     interp_Hr=0d0
+    ndeg = 0d0
     do ir=1,nr_top
         do i=1,nb
             do j=1,nb
                read(99,*)rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3),i1,i2,x1,y1
                top_Hr_temp(i1,i2)=dcmplx(x1,y1)
+               ndeg(rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = ndeg_top(ir)
             enddo
         enddo
         top_Hr(:,:,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = top_Hr_temp(:,:)
@@ -231,16 +233,20 @@ Program Projected_band_structure
         ikp=0
         if(myid.eq.0)print *, "block", il+1, "/", nblocks
         do ik=kpmin,min(kpmax,nk)
+            print*,'1'
             ikp=ikp+1
             do ira= -6,6 ! Loop over R_ vectors
                 Hk=0d0    
                 do irb = -6,6
                     do irc = -6,6
+                        print*,'2'
+                       
                         phase = 0d0
 
                         phase = phase + kpath(kindex(1),ik) * irb + kpath(kindex(2),ik) * irc
 
-                        Hk=Hk+((1-a)*(triv_Hr(:,:,ira,irb,irc))+(a)*(top_Hr(:,:,ira,irb,irc)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+                        Hk=Hk+((1-a)*(triv_Hr(:,:,ira,irb,irc))+(a)*(top_Hr(:,:,ira,irb,irc)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ira,irb,irc))
+                        print*,"3"
                     enddo
                 enddo
                 Hkra(:,:,ira) = Hk
