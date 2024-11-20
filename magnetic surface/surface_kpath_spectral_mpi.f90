@@ -2,29 +2,28 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef= 4.18903772,a=1,emin=6,emax=7,bfactor=0.002
-    ! real*8,parameter::emin=6.04,emax=6.13
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,emin=6,emax=7,bfactor=0.002
     integer,parameter::nkpath=3,np=200,eres=400,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
-    
+
 end module parameters
 
 Program Projected_band_structure
     use parameters
     Implicit None
-    ! INCLUDE 'mpif.h'
+    INCLUDE 'mpif.h'
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     character(len=5) suffix
-    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum,interp_size,nr_top,nr_triv,rvec(3)
-    integer*4 recv(1)
+    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),ira,irb,irc,ra
+    integer*4 recv(1),nrc(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.00d0
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
     real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
     integer*4,allocatable:: ndeg(:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
-    complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:,:)
+    complex*16,allocatable::Hk(:,:),Hkra(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:,:)
     complex*16 B_sigma(2,2),temp1,temp2
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
@@ -219,9 +218,9 @@ Program Projected_band_structure
     kcount = (min(kpmax,nk)-kpmin+1)*nepoints*3
 
 !----- Axis selection
-    if(ax == 'x') nr_ = [6,4,5]
-    if(ax == 'y') nr_ = [4,5,6]
-    if(ax == 'z') nr_ = [5,6,4]
+    if(ax == 'x') nrc = [6,4,5]
+    if(ax == 'y') nrc = [4,5,6]
+    if(ax == 'z') nrc = [5,6,4]
 
 !----- Perform fourier transform
     ! nr12=nr/nr3
