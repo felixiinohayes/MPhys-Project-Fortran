@@ -16,7 +16,7 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     character(len=5) suffix
-    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),ira,irb,irc,ra
+    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),ira,irb,irc,ra,ai(3)
     integer*4 recv(1),nr_(3),kindex(2)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
@@ -225,6 +225,8 @@ Program Projected_band_structure
     if(ax == 'z') kindex = [1,2]
 
     allocate(Hkra(nb,nb,-6:6))
+    allocate(Hk(nb,nb))
+    allocate(k_ene(3,kcount))
 
 !----- Perform fourier transform
     ! nr12=nr/nr3
@@ -233,20 +235,21 @@ Program Projected_band_structure
         ikp=0
         if(myid.eq.0)print *, "block", il+1, "/", nblocks
         do ik=kpmin,min(kpmax,nk)
-            print*,'1'
-            ikp=ikp+1
+            ! ikp=ikp+1
             do ira= -6,6 ! Loop over R_ vectors
                 Hk=0d0    
                 do irb = -6,6
                     do irc = -6,6
-                        print*,'2'
                        
                         phase = 0d0
 
                         phase = phase + kpath(kindex(1),ik) * irb + kpath(kindex(2),ik) * irc
 
-                        Hk=Hk+((1-a)*(triv_Hr(:,:,ira,irb,irc))+(a)*(top_Hr(:,:,ira,irb,irc)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ira,irb,irc))
-                        print*,"3"
+                        if(ax == 'x') ai = [ira, irb, irc]
+                        if(ax == 'y') ai = [irb, ira, irc]
+                        if(ax == 'z') ai = [irb, irc, ira]
+
+                        Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
                     enddo
                 enddo
                 Hkra(:,:,ira) = Hk
@@ -255,7 +258,7 @@ Program Projected_band_structure
             do i=0,nblocks-1
                 do j=0,nblocks-1
                     ra = i-j
-                    if (ra<=6 .AND. ra>=-6) then   
+                    if (ra<=6 .AND. ra>=-6) then
                         super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,ra)
                     else
                         super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
