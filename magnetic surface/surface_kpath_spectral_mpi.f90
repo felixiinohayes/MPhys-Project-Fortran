@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'z'
-    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,emin=5,emax=10,bfactor=0.02, B=0.00d0
-    integer,parameter::nkpath=3,np=200,eres=100,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    character(len=80):: prefix="../BiTeI", ax = 'x'
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=0,emin=3,emax=5.5,bfactor=0.005, B=0.00d0, passval=-0.0d0
+    integer,parameter::nkpath=3,np=400,eres=200,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -16,14 +16,15 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     character(len=5) suffix
-    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),ira,irb,irc,ra,ai(3)
-    integer*4 recv(1),nr_(3),kindex(2)
+    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,n
+    integer*4 lwork,info,ik,count,sign,kpool,kpmin,kpmax,ecounts,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),index
+    integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
     real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
     integer*4,allocatable:: ndeg(:,:,:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
-    complex*16,allocatable::Hk(:,:),Hkra(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:,:)
+    complex*16,allocatable::Hk(:,:),Hkra(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2),temp1,temp2
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
@@ -46,7 +47,7 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='super_H_B12.dx')
+    open(100,file='super_H_x_triv.dx')
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -73,25 +74,28 @@ Program Projected_band_structure
 
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks,nb*nblocks))
-    allocate(extrarow(nb,nb*nblocks))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks+1,nb*nblocks+1))
+    allocate(extrarow(nb*nblocks))
 
     read(99,*)ndeg_top
     read(97,*)ndeg_triv
 
-    lwork=max(1,2*(nb*nblocks)-1)
-    allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks)-2)))
+    lwork=max(1,2*(nb*nblocks+1)-1)
+    allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks+1)-2)))
 
 !-----kpath
-    kpoints(:,1) = [ -0.2d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,1) = [ -2.0d0,  0.0d0,   0.0d0]  !-M
     kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
-    kpoints(:,3) = [  0.2d0,  0.0d0,   0.0d0]  !M   
+    kpoints(:,3) = [  2.0d0,  0.0d0,   0.0d0]  !M   
     
     ! ky -> -ky 
-    ! kpoints(:,1) = [ 0.05d0,  -0.1d0,   0.5d0]  !H
-    ! kpoints(:,2) = [ 0.0d0,   0.0d0,    0.5d0]  !A
-    ! kpoints(:,3) = [ -0.05d0,   0.1d0,  0.5d0]  !-H
+    ! kpoints(:,1) = [ 0.00d0,  -0.0d0,   -0.914d0]  !-A
+    ! kpoints(:,2) = [ 0.0d0,   0.0d0,    0.0d0]  !Gamma
+    ! kpoints(:,3) = [ -0.00d0,   0.0d0,  1.4497d0]  !A
 
+    ! kpoints(:,1) = [ 0.0d0,  -0.0d0,   5.0d0]  !A
+    ! kpoints(:,2) = [ 0.0d0,   0.0d0,    0.0d0]  !Gamma
+    ! kpoints(:,3) = [ -0.0d0,   5.0d0,  0.0d0]  !K
 
     ! kx -> -kx
     ! kpoints(:,1) = [ -0.5d0,   0.0d0,   0.5d0 ]  !L
@@ -219,10 +223,17 @@ Program Projected_band_structure
     enddo
     kcount = (min(kpmax,nk)-kpmin+1)*nepoints*3
 
+
 !----- Axis selection
-    if(ax == 'x') kindex = [2,3]
+    extrarow=0d0
+    if(ax == 'x') then
+        kindex = [2,3]
+        extrarow(1:2) = 3*passval
+        extrarow((nblocks-1)*nb:(nblocks-1)*nb+1) = -2*passval
+    endif
     if(ax == 'y') kindex = [1,3]
     if(ax == 'z') kindex = [1,2]
+
 
     allocate(Hkra(nb,nb,-6:6))
     allocate(Hk(nb,nb))
@@ -267,14 +278,17 @@ Program Projected_band_structure
                     endif
                 enddo
             enddo
-            call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
+            super_H(nb*nblocks+1,:) = extrarow
+            super_H(:,nb*nblocks+1) = conjg(extrarow)
+            call zheev('V','U',nb*nblocks+1,super_H,nb*nblocks+1,k_ene(:,ik),work,lwork,rwork,info)
 
             do ie=1,nepoints
                 spectral_A = 0d0
                 do i=1,nb*nblocks
                     p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
                     exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
-                    spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))*1/(bfactor*sqrt(2*pi2))
+                    spectral_A = spectral_A + p_l * (exp(-0.5d0*exp_factor**2)) * 1/(bfactor*sqrt(2*pi2))
+                    ! print*, spectral_A
                 enddo
                 spectral_A_single(1,(ikp-1)*nepoints + ie) = xk(ik)
                 spectral_A_single(2,(ikp-1)*nepoints + ie) = epoints(ie)
