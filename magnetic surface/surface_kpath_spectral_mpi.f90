@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI"
-    real*8,parameter::ef= 4.18903772,a=1,emin=6,emax=7,bfactor=0.002
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,emin=6,emax=7,bfactor=0.002
     ! real*8,parameter::emin=6.04,emax=6.13
     integer,parameter::nkpath=3,np=200,eres=400,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
@@ -16,61 +16,69 @@ Program Projected_band_structure
     INCLUDE 'mpif.h'
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum
+    character(len=5) suffix
+    integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum,interp_size,nr_top,nr_triv,rvec(3)
     integer*4 recv(1)
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.02d0
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.00d0
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
-    real*8,allocatable:: rvec(:,:),rvec_miller(:,:),rwork(:),k_ene(:,:),spectral_A_single(:,:)
-    integer*4,allocatable:: ndeg(:),displs(:),recvcounts(:)
-    complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),top_Hr(:,:,:),triv_Hr(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:)
+    real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
+    integer*4,allocatable:: ndeg(:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
+    complex*16,allocatable::Hk(:,:),Hkr3(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:,:)
     complex*16 B_sigma(2,2),temp1,temp2
+    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
+    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
+    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
 !------------------------------------------------------
     call init_mpi
 
-    write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological_4band.dat"
-    write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial_4band.dat"
-    write(nnkp,'(a,a)')trim(adjustl(prefix)),".nnkp"
-
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
-!--------------- reciprocal vectors
-    open(98,file=trim(adjustl(nnkp)))
-111 read(98,'(a)')line
-    if(trim(adjustl(line)).ne."begin real_lattice") goto 111
-    read(98,*)avec
-    read(98,'(a)')line
-    read(98,'(a)')line
-    read(98,'(a)')line
-    read(98,*)bvec
+    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
+    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
+    write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
+    open(98, file=trim(adjustl(nnkp)))
+111 read(98, '(a)') line
+    if (trim(adjustl(line)) .ne. "begin real_lattice") goto 111
+    read(98, *) avec
+    read(98, '(a)') line
+    read(98, '(a)') line
+    read(98, '(a)') line
+    read(98, *) bvec
+    open(99, file=trim(adjustl(top_file)))
+    open(97, file=trim(adjustl(triv_file)))
+    open(100,file='super_H_B12.dx')
 
+    ! Determine the suffix based on the value of a
+    if (a == 1.0d0) then
+        if (B .ne. 0d0) then
+            suffix = "TOP_B"
+        else
+            suffix = "TOP"
+        endif
+    else
+        if (B .ne. 0d0) then
+            suffix = "TRIV_B"
+        else
+            suffix = "TRIV"
+        endif
+    endif
 
 !------read H(R)
-    open(99,file=trim(adjustl(top_file)))
-    open(97,file=trim(adjustl(triv_file)))
-    open(100,file='spectral_x.dx')
+    interp_size=6
+    ! if((nxblocks > interp_size).or.(nyblocks > interp_size).or.(nzblocks > interp_size)) interp_size = max(max(nxblocks,nyblocks),nzblocks)
     read(99,*)
-    read(99,*)nb,nr
-    allocate(rvec(2,nr),rvec_miller(3,nr),Hk(nb,nb),Hkr3(nb,nb,nr3),top_Hr(nb,nb,nr),triv_Hr(nb,nb,nr),ndeg(nr))
-    allocate(super_H(nb*nblocks,nb*nblocks),sH(nb,nb*nblocks),k_ene(nb*nblocks,nk))
-    allocate(a_p_top(nb*nblocks,nk),a_p_bottom(nb*nblocks,nk))
-    read(99,*)ndeg
+    read(99,*)nb,nr_top
+    read(97,*)
+    read(97,*)nb,nr_triv
 
-    do i=1,80
-      read(97,*)
-    enddo
-    do ir=1,nr
-        do i=1,nb
-            do j=1,nb
-               read(99,*)rvec_data(1),rvec_data(2),rvec_data(3),i1,i2,x1,y1
-               top_Hr(i1,i2,ir)=dcmplx(x1,y1)
-               read(97,*)rvec_data(1),rvec_data(2),rvec_data(3),j1,j2,x2,y2
-               triv_Hr(j1,j2,ir)=dcmplx(x2,y2)
-                print *, rvec_data(1),rvec_data(2),rvec_data(3)
-            enddo
-        enddo
-        rvec(:,ir) = rvec_data(1)*avec(:,1) + rvec_data(2)*avec(:,2)
-    enddo
+    allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv))
+    allocate(rvec_top(nr_top,3))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
+    allocate(extrarow(nb,nb*nblocks))
+
+    read(99,*)ndeg_top
+    read(97,*)ndeg_triv
 
     lwork=max(1,2*(nb*nblocks)-1)
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks)-2)))
@@ -152,6 +160,50 @@ Program Projected_band_structure
 		enddo
 	enddo
 
+    interp_Hr=0d0
+    do ir=1,nr_top
+        do i=1,nb
+            do j=1,nb
+               read(99,*)rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3),i1,i2,x1,y1
+               top_Hr_temp(i1,i2)=dcmplx(x1,y1)
+            enddo
+        enddo
+        top_Hr(:,:,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = top_Hr_temp(:,:)
+    enddo
+    do ir=1,nr_triv
+        do i=1,nb
+            do j=1,nb
+               read(97,*)rvec(1),rvec(2),rvec(3),i1,i2,x1,y1
+               triv_Hr_temp(i1,i2)=dcmplx(x1,y1)
+            enddo
+        enddo
+        triv_Hr(:,:,rvec(1),rvec(2),rvec(3)) = triv_Hr_temp
+    enddo
+
+    ! Interpolate Hamiltonian and add magnetic field
+    do ir=1,nr_top
+        do i=1,nb
+            do j=1,nb
+                interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
+            enddo
+        enddo
+    enddo
+    do i=1,nb
+        do j=1,nb
+            interp_Hr(i,j,0,0,0) = interp_Hr(i,j,0,0,0) + B_pt(i,j)
+        enddo
+    enddo
+
+    print *, interp_Hr(1,1,1,0,0)
+
+    do i=1,nb
+        if(a==0) then 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
+        else 
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+        endif
+    enddo
+
     recv(1)=(min(kpmax,nk)-kpmin+1)*nepoints*3
 
     allocate(spectral_A_single(3,recv(1)*nepoints),displs(numprocs),recvcounts(numprocs))
@@ -168,61 +220,61 @@ Program Projected_band_structure
     kcount = (min(kpmax,nk)-kpmin+1)*nepoints*3
 !----- Perform fourier transform
     nr12=nr/nr3
-    do il=0,nblocks-1
-        if(myid.eq.0) write(100, '(a,i8,a,i10,a)') 'object',il+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
-        ikp=0
-        if(myid.eq.0)print *, "block", il+1, "/", nblocks
-        do ik=kpmin,min(kpmax,nk)
-            ikp=ikp+1
-            do ir3=1,nr3 ! Loop over R3 vectors
-                ! print *, top_Hr(1,1,ir3)
-                Hk=0d0    
-                do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
-                    ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
-                    phase = 0d0
-                    do j = 1,2
-                        phase = phase + kpath(j,ik)*rvec(j,ir)
-                    enddo
-                    Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
-                enddo
-                Hkr3(:,:,ir3) = Hk
-            enddo
+    ! do il=0,nblocks-1
+    !     if(myid.eq.0) write(100, '(a,i8,a,i10,a)') 'object',il+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
+    !     ikp=0
+    !     if(myid.eq.0)print *, "block", il+1, "/", nblocks
+    !     do ik=kpmin,min(kpmax,nk)
+    !         ikp=ikp+1
+    !         do ir3=1,nr3 ! Loop over R3 vectors
+    !             ! print *, top_Hr(1,1,ir3)
+    !             Hk=0d0    
+    !             do ir12=0,nr12-1 ! Loop over (R1,R2) vectors
+    !                 ir = ir3 + ir12*nr3 ! Calculate index of (R1,R2) vector in nr
+    !                 phase = 0d0
+    !                 do j = 1,2
+    !                     phase = phase + kpath(j,ik)*rvec(j,ir)
+    !                 enddo
+    !                 Hk=Hk+((1-a)*(triv_Hr(:,:,ir))+(a)*(top_Hr(:,:,ir)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
+    !             enddo
+    !             Hkr3(:,:,ir3) = Hk
+    !         enddo
 
-            do i=0,nblocks-1
-                do j=0,nblocks-1
-                    r3 = i-j
-                    if (r3<=5 .AND. r3>=-5) then
-                        if(r3.eq.0 .or. r3.eq.nblocks-1) then
-                            super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2) + B_pt
-                        else
-                            super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
-                        endif
-                    else
-                        super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
-                    endif
-                enddo
-            enddo
-            call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
+    !         do i=0,nblocks-1
+    !             do j=0,nblocks-1
+    !                 r3 = i-j
+    !                 if (r3<=5 .AND. r3>=-5) then
+    !                     if(r3.eq.0 .or. r3.eq.nblocks-1) then
+    !                         super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2) + B_pt
+    !                     else
+    !                         super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkr3(:,:,r3 + (nr3+1)/2)
+    !                     endif
+    !                 else
+    !                     super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
+    !                 endif
+    !             enddo
+    !         enddo
+    !         call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
 
-            do ie=1,nepoints
-                spectral_A = 0d0
-                do i=1,nb*nblocks
-                    p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
-                    exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
-                    spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))
-                enddo
-                spectral_A_single(1,(ikp-1)*nepoints + ie) = xk(ik)
-                spectral_A_single(2,(ikp-1)*nepoints + ie) = epoints(ie)
-                spectral_A_single(3,(ikp-1)*nepoints + ie) = real(spectral_A)! Top surface
-            enddo
-        enddo
-        call MPI_GATHERV(spectral_A_single,kcount,MPI_DOUBLE_PRECISION, &
-                            spectral_A_comm,recvcounts,displs,MPI_DOUBLE_PRECISION, &
-                            0, MPI_COMM_WORLD,IERR)
+    !         do ie=1,nepoints
+    !             spectral_A = 0d0
+    !             do i=1,nb*nblocks
+    !                 p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
+    !                 exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
+    !                 spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))
+    !             enddo
+    !             spectral_A_single(1,(ikp-1)*nepoints + ie) = xk(ik)
+    !             spectral_A_single(2,(ikp-1)*nepoints + ie) = epoints(ie)
+    !             spectral_A_single(3,(ikp-1)*nepoints + ie) = real(spectral_A)! Top surface
+    !         enddo
+    !     enddo
+    !     call MPI_GATHERV(spectral_A_single,kcount,MPI_DOUBLE_PRECISION, &
+    !                         spectral_A_comm,recvcounts,displs,MPI_DOUBLE_PRECISION, &
+    !                         0, MPI_COMM_WORLD,IERR)
 
-        if(myid.eq.0) write(100, '(3(1x,f12.6))') spectral_A_comm
-        if(myid.eq.0) write(100, '(a)') 'attribute "dep" string "positions"'
-    enddo
+    !     if(myid.eq.0) write(100, '(3(1x,f12.6))') spectral_A_comm
+    !     if(myid.eq.0) write(100, '(a)') 'attribute "dep" string "positions"'
+    ! enddo
 
     if(myid.eq.0) then
         do i=0,nblocks-1
