@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=0,emin=3,emax=5.5,bfactor=0.005, B=0.00d0, passval=-0.0d0
-    integer,parameter::nkpath=3,np=400,eres=200,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7.0,bfactor=0.005, B=0.00d0, passval=0.6d0
+    integer,parameter::nkpath=3,np=250,eres=250,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -21,11 +21,11 @@ Program Projected_band_structure
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
-    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
+    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk),kvec1(3),kvec2(3)
     real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
     integer*4,allocatable:: ndeg(:,:,:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16,allocatable::Hk(:,:),Hkra(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
-    complex*16 B_sigma(2,2),temp1,temp2
+    complex*16 B_sigma(2,2)
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
@@ -76,6 +76,8 @@ Program Projected_band_structure
     allocate(rvec_top(nr_top,3))
     allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks+1,nb*nblocks+1))
     allocate(extrarow(nb*nblocks))
+    allocate(Hkra(nb,nb,-6:6))
+    allocate(Hk(nb,nb))
 
     read(99,*)ndeg_top
     read(97,*)ndeg_triv
@@ -84,37 +86,45 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks+1)-2)))
 
 !-----kpath
-    kpoints(:,1) = [ -2.0d0,  0.0d0,   0.0d0]  !-M
-    kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
-    kpoints(:,3) = [  2.0d0,  0.0d0,   0.0d0]  !M   
+    ! !-kx -> kx
+    ! kpoints(:,1) = [ -0.2d0,  0.0d0,   0.0d0]  !-M
+    ! kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
+    ! kpoints(:,3) = [  0.2d0,  0.0d0,   0.0d0]  !M   
     
-    ! ky -> -ky 
-    ! kpoints(:,1) = [ 0.00d0,  -0.0d0,   -0.914d0]  !-A
-    ! kpoints(:,2) = [ 0.0d0,   0.0d0,    0.0d0]  !Gamma
-    ! kpoints(:,3) = [ -0.00d0,   0.0d0,  1.4497d0]  !A
+    ! -ky -> ky 
+    kpoints(:,1) = [ 0.05d0, -0.1d0,  0.5d0]  !H
+    kpoints(:,2) = [  0.0d0,  0.0d0,  0.5d0]  !A
+    kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
 
-    ! kpoints(:,1) = [ 0.0d0,  -0.0d0,   5.0d0]  !A
-    ! kpoints(:,2) = [ 0.0d0,   0.0d0,    0.0d0]  !Gamma
-    ! kpoints(:,3) = [ -0.0d0,   5.0d0,  0.0d0]  !K
+    ! -kz -> kz
+    ! kpoints(:,1) = [ 0.00d0,  -0.0d0,    -0.5]  !-A
+    ! kpoints(:,2) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    ! kpoints(:,3) = [-0.00d0,   0.0d0,   0.5d0]  !A
 
-    ! kx -> -kx
-    ! kpoints(:,1) = [ -0.5d0,   0.0d0,   0.5d0 ]  !L
-    ! kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
-    ! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.5d0 ]  !-L
+    ! Initial point in the k path
+    kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
+    xk(1)= -sqrt(dot_product(kvec1,kvec1))
 
-
-
-    do j = 1, nkpath-1
-          sign = 1
-          if(j ==1) sign = -1
-        do i = 1, np+1
-            ik = i + np*(j-1)
-            dk = (kpoints(:,j+1)-kpoints(:,j))/np
-            kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
-            xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
+    kvec1 = 0d0
+    
+    ! Interpolation between points
+    do i = 1, nkpath-1
+        do j = 1, np
+            ik = j + np*(i-1)
+            dk = (kpoints(:,i+1)-kpoints(:,i))/np
+            kpath(:, ik) = kpoints(:,(i)) + (dk*(j-1))
+            kvec2 = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
+            if(ik.gt.1) xk(ik) =  xk(ik-1) + sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
+            kvec1 = kvec2
         enddo
     enddo
+    ! Final point in the kpath
+    kpath(:,nk) = kpoints(:,nkpath)
+    kvec2=kpath(1,nk)*bvec(:,1)+kpath(2,nk)*bvec(:,2)+kpath(3,nk)*bvec(:,3)
+    xk(nk)=xk(nk-1)+sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
+    kpath = kpath*pi2
 
+!----energy mesh
     emiddle = emin + (emax-emin)/2
     de = (emax-emin)/(2*eres)
     ie=0
@@ -123,6 +133,7 @@ Program Projected_band_structure
         epoints(ie) = emiddle + de*i
     enddo
 
+!-----kpool
     kpool=nk/numprocs
     if (mod(nk,numprocs).ne.0) kpool=kpool+1
 
@@ -163,6 +174,7 @@ Program Projected_band_structure
 		enddo
 	enddo
 
+!----Read in Hamiltonian
     interp_Hr=0d0
     ndeg = 0d0
     do ir=1,nr_top
@@ -207,7 +219,7 @@ Program Projected_band_structure
     !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
     !     endif
     ! enddo
-
+!
     recv(1)=(min(kpmax,nk)-kpmin+1)*nepoints*3
 
     allocate(spectral_A_single(3,recv(1)*nepoints),displs(numprocs),recvcounts(numprocs))
@@ -222,22 +234,21 @@ Program Projected_band_structure
         sum=sum+recvcounts(i) 
     enddo
     kcount = (min(kpmax,nk)-kpmin+1)*nepoints*3
+    allocate(k_ene(3,kcount))
+
 
 
 !----- Axis selection
     extrarow=0d0
-    if(ax == 'x') then
-        kindex = [2,3]
-        extrarow(1:2) = 3*passval
-        extrarow((nblocks-1)*nb:(nblocks-1)*nb+1) = -2*passval
-    endif
+    if(ax == 'x') kindex = [2,3]
     if(ax == 'y') kindex = [1,3]
     if(ax == 'z') kindex = [1,2]
 
+    extrarow(1:2) = 3*passval
+    ! extrarow((nblocks-1)*nb:(nblocks-1)*nb+1) = -2*passval
+    extrarow(nblocks*nb-1:nblocks*nb) = -2*passval
 
-    allocate(Hkra(nb,nb,-6:6))
-    allocate(Hk(nb,nb))
-    allocate(k_ene(3,kcount))
+    
 
 !----- Perform fourier transform
     ! nr12=nr/nr3

@@ -13,7 +13,7 @@
       integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,j1,j2,nb,l
       real*8,parameter::third=1d0/3d0, alpha = 0
       real*8 phase,pi2,jk,a,b,x1,y1
-      real*8 xk(nk),bvec(3,3),avec(3,3),ktemp1(3),ktemp2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
+      real*8 xk(nk),bvec(3,3),avec(3,3),kvec1(3),kvec2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
       real*8,allocatable:: rvec(:,:),rvec_data(:,:),ene(:,:),rwork(:),od(:,:,:)
       integer*4,allocatable:: ndeg(:)
       complex*16,allocatable:: Hk(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),work(:),H_col(:)
@@ -38,25 +38,26 @@
       data kpoints(:,3) /     third,      third,    0.5d0/  !H
 
       data klabel     /'L','A','H'/
+
+      kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
+      xk(1)= -sqrt(dot_product(kvec1,kvec1))
   
-      do j = 1, nkpath-1
-            sign = 1
-            if(j ==1) sign = -1
-          do i = 1, np
-              ik = i + np*(j-1)
-              dk = (kpoints(:,j+1)-kpoints(:,j))/np
-              kpath(:, ik) = kpoints(:,(j)) + (dk*(i-1))
-
-              !xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)- kpath(:, ik),kpoints(:,2) - kpath(:, ik)))
-              kpath(:,ik) = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
-              xk(ik) =  sign*sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, ik),kpoints(:,2)*bvec(:,3) - kpath(:, ik)))
-
-              if(ik==2*np) then
-                     kpath(:,nk) = kpoints(1,nkpath)*bvec(:,1) + kpoints(2,nkpath)*bvec(:,2) + kpoints(3,nkpath)*bvec(:,3) 
-                     xk(nk) = xk(nk-1) + sqrt(dot_product(kpoints(:,2)*bvec(:,3) - kpath(:, nk),kpoints(:,2)*bvec(:,3) - kpath(:, nk)))
-              endif
+      kvec1 = 0d0
+      do i = 1, nkpath-1
+          do j = 1, np
+              ik = j + np*(i-1)
+              dk = (kpoints(:,i+1)-kpoints(:,i))/np
+              kpath(:, ik) = kpoints(:,(i)) + (dk*(j-1))
+              kvec2 = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
+              if(ik.gt.1) xk(ik) =  xk(ik-1) + sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
+              kvec1 = kvec2
           enddo
       enddo
+      ! Final point in the kpath
+      kpath(:,nk) = kpoints(:,nkpath)
+      kvec2=kpath(1,nk)*bvec(:,1)+kpath(2,nk)*bvec(:,2)+kpath(3,nk)*bvec(:,3)
+      xk(nk)=xk(nk-1)+sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
+      kpath = kpath*pi2
 
 !------read H(R) 
       open(99,file=trim(adjustl(top_file)))
@@ -89,10 +90,9 @@
          HK=(0d0,0d0)
          do j=1,nr
 
-            rvec(:,j) = rvec_data(1,j)*avec(:,1) + rvec_data(2,j)*avec(:,2) + rvec_data(3,j)*avec(:,3)
             phase=0.0d0
             do i=1,3
-               phase=phase+kpath(i,k)*rvec(i,j)  
+               phase=phase+kpath(i,k)*rvec_data(i,j)  
             enddo
 
             HK=HK+((1-alpha)*(triv_hr(:,:,j))+alpha*(top_hr(:,:,j)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(j))
