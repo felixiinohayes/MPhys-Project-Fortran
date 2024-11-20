@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,emin=6,emax=7,bfactor=0.002
-    integer,parameter::nkpath=3,np=200,eres=400,nblocks=20,nr3=11,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,emin=6,emax=7,bfactor=0.002, B=0.00d0
+    integer,parameter::nkpath=3,np=200,eres=400,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -17,8 +17,8 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     character(len=5) suffix
     integer*4 i,j,k,nr,i1,i2,j1,j2,ie,lwork,info,ik,count,ir,ir3,ir12,nr12,r3,sign,il,kpool,kpmin,kpmax,ecounts,ikp,jk,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),ira,irb,irc,ra
-    integer*4 recv(1),nrc(3)
-    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two), B=0.00d0
+    integer*4 recv(1),nr_(3),kindex(2)
+    real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk)
     real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
@@ -73,7 +73,7 @@ Program Projected_band_structure
 
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks,nb*nblocks))
     allocate(extrarow(nb,nb*nblocks))
 
     read(99,*)ndeg_top
@@ -218,9 +218,11 @@ Program Projected_band_structure
     kcount = (min(kpmax,nk)-kpmin+1)*nepoints*3
 
 !----- Axis selection
-    if(ax == 'x') nrc = [6,4,5]
-    if(ax == 'y') nrc = [4,5,6]
-    if(ax == 'z') nrc = [5,6,4]
+    if(ax == 'x') kindex = [2,3]
+    if(ax == 'y') kindex = [1,3]
+    if(ax == 'z') kindex = [1,2]
+
+    allocate(Hkra(nb,nb,-6:6))
 
 !----- Perform fourier transform
     ! nr12=nr/nr3
@@ -230,14 +232,13 @@ Program Projected_band_structure
         if(myid.eq.0)print *, "block", il+1, "/", nblocks
         do ik=kpmin,min(kpmax,nk)
             ikp=ikp+1
-            do ira= -nr_(1),nr_(1) ! Loop over R_ vectors
+            do ira= -6,6 ! Loop over R_ vectors
                 Hk=0d0    
-                do irb = -nr_(2),nr_(2)
-                    do irc = -nr_(3),nr_(3)
+                do irb = -6,6
+                    do irc = -6,6
                         phase = 0d0
-                        do j = 1,2
-                            phase = phase + kpath(j,ik)*rvec(j,ir)
-                        enddo
+
+                        phase = phase + kpath(kindex(1),ik) * irb + kpath(kindex(2),ik) * irc
 
                         Hk=Hk+((1-a)*(triv_Hr(:,:,ira,irb,irc))+(a)*(top_Hr(:,:,ira,irb,irc)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ir))
                     enddo
@@ -247,13 +248,9 @@ Program Projected_band_structure
 
             do i=0,nblocks-1
                 do j=0,nblocks-1
-                    r3 = i-j
-                    if (r3<=5 .AND. r3>=-5) then
-                        if(r3.eq.0 .or. r3.eq.nblocks-1) then
-                            super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,r3 + (nr3+1)/2) + B_pt
-                        else
-                            super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,r3 + (nr3+1)/2)
-                        endif
+                    ra = i-j
+                    if (ra<=6 .AND. ra>=-6) then   
+                        super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,ra)
                     else
                         super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
                     endif
@@ -261,25 +258,25 @@ Program Projected_band_structure
             enddo
             call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
 
-    !         do ie=1,nepoints
-    !             spectral_A = 0d0
-    !             do i=1,nb*nblocks
-    !                 p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
-    !                 exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
-    !                 spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))
-    !             enddo
-    !             spectral_A_single(1,(ikp-1)*nepoints + ie) = xk(ik)
-    !             spectral_A_single(2,(ikp-1)*nepoints + ie) = epoints(ie)
-    !             spectral_A_single(3,(ikp-1)*nepoints + ie) = real(spectral_A)! Top surface
-    !         enddo
-    !     enddo
-    !     call MPI_GATHERV(spectral_A_single,kcount,MPI_DOUBLE_PRECISION, &
-    !                         spectral_A_comm,recvcounts,displs,MPI_DOUBLE_PRECISION, &
-    !                         0, MPI_COMM_WORLD,IERR)
+            do ie=1,nepoints
+                spectral_A = 0d0
+                do i=1,nb*nblocks
+                    p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
+                    exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
+                    spectral_A = spectral_A + p_l * exp(-0.5d0 * (exp_factor**2))
+                enddo
+                spectral_A_single(1,(ikp-1)*nepoints + ie) = xk(ik)
+                spectral_A_single(2,(ikp-1)*nepoints + ie) = epoints(ie)
+                spectral_A_single(3,(ikp-1)*nepoints + ie) = real(spectral_A)! Top surface
+            enddo
+        enddo
+        call MPI_GATHERV(spectral_A_single,kcount,MPI_DOUBLE_PRECISION, &
+                            spectral_A_comm,recvcounts,displs,MPI_DOUBLE_PRECISION, &
+                            0, MPI_COMM_WORLD,IERR)
 
-    !     if(myid.eq.0) write(100, '(3(1x,f12.6))') spectral_A_comm
-    !     if(myid.eq.0) write(100, '(a)') 'attribute "dep" string "positions"'
-    ! enddo
+        if(myid.eq.0) write(100, '(3(1x,f12.6))') spectral_A_comm
+        if(myid.eq.0) write(100, '(a)') 'attribute "dep" string "positions"'
+    enddo
 
     if(myid.eq.0) then
         do i=0,nblocks-1
