@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7.0,bfactor=0.005, B=0.00d0, passval=0.6d0
-    integer,parameter::nkpath=3,np=250,eres=250,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    character(len=80):: prefix="../BiTeI", ax = 'y'
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7.0,bfactor=0.005, B=0.00d0, passval=0.5d0
+    integer,parameter::nkpath=3,np=250,eres=250,nblocks=60,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -47,7 +47,7 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='super_H_x_triv.dx')
+    open(100,file='super_H_Y_60.dx')
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -91,15 +91,15 @@ Program Projected_band_structure
     ! kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
     ! kpoints(:,3) = [  0.2d0,  0.0d0,   0.0d0]  !M   
     
-    ! -ky -> ky 
-    kpoints(:,1) = [ 0.05d0, -0.1d0,  0.5d0]  !H
-    kpoints(:,2) = [  0.0d0,  0.0d0,  0.5d0]  !A
-    kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
+    ! ! -ky -> ky 
+    ! kpoints(:,1) = [ 0.05d0, -0.1d0,  0.5d0]  !H
+    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.5d0]  !A
+    ! kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
 
     ! -kz -> kz
-    ! kpoints(:,1) = [ 0.00d0,  -0.0d0,    -0.5]  !-A
-    ! kpoints(:,2) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    ! kpoints(:,3) = [-0.00d0,   0.0d0,   0.5d0]  !A
+    kpoints(:,1) = [ 0.0d0,  -0.0d0,   -0.5d0]  !-A
+    kpoints(:,2) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    kpoints(:,3) = [-0.0d0,   0.0d0,    0.5d0]  !A
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
@@ -244,11 +244,8 @@ Program Projected_band_structure
     if(ax == 'y') kindex = [1,3]
     if(ax == 'z') kindex = [1,2]
 
-    extrarow(1:2) = 3*passval
-    ! extrarow((nblocks-1)*nb:(nblocks-1)*nb+1) = -2*passval
-    extrarow(nblocks*nb-1:nblocks*nb) = -2*passval
-
-    
+    extrarow(3:4) = +2*passval
+    extrarow(nblocks*nb-3:nblocks*nb-2) = -3*passval
 
 !----- Perform fourier transform
     ! nr12=nr/nr3
