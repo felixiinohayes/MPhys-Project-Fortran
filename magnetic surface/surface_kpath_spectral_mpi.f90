@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'y'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7.0,bfactor=0.005, B=0.00d0, passval=0.5d0
-    integer,parameter::nkpath=3,np=250,eres=250,nblocks=60,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7.0,bfactor=0.005, B=0.00d0, passval=0.0d0
+    integer,parameter::nkpath=3,np=250,eres=250,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -47,7 +47,7 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='super_H_Y_60.dx')
+    open(100,file='super_H_Y_60_nopass.dx')
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -97,9 +97,9 @@ Program Projected_band_structure
     ! kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
 
     ! -kz -> kz
-    kpoints(:,1) = [ 0.0d0,  -0.0d0,   -0.5d0]  !-A
     kpoints(:,2) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    kpoints(:,3) = [-0.0d0,   0.0d0,    0.5d0]  !A
+    kpoints(:,1) = [ 0.0d0,  -0.0d0,   0.5d0]  !A
+    kpoints(:,3) = [0.5d0, 0.0d0,    0.5d0]  !L
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
@@ -249,8 +249,12 @@ Program Projected_band_structure
 
 !----- Perform fourier transform
     ! nr12=nr/nr3
+    count = 0
     do il=0,nblocks-1
-        if(myid.eq.0) write(100, '(a,i8,a,i10,a)') 'object',il+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
+        if(myid.eq.0 .and. (il == 0 .or. il == nblocks - 1 .or. il == nblocks/2)) then
+            write(100, '(a,i8,a,i10,a)') 'object',count+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
+            count = count + 1
+        endif
         ikp=0
         if(myid.eq.0)print *, "block", il+1, "/", nblocks
         do ik=kpmin,min(kpmax,nk)
@@ -307,21 +311,23 @@ Program Projected_band_structure
                             spectral_A_comm,recvcounts,displs,MPI_DOUBLE_PRECISION, &
                             0, MPI_COMM_WORLD,IERR)
 
-        if(myid.eq.0) write(100, '(3(1x,f12.6))') spectral_A_comm
-        if(myid.eq.0) write(100, '(a)') 'attribute "dep" string "positions"'
+        if(myid.eq.0 .and. (il == 0 .or. il == nblocks - 1 .or. il == nblocks/2)) then
+            write(100, '(3(1x,f12.6))') spectral_A_comm
+            write(100, '(a)') 'attribute "dep" string "positions"'
+        endif
     enddo
 
     if(myid.eq.0) then
-        do i=0,nblocks-1
+        do i=0,2
             write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-            'object',nblocks+3+i,' class field', &
+            'object',3+3+i,' class field', &
             'component "positions" value 1', &
             'component "connections" value 2', &
             'component "data" value ',3+i
         enddo
         write(100, '(a)') 'object "series" class series'
-        do i=0,nblocks-1
-            write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+nblocks+3), ' position', i
+        do i=0,2
+            write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+3+3), ' position', i
         enddo
         write(100, '(A)') 'end'
     endif
