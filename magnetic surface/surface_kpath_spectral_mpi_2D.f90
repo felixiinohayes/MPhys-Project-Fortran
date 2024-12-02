@@ -246,9 +246,9 @@ Program Projected_band_structure
 
 !----- Axis selection
     extrarow=0d0
-    if(ax == 'x') kindex = [2,3]
-    if(ax == 'y') kindex = [1,3]
-    if(ax == 'z') kindex = [1,2]
+    if(ax == 'x') index = 1
+    if(ax == 'y') index = 2
+    if(ax == 'z') index = 3
 
     extrarow(3:4) = +2*passval
     extrarow(nblocks*nb-3:nblocks*nb-2) = -3*passval
@@ -265,19 +265,19 @@ Program Projected_band_structure
         if(myid.eq.0)print *, "block", il+1, "/", nblocks
         do ik=kpmin,min(kpmax,nk)
             ikp=ikp+1
-            do ira= -6,6 ! Loop over R_ vectors
-                Hk=0d0    
-                do irb = -6,6
+            do ira= -6,6 
+                do irb = -6,6  ! Loop over R_ vectors
+                    Hk=0d0    
                     do irc = -6,6
 
-                        if(ax == 'x') ai = [ira, irb, irc]
-                        if(ax == 'y') ai = [irb, ira, irc]
-                        if(ax == 'z') ai = [irb, irc, ira]
+                        if(ax == 'x') ai = [irc, ira, irb]
+                        if(ax == 'y') ai = [ira, irc, irb]
+                        if(ax == 'z') ai = [ira, irb, irc]
 
                         if(ndeg(ai(1),ai(2),ai(3)).ne.0) then 
                             phase = 0d0
 
-                            phase = phase + kpath(kindex(1),ik) * irb + kpath(kindex(2),ik) * irc
+                            phase = phase + kpath(index,ik) * irc
 
                             Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
                         endif
