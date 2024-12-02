@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'y'
+    character(len=80):: prefix="../BiTeI", ax = 'z'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=8,np=400,eres=400,nblocks=60,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    integer,parameter::nkpath=8,np=400,eres=400,nblocks=30,nk=(nkpath-1)*np+1,nepoints=2*eres+1,N2=nblocks**2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -16,7 +16,7 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     character(len=5) suffix
-    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,n
+    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n
     integer*4 lwork,info,ik,count,sign,kpool,kpmin,kpmax,ecounts,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),index
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
@@ -24,7 +24,7 @@ Program Projected_band_structure
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk),kvec1(3),kvec2(3)
     real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
     integer*4,allocatable:: ndeg(:,:,:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
-    complex*16,allocatable::Hk(:,:),Hkra(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
+    complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2)
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
@@ -48,6 +48,8 @@ Program Projected_band_structure
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
     open(100,file='super_H_Y_60_longpath.dx')
+
+    count = 0
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -74,38 +76,33 @@ Program Projected_band_structure
 
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks+1,nb*nblocks+1))
-    allocate(extrarow(nb*nblocks))
-    allocate(Hkra(nb,nb,-6:6))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*N2+1,nb*N2+1))
+    allocate(extrarow(nb*N2))
+    allocate(Hkra(nb,nb,-6:6,-6:6))
     allocate(Hk(nb,nb))
 
     read(99,*)ndeg_top
     read(97,*)ndeg_triv
 
-    lwork=max(1,2*(nb*nblocks+1)-1)
-    allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks+1)-2)))
+    lwork=max(1,2*(nb*N2+1)-1)
+    allocate(work(max(1,lwork)),rwork(max(1,3*(nb*N2+1)-2)))
 
 !-----kpath
     ! !-kx -> kx
-    ! kpoints(:,1) = [ -0.2d0,  0.0d0,   0.0d0]  !-M
-    ! kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
-    ! kpoints(:,3) = [  0.2d0,  0.0d0,   0.0d0]  !M   
+    kpoints(:,1) = [ -0.5d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
+    kpoints(:,3) = [  0.5d0,  0.0d0,   0.0d0]  !M   
     
     ! ! -ky -> ky 
-    ! kpoints(:,1) = [ 0.05d0, -0.1d0,  0.5d0]  !H
-    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.5d0]  !A
-    ! kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
+    ! kpoints(:,1) = [ 0.00d0, -0.5d0,  0.0d0]  !H
+    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
+    ! kpoints(:,3) = [ 0.00d0,  0.5d0,  0.0d0]  !-H
 
     ! -kz -> kz
-    ! G K M G A H L A 
-    kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    kpoints(:,2) = [ 2*third, third,  0.0d0]  !K
-    kpoints(:,3) = [ 0.5d0,  0.0d0,   0.0d0]  !M
-    kpoints(:,4) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    kpoints(:,5) = [ 0.0d0,  0.0d0,   0.5d0]  !A
-    kpoints(:,6) = [ 2*third, third,  0.5d0]  !H
-    kpoints(:,7) = [0.5d0, 0.0d0,    0.5d0]  !L
-    kpoints(:,8) = [ 0.0d0,  0.0d0,   0.5d0]  !A
+    ! kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.5d0]  !H
+    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
+    ! kpoints(:,3) = [0.00d0,  0.0d0,  0.5d0]  !-H
+
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
@@ -179,6 +176,8 @@ Program Projected_band_structure
             endif
 		enddo
 	enddo
+
+    
 
 !----Read in Hamiltonian
     interp_Hr=0d0
@@ -269,7 +268,8 @@ Program Projected_band_structure
                 do irb = -6,6  ! Loop over R_ vectors
                     Hk=0d0    
                     do irc = -6,6
-
+                        
+                        ! Now 'ax' is  the only axis where periodicity is maintained
                         if(ax == 'x') ai = [irc, ira, irb]
                         if(ax == 'y') ai = [ira, irc, irb]
                         if(ax == 'z') ai = [ira, irb, irc]
@@ -283,26 +283,31 @@ Program Projected_band_structure
                         endif
                     enddo
                 enddo
-                Hkra(:,:,ira) = Hk
+                Hkra(:,:,ira,irb) = Hk
             enddo
 
-            do i=0,nblocks-1
-                do j=0,nblocks-1
-                    ra = i-j
-                    if (ra<=6 .AND. ra>=-6) then
-                        super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,ra)
+            do i=0,N2-1
+                fb = mod((i)/nblocks,nblocks)
+                fa = mod(i,nblocks)
+                do j=0,N2-1
+                    rb = mod((j)/nblocks,nblocks) - fb
+                    ra = mod(j,nblocks) - fa
+                    ! print*,ra,rb
+                    if (abs(ra).lt.6 .AND. abs(rb).lt.6 ) then
+                        super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,ra,rb)
                     else
                         super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
                     endif
                 enddo
             enddo
-            super_H(nb*nblocks+1,:) = extrarow
-            super_H(:,nb*nblocks+1) = conjg(extrarow)
-            call zheev('V','U',nb*nblocks+1,super_H,nb*nblocks+1,k_ene(:,ik),work,lwork,rwork,info)
+
+            super_H(nb*N2+1,:) = extrarow
+            super_H(:,nb*N2+1) = conjg(extrarow)
+            call zheev('V','U',nb*N2+1,super_H,nb*N2+1,k_ene(:,ik),work,lwork,rwork,info)
 
             do ie=1,nepoints
                 spectral_A = 0d0
-                do i=1,nb*nblocks
+                do i=1,nb*N2
                     p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
                     exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
                     spectral_A = spectral_A + p_l * (exp(-0.5d0*exp_factor**2)) * 1/(bfactor*sqrt(2*pi2))
