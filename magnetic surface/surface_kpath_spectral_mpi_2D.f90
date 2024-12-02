@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'z'
+    character(len=80):: prefix="../BiTeI", ax = 'x'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=8,np=400,eres=400,nblocks=30,nk=(nkpath-1)*np+1,nepoints=2*eres+1,N2=nblocks**2
+    integer,parameter::nkpath=8,np=300,eres=300,nblocks=30,nk=(nkpath-1)*np+1,nepoints=2*eres+1,N2=nblocks**2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -17,14 +17,14 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line
     character(len=5) suffix
     integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n
-    integer*4 lwork,info,ik,count,sign,kpool,kpmin,kpmax,ecounts,kcount,sum,interp_size,nr_top,nr_triv,rvec(3),index
+    integer*4 lwork,info,ik,count,sign,kpool,kpmin,kpmax,ecounts,kcount,buffsize,sum,interp_size,nr_top,nr_triv,rvec(3),index
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk),kvec1(3),kvec2(3)
     real*8,allocatable:: rwork(:),k_ene(:,:),spectral_A_single(:,:)
     integer*4,allocatable:: ndeg(:,:,:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
-    complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
+    complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2)
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
@@ -47,9 +47,7 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='super_H_Y_60_longpath.dx')
-
-    count = 0
+    open(100,file='super_H_X_30_BP2D.dx')
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -76,7 +74,7 @@ Program Projected_band_structure
 
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*N2+1,nb*N2+1))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
     allocate(extrarow(nb*N2))
     allocate(Hkra(nb,nb,-6:6,-6:6))
     allocate(Hk(nb,nb))
@@ -152,13 +150,13 @@ Program Projected_band_structure
         write(100, '(a,2(1x,f12.6))') 'delta',0d0,de
         write(100, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nk,nepoints
     endif
-    allocate(B_pt(nb, nb))
+    allocate(B_pt(nb, nb),super_H(nb*N2+1,nb*N2+1,kpool))
 
-     !B along Y axis
+    ! B along Y axis
     ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
     ! B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
 
-     !B along X axis
+    ! B along X axis
     B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(B,0d0)]
     B_sigma(2,:) = [dcmplx(B,0d0) ,  dcmplx(0d0,0d0)]
 
@@ -177,7 +175,6 @@ Program Projected_band_structure
 		enddo
 	enddo
 
-    
 
 !----Read in Hamiltonian
     interp_Hr=0d0
@@ -238,9 +235,9 @@ Program Projected_band_structure
         displs(i) = sum
         sum=sum+recvcounts(i) 
     enddo
-    kcount = (min(kpmax,nk)-kpmin+1)*nepoints*3
+    kcount = (min(kpmax,nk)-kpmin+1)
+    buffsize= kcount*(N2*nb)**2
     allocate(k_ene(3,kcount))
-
 
 
 !----- Axis selection
@@ -255,93 +252,60 @@ Program Projected_band_structure
 !----- Perform fourier transform
     ! nr12=nr/nr3
     count = 0
-    do il=0,nblocks-1
-        if(myid.eq.0 .and. (il == 0 .or. il == nblocks - 1 .or. il == nblocks/2)) then
-            write(100, '(a,i8,a,i10,a)') 'object',count+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
-            count = count + 1
-        endif
-        ikp=0
-        if(myid.eq.0)print *, "block", il+1, "/", nblocks
-        do ik=kpmin,min(kpmax,nk)
-            ikp=ikp+1
-            do ira= -6,6 
-                do irb = -6,6  ! Loop over R_ vectors
-                    Hk=0d0    
-                    do irc = -6,6
-                        
-                        ! Now 'ax' is  the only axis where periodicity is maintained
-                        if(ax == 'x') ai = [irc, ira, irb]
-                        if(ax == 'y') ai = [ira, irc, irb]
-                        if(ax == 'z') ai = [ira, irb, irc]
+    if(myid.eq.0 .and. (il == 0 .or. il == nblocks - 1 .or. il == nblocks/2)) then
+        write(100, '(a,i8,a,i10,a)') 'object',count+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
+        count = count + 1
+    endif
+    ikp=0
+    if(myid.eq.0)print *, "block", il+1, "/", nblocks
+    do ik=kpmin,min(kpmax,nk)
+        ikp=ikp+1
+        do ira= -6,6 
+            do irb = -6,6  ! Loop over R_ vectors
+                Hk=0d0    
+                do irc = -6,6
+                    
+                    ! Now 'ax' is  the only axis where periodicity is maintained
+                    if(ax == 'x') ai = [irc, ira, irb]
+                    if(ax == 'y') ai = [ira, irc, irb]
+                    if(ax == 'z') ai = [ira, irb, irc]
 
-                        if(ndeg(ai(1),ai(2),ai(3)).ne.0) then 
-                            phase = 0d0
+                    if(ndeg(ai(1),ai(2),ai(3)).ne.0) then 
+                        phase = 0d0
 
-                            phase = phase + kpath(index,ik) * irc
+                        phase = phase + kpath(index,ik) * irc
 
-                            Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
-                        endif
-                    enddo
-                enddo
-                Hkra(:,:,ira,irb) = Hk
-            enddo
-
-            do i=0,N2-1
-                fb = mod((i)/nblocks,nblocks)
-                fa = mod(i,nblocks)
-                do j=0,N2-1
-                    rb = mod((j)/nblocks,nblocks) - fb
-                    ra = mod(j,nblocks) - fa
-                    ! print*,ra,rb
-                    if (abs(ra).lt.6 .AND. abs(rb).lt.6 ) then
-                        super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,ra,rb)
-                    else
-                        super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
+                        Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
                     endif
                 enddo
             enddo
+            Hkra(:,:,ira,irb) = Hk
+        enddo
 
-            super_H(nb*N2+1,:) = extrarow
-            super_H(:,nb*N2+1) = conjg(extrarow)
-            call zheev('V','U',nb*N2+1,super_H,nb*N2+1,k_ene(:,ik),work,lwork,rwork,info)
-
-            do ie=1,nepoints
-                spectral_A = 0d0
-                do i=1,nb*N2
-                    p_l = dot_product(super_H((1+nb*il):(nb*(il+1)),i),super_H((1+nb*il):(nb*(il+1)),i))
-                    exp_factor = (epoints(ie) - k_ene(i,ik))/bfactor
-                    spectral_A = spectral_A + p_l * (exp(-0.5d0*exp_factor**2)) * 1/(bfactor*sqrt(2*pi2))
-                    ! print*, spectral_A
-                enddo
-                spectral_A_single(1,(ikp-1)*nepoints + ie) = xk(ik)
-                spectral_A_single(2,(ikp-1)*nepoints + ie) = epoints(ie)
-                spectral_A_single(3,(ikp-1)*nepoints + ie) = real(spectral_A)! Top surface
+        do i=0,N2-1
+            fb = mod((i)/nblocks,nblocks)
+            fa = mod(i,nblocks)
+            do j=0,N2-1
+                rb = mod((j)/nblocks,nblocks) - fb
+                ra = mod(j,nblocks) - fa
+                ! print*,ra,rb
+                if (abs(ra).lt.6 .AND. abs(rb).lt.6 ) then
+                    super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1)),ikp) = Hkra(:,:,ra,rb)
+                else
+                    super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1)),ikp) = 0d0
+                endif
             enddo
         enddo
-        call MPI_GATHERV(spectral_A_single,kcount,MPI_DOUBLE_PRECISION, &
-                            spectral_A_comm,recvcounts,displs,MPI_DOUBLE_PRECISION, &
-                            0, MPI_COMM_WORLD,IERR)
 
-        if(myid.eq.0 .and. (il == 0 .or. il == nblocks - 1 .or. il == nblocks/2)) then
-            write(100, '(3(1x,f12.6))') spectral_A_comm
-            write(100, '(a)') 'attribute "dep" string "positions"'
-        endif
+        ! super_H(nb*N2+1,:) = extrarow
+        ! super_H(:,nb*N2+1) = conjg(extrarow)
+        call zheev('V','U',nb*N2+1,super_H(:,:,ik),nb*N2+1,k_ene(:,ik),work,lwork,rwork,info)
     enddo
 
-    if(myid.eq.0) then
-        do i=0,2
-            write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-            'object',3+3+i,' class field', &
-            'component "positions" value 1', &
-            'component "connections" value 2', &
-            'component "data" value ',3+i
-        enddo
-        write(100, '(a)') 'object "series" class series'
-        do i=0,2
-            write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+3+3), ' position', i
-        enddo
-        write(100, '(A)') 'end'
-    endif
+    call MPI_GATHERV(super_H,kcount,MPI_DOUBLE_PRECISION, &
+                        spectral_A_comm,recvcounts,displs,MPI_DOUBLE_PRECISION, &
+                        0, MPI_COMM_WORLD,IERR)
+
 
     call MPI_FINALIZE(IERR)
 end Program Projected_band_structure
