@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'y'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7.0,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=3,np=250,eres=250,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7,bfactor=0.005, B=0.00d0, passval=0.0d0
+    integer,parameter::nkpath=8,np=400,eres=400,nblocks=60,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -47,7 +47,7 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='super_H_Y_60_nopass.dx')
+    open(100,file='super_H_Y_60_longpath.dx')
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -97,9 +97,15 @@ Program Projected_band_structure
     ! kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
 
     ! -kz -> kz
-    kpoints(:,2) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    kpoints(:,1) = [ 0.0d0,  -0.0d0,   0.5d0]  !A
-    kpoints(:,3) = [0.5d0, 0.0d0,    0.5d0]  !L
+    ! G K M G A H L A 
+    kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    kpoints(:,2) = [ 2*third, third,  0.0d0]  !K
+    kpoints(:,3) = [ 0.5d0,  0.0d0,   0.0d0]  !M
+    kpoints(:,4) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    kpoints(:,5) = [ 0.0d0,  0.0d0,   0.5d0]  !A
+    kpoints(:,6) = [ 2*third, third,  0.5d0]  !H
+    kpoints(:,7) = [0.5d0, 0.0d0,    0.5d0]  !L
+    kpoints(:,8) = [ 0.0d0,  0.0d0,   0.5d0]  !A
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
