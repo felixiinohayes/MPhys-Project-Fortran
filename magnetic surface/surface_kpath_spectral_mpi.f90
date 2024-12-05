@@ -261,8 +261,8 @@ Program Projected_band_structure
             write(100, '(a,i8,a,i10,a)') 'object',count+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
             count = count + 1
         endif
-        ikp=0
         if(myid.eq.0)print *, "block", il+1, "/", nblocks
+        ikp=0
         do ik=kpmin,min(kpmax,nk)
             ikp=ikp+1
             do ira= -6,6 ! Loop over R_ vectors
