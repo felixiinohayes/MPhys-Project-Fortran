@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=3,np=300,eres=300,nblocks=5,nk=(nkpath-1)*np+1,nepoints=2*eres+1,N2=nblocks**2
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0
+    integer,parameter::nkpath=3,np=50,nblocks=20,nk=(nkpath-1)*np+1,N2=nblocks**2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -21,7 +21,7 @@ Program Projected_band_structure
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
-    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),epoints(nepoints),spectral_A_comm(3,nk*nepoints),kpath(3,nk),kvec1(3),kvec2(3)
+    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3)
     real*8,allocatable:: rwork(:),eval(:,:),eval_flat(:),eval_flatg(:)
     integer*4,allocatable:: ndeg(:,:,:),displs1(:),recvcounts1(:),displs2(:),recvcounts2(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:),kpminlist(:),kpmaxlist(:),kloclist(:),kloc_sum(:),buff_sum1(:),buff_sum2(:),buffsize1(:),buffsize2(:)
     complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:,:),sH_flat(:),sH_flatg(:),SH(:,:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
@@ -50,6 +50,7 @@ Program Projected_band_structure
     open(100,file='super_H_X_30_BP2D.dx')
     open(200,file='2D_EVECS.dat')
     open(300,file='2D_EVALS.dat')
+    open(400,file='2D_xk.dat')
 
 
     ! Determine the suffix based on the value of a
@@ -90,14 +91,13 @@ Program Projected_band_structure
 
 !-----kpath
     ! !-kx -> kx
-    kpoints(:,1) = [ -0.5d0,  0.0d0,   0.0d0]  !-M
-    kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
-    kpoints(:,3) = [  0.5d0,  0.0d0,   0.0d0]  !M   
+    ! kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
+    
     
     ! ! -ky -> ky 
-    ! kpoints(:,1) = [ 0.00d0, -0.5d0,  0.0d0]  !H
-    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
-    ! kpoints(:,3) = [ 0.00d0,  0.5d0,  0.0d0]  !-H
+    kpoints(:,1) = [ 0.00d0, -0.5d0,  0.0d0]  !H
+    kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
+    kpoints(:,3) = [ 0.00d0,  0.5d0,  0.0d0]  !-H
 
     ! -kz -> kz
     ! kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.5d0]  !H
@@ -128,25 +128,8 @@ Program Projected_band_structure
     xk(nk)=xk(nk-1)+sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
     kpath = kpath*pi2
 
-!----energy mesh
-    emiddle = emin + (emax-emin)/2
-    de = (emax-emin)/(2*eres)
-    ie=0
-    do i=-eres, eres
-        ie=ie+1
-        epoints(ie) = emiddle + de*i
-    enddo
-
 
 !----Construct magnetic perturbation
-    ! call write_header()
-    if(myid.eq.0) then
-        write(100, '(a,2(1x,i8))') 'object 1 class gridpositions counts',nk,nepoints
-        write(100, '(a,2(1x,f12.6))') 'origin',-0.1d0,emin
-        write(100, '(a,2(1x,f12.6))') 'delta',sqrt(dot_product(dk,dk)),0d0
-        write(100, '(a,2(1x,f12.6))') 'delta',0d0,de
-        write(100, '(a,2(1x,i8))') 'object 2 class gridconnections counts',nk,nepoints
-    endif
     allocate(B_pt(nb, nb))
 
     ! B along Y axis
@@ -292,6 +275,7 @@ Program Projected_band_structure
     ikp=0
     ! if(myid.eq.0)print *, "block", il+1, "/", nblocks
     do ik=kpminlist(myid+1),kpmaxlist(myid+1)
+        if(myid==0) print *, ik
         ikp=ikp+1
         do ira= -6,6 
             do irb = -6,6  ! Loop over R_ vectors
@@ -345,8 +329,9 @@ Program Projected_band_structure
                         0, MPI_COMM_WORLD,IERR)
 
     if(myid.eq.0) then 
-        write(200, *) nblocks
-        write(200, *) nk
+        write(300, *) nblocks
+        write(300, *) nk
+        write(300, *) dk
 
         do i =1, nk
             do j = 1, dim
@@ -355,6 +340,8 @@ Program Projected_band_structure
             write(300,*) eval_flatg(1 + dim*(i-1): dim*(i))
         enddo
     endif
+
+    write(400, *) xk
                         
     call MPI_FINALIZE(IERR)
 end Program Projected_band_structure
