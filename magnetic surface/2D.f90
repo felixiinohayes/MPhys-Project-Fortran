@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0
-    integer,parameter::nkpath=3,np=50,nblocks=20,nk=(nkpath-1)*np+1,N2=nblocks**2
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=5,emax=8,eta=0.005
+    integer,parameter::nkpath=3,np=200,nblocks=10,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -16,15 +16,15 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
     character(len=5) suffix
-    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1
+    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1,ib,offset
     integer*4 lwork,info,ik,count,sign,kloc,kpmin,kpmax,ecounts,kcount,interp_size,nr_top,nr_triv,rvec(3),index
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
-    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3)
-    real*8,allocatable:: rwork(:),eval(:,:),eval_flat(:),eval_flatg(:)
+    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3),epoints(eres),a_spec,factor,dos
+    real*8,allocatable:: rwork(:),eval(:),eval_flat(:),eval_flatg(:),data_row(:,:,:),data_rowf(:),data_gf(:),data_g(:,:,:)
     integer*4,allocatable:: ndeg(:,:,:),displs1(:),recvcounts1(:),displs2(:),recvcounts2(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:),kpminlist(:),kpmaxlist(:),kloclist(:),kloc_sum(:),buff_sum1(:),buff_sum2(:),buffsize1(:),buffsize2(:)
-    complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:,:),sH_flat(:),sH_flatg(:),SH(:,:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
+    complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),sH_flat(:),sH_flatg(:),SH(:,:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2)
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
@@ -47,10 +47,11 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='super_H_X_30_BP2D.dx')
-    open(200,file='2D_EVECS.dat')
-    open(300,file='2D_EVALS.dat')
-    open(400,file='2D_xk.dat')
+    open(100,file='block_1.dx')
+    open(101,file='block_2.dx')
+    open(102,file='block_3.dx')
+    open(103,file='block_4.dx')
+    open(104,file='block_5.dx')
 
 
     ! Determine the suffix based on the value of a
@@ -91,13 +92,15 @@ Program Projected_band_structure
 
 !-----kpath
     ! !-kx -> kx
-    ! kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,1) = [ -0.5d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,2) = [ 0.0d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,3) = [ 0.5d0,  0.0d0,   0.0d0]  !-M
     
     
-    ! ! -ky -> ky 
-    kpoints(:,1) = [ 0.00d0, -0.5d0,  0.0d0]  !H
-    kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
-    kpoints(:,3) = [ 0.00d0,  0.5d0,  0.0d0]  !-H
+    ! ! ! -ky -> ky 
+    ! kpoints(:,1) = [ 0.00d0, -0.5d0,  0.0d0]  !H
+    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
+    ! kpoints(:,3) = [ 0.00d0,  0.5d0,  0.0d0]  !-H
 
     ! -kz -> kz
     ! kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.5d0]  !H
@@ -128,6 +131,11 @@ Program Projected_band_structure
     xk(nk)=xk(nk-1)+sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
     kpath = kpath*pi2
 
+!---- emesh
+    de = (emax-emin)/eres
+    do i=1, eres
+        epoints(i) = emin + de*i
+    enddo
 
 !----Construct magnetic perturbation
     allocate(B_pt(nb, nb))
@@ -223,38 +231,57 @@ Program Projected_band_structure
 
         kloc_sum(i+1) = kloc_sum(i) + kloclist(i)
 
-        !For the MPI_GATHERV(super_H) call
-        buffsize1(i) = (kpmaxlist(i)-kpminlist(i)+1)*matsize
+        buffsize1(i) = kloclist(i)*3*eres*5
         sum1 = sum1+ buffsize1(i)
 
         buff_sum1(i+1) = sum1
 
         displs1(i) = buff_sum1(i) - 1
 
-        !For the MPI_GATHERV(evals) call
-        buffsize2(i) = (kpmaxlist(i)-kpminlist(i)+1)*dim !For the MPI_GATHERV(eval) call
-        sum2 = sum2+ buffsize2(i)
+        ! !For the MPI_GATHERV(super_H) call
+        ! buffsize1(i) = (kpmaxlist(i)-kpminlist(i)+1)*matsize
+        ! sum1 = sum1+ buffsize1(i)
 
-        buff_sum2(i+1) = sum2
+        ! buff_sum1(i+1) = sum1
 
-        displs2(i) = buff_sum2(i) -1
+        ! displs1(i) = buff_sum1(i) - 1
+
+        ! !For the MPI_GATHERV(evals) call
+        ! buffsize2(i) = (kpmaxlist(i)-kpminlist(i)+1)*dim !For the MPI_GATHERV(eval) call
+        ! sum2 = sum2+ buffsize2(i)
+
+        ! buff_sum2(i+1) = sum2
+
+        ! displs2(i) = buff_sum2(i) -1
     enddo
 
     recvcounts1 = buffsize1
     recvcounts2 = buffsize2
     kloc = kloclist(myid+1) 
 
-    allocate(SH(dim,dim,nk),super_H(dim,dim,kloc),sH_flat(buffsize1(myid+1)),sH_flatg(matsize*nk)&
-                                ,eval(dim,kloc),eval_flat(dim*kloc),eval_flatg(dim*nk))
+    allocate(SH(dim,dim,nk),super_H(dim,dim),sH_flat(buffsize1(myid+1)),sH_flatg(matsize*nk)&
+                                ,eval(dim),eval_flat(dim*kloc),eval_flatg(dim*nk))
 
     if(myid.eq.0) print *, "kloc:", kloclist
     if(myid.eq.0) print *, "kpmin:", kpminlist
     if(myid.eq.0) print *, "kpmax:", kpmaxlist
     if(myid.eq.0) print *, "kloc_sum:", kloc_sum
     if(myid.eq.0) print *, "buffsize1:", buffsize1
-    if(myid.eq.0) print *, "buffsize2:", buffsize2
+    ! if(myid.eq.0) print *, "buffsize2:", buffsize2
     if(myid.eq.0) print *, "buff_sum1:", buff_sum1, displs1
-    if(myid.eq.0) print *, "buff_sum2:", buff_sum2, displs2
+    ! if(myid.eq.0) print *, "buff_sum2:", buff_sum2, displs2
+
+!----DX Files
+    if(myid.eq.0) then
+        do i = 1,5
+            write(100+(i-1), '(a,3(1x,i8))') 'object 1 class gridpositions counts',nk,eres
+            write(100+(i-1), '(a,3(1x,f12.8))') 'origin',-0.1d0,emin
+            write(100+(i-1), '(a,3(1x,f12.8))') 'delta',sqrt(dot_product(dk,dk)),0d0
+            write(100+(i-1), '(a,3(1x,f12.6))') 'delta',0d0,de
+            write(100+(i-1), '(a,3(1x,i8))') 'object 2 class gridconnections counts',nk,eres
+            write(100+(i-1), '(a,i8,a,i8,a,i10,a)') 'object',3,' class array type float rank 1 shape',3,' item', nk*eres, ' data follows'
+        enddo
+    endif
 
 
 !----- Axis selection
@@ -267,13 +294,12 @@ Program Projected_band_structure
     ! extrarow(nblocks*nb-3:nblocks*nb-2) = -3*passval
 
 !----- Perform fourier transform
+
+    allocate(data_row(3,kloc*eres,5),data_rowf(3*kloc*eres*5),data_gf(3*nk*eres*5),data_g(3,nk*eres,5))
+
     count = 0
-    ! if(myid.eq.0 .and. (il == 0 .or. il == nblocks - 1 .or. il == nblocks/2)) then
-    !     write(100, '(a,i8,a,i10,a)') 'object',count+3,' class array type float rank 1 shape 3 item',nk*nepoints,' data follows'
-    !     count = count + 1
     ! endif
     ikp=0
-    ! if(myid.eq.0)print *, "block", il+1, "/", nblocks
     do ik=kpminlist(myid+1),kpmaxlist(myid+1)
         if(myid==0) print *, ik
         ikp=ikp+1
@@ -307,41 +333,66 @@ Program Projected_band_structure
                 ra = mod(j,nblocks) - fa
                 ! print*,ra,rb
                 if (abs(ra).lt.6 .AND. abs(rb).lt.6 ) then
-                    super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1)),ikp) = Hkra(:,:,ra,rb)
+                    super_H((1+nb*i):(nb*(i+1)),(1+nb*j):(nb*(j+1))) = Hkra(:,:,ra,rb)
                 else
-                    super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1)),ikp) = 0d0
+                    super_H((1+nb*i):(nb*(i+1)), (1+nb*j):(nb*(j+1))) = 0d0
                 endif
             enddo
         enddo
 
-        call zheev('V','U',dim,super_H(:,:,ikp),dim,eval(:,ikp),work,lwork,rwork,info)
+        call zheev('V','U',dim,super_H(:,:),dim,eval(:),work,lwork,rwork,info)
+        
 
-        sH_flat((1+((ikp-1)*matsize)):(matsize*(ikp))) = reshape(super_H(:,:,ikp),[matsize])
-        eval_flat((1+((ikp-1)*dim)):(dim*ikp)) = reshape(eval(:,ikp),[dim]) 
+        count = 0
+        do ib =1, N2
+            if(ib.eq.(nblocks_2 + 1).or. ib.eq.((nblocks_2)*nblocks +1).or. ib.eq.((nblocks_2)*(nblocks+1) +1).or. ib.eq.((nblocks_2)*(nblocks+2) +1).or. ib.eq.((nblocks_2)*(2*nblocks+1)+1)) then
+                do ie=1,eres
+                    ! print*, ie, eres
+                    a_spec = 0d0
+                    do i=1,dim
+                        p_l = dot_product(super_H((1+nb*ib):(nb*(ib+1)),i), super_H((1+nb*ib):(nb*(ib+1)),i))
+                        factor = ((epoints(ie) - eval(i)))/eta
+                        a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
+                        ! print *, a_spec
+                    enddo
+                    data_row(1,(ikp-1)*eres + ie, count+1) = xk(ik)
+                    data_row(2,(ikp-1)*eres + ie, count+1) = epoints(ie)
+                    data_row(3,(ikp-1)*eres + ie, count+1) = real(a_spec)! Top surface
+                    print*, data_row(:,(ikp-1)*eres + ie, count+1)
+                enddo
+                count = count+1
+            endif
+        enddo
+
+        data_rowf(1+(ikp-1)*(3*eres*5):((3*eres*5)*ikp)) = reshape(data_row(:,:,:),[(3*eres)*5])
+
     enddo
 
-    call MPI_GATHERV(sH_flat,matsize*kloc,MPI_DOUBLE_COMPLEX, &
-                        sH_flatg,recvcounts1,displs1,MPI_DOUBLE_COMPLEX, &
-                        0, MPI_COMM_WORLD,IERR)
-
-    call MPI_GATHERV(eval_flat,dim*kloc,MPI_DOUBLE_PRECISION, &
-                        eval_flatg,recvcounts2,displs2,MPI_DOUBLE_PRECISION, &
-                        0, MPI_COMM_WORLD,IERR)
-
-    if(myid.eq.0) then 
-        write(300, *) nblocks
-        write(300, *) nk
-        write(300, *) dk
-
-        do i =1, nk
-            do j = 1, dim
-                write(200, *) sH_flatg(1 + matsize*(i-1)+(j-1)*dim : dim*(j) + matsize*(i-1))
+    call MPI_GATHERV(data_rowf,3*kloc*eres*5,MPI_DOUBLE_PRECISION, &
+                     data_gf,recvcounts1,displs1,MPI_DOUBLE_PRECISION, &
+                     0, MPI_COMM_WORLD,IERR)
+    
+    if(myid.eq.0) then
+        ! print*,data_gf
+        do i=0,nk-1
+            do j = 0,4
+                do k = 0,eres-1
+                    offset = (k)*3 + (j)*3*eres + (i)*3*5*eres 
+                    ! print*,offset
+                    write(100+(j), '(3(1x,f20.12))') data_gf(1 + offset : 3 + offset)
+                enddo
             enddo
-            write(300,*) eval_flatg(1 + dim*(i-1): dim*(i))
+        enddo
+
+        do i=1,5
+            write(100+(i-1),*) 'object "regular positions regular connections" class field'
+            write(100+(i-1),*) 'component "positions" value 1'
+            write(100+(i-1),*) 'component "connections" value 2'
+            write(100+(i-1),*) 'component "data" value 3'
+            write(100+(i-1),*) 'end'
         enddo
     endif
 
-    write(400, *) xk
                         
     call MPI_FINALIZE(IERR)
 end Program Projected_band_structure
