@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'z'
+    character(len=80):: prefix="../BiTeI", ax = 'x'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=6,emax=7,eta=0.005
-    integer,parameter::nkpath=3,np=100,nblocks=5,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=120,nblocks_2=nblocks/2
+    integer,parameter::nkpath=3,np=50,nblocks=10,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=120,nblocks_2=nblocks/2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -91,22 +91,26 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*N2+1)-2)))
 
 !-----kpath
-    ! !-kx -> kx
-    ! kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
-    ! kpoints(:,2) = [ 0.0d0,  0.0d0,   0.0d0]  !-M
-    ! kpoints(:,3) = [ 0.1d0,  0.0d0,   0.0d0]  !-M
-    
-    
-    ! ! ! -ky -> ky 
-    ! kpoints(:,1) = [ 0.00d0, -0.5d0,  0.0d0]  !H
-    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
-    ! kpoints(:,3) = [ 0.00d0,  0.5d0,  0.0d0]  !-H
 
-    ! -kz -> kz
-    kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.5d0]  !H
-    kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
-    kpoints(:,3) = [0.00d0,  0.0d0,  0.5d0]  !-H
-
+    select case (ax)
+    case ('x')
+        !-kx -> kx
+        kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
+        kpoints(:,2) = [ 0.0d0,  0.0d0,   0.0d0]  !-M
+        kpoints(:,3) = [ 0.1d0,  0.0d0,   0.0d0]  !-M
+    case ('y')
+        ! -ky -> ky 
+        kpoints(:,1) = [ 0.00d0, -0.1d0,  0.0d0]  !H
+        kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
+        kpoints(:,3) = [ 0.00d0,  0.1d0,  0.0d0]  !-H
+    case ('z')
+        ! -kz -> kz
+        kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.1d0]  !H
+        kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
+        kpoints(:,3) = [0.00d0,  0.0d0,  0.1d0]  !-H
+    case default
+        stop "Error: Select axis."
+    end select
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
@@ -301,7 +305,7 @@ Program Projected_band_structure
     ! endif
     ikp=0
     do ik=kpminlist(myid+1),kpmaxlist(myid+1)
-        if(myid==0) print *, ik
+        if(myid==0) print *, ik,'/',kloc
         ikp=ikp+1
         do ira= -6,6 
             do irb = -6,6  ! Loop over R_ vectors
@@ -351,7 +355,7 @@ Program Projected_band_structure
                     ! print*, ie, eres
                     a_spec = 0d0
                     do i=1,dim
-                        p_l = dot_product(super_H((1+nb*(ib-1)):(nb*(ib)),i), super_H((1+nb*ib):(nb*(ib+1)),i))
+                        p_l = dot_product(super_H((1+nb*(ib-1)):(nb*(ib)),i), super_H((1+nb*(ib-1)):(nb*(ib)),i))
                         factor = ((epoints(ie) - eval(i)))/eta
                         a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
                         ! print *, a_spec
