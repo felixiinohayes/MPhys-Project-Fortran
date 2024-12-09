@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'x'
+    character(len=80):: prefix="../BiTeI", ax = 'z'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=6,emax=7,eta=0.005
-    integer,parameter::nkpath=3,np=100,nblocks=25,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2
+    integer,parameter::nkpath=3,np=100,nblocks=5,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=120,nblocks_2=nblocks/2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -92,9 +92,9 @@ Program Projected_band_structure
 
 !-----kpath
     ! !-kx -> kx
-    kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
-    kpoints(:,2) = [ 0.0d0,  0.0d0,   0.0d0]  !-M
-    kpoints(:,3) = [ 0.1d0,  0.0d0,   0.0d0]  !-M
+    ! kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
+    ! kpoints(:,2) = [ 0.0d0,  0.0d0,   0.0d0]  !-M
+    ! kpoints(:,3) = [ 0.1d0,  0.0d0,   0.0d0]  !-M
     
     
     ! ! ! -ky -> ky 
@@ -103,9 +103,9 @@ Program Projected_band_structure
     ! kpoints(:,3) = [ 0.00d0,  0.5d0,  0.0d0]  !-H
 
     ! -kz -> kz
-    ! kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.5d0]  !H
-    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
-    ! kpoints(:,3) = [0.00d0,  0.0d0,  0.5d0]  !-H
+    kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.5d0]  !H
+    kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
+    kpoints(:,3) = [0.00d0,  0.0d0,  0.5d0]  !-H
 
 
     ! Initial point in the k path
@@ -351,7 +351,7 @@ Program Projected_band_structure
                     ! print*, ie, eres
                     a_spec = 0d0
                     do i=1,dim
-                        p_l = dot_product(super_H((1+nb*ib):(nb*(ib+1)),i), super_H((1+nb*ib):(nb*(ib+1)),i))
+                        p_l = dot_product(super_H((1+nb*(ib-1)):(nb*(ib)),i), super_H((1+nb*ib):(nb*(ib+1)),i))
                         factor = ((epoints(ie) - eval(i)))/eta
                         a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
                         ! print *, a_spec
