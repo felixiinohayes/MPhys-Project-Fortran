@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=5,emax=8,eta=0.005
-    integer,parameter::nkpath=3,np=200,nblocks=10,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=6,emax=7,eta=0.005
+    integer,parameter::nkpath=3,np=100,nblocks=25,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -21,8 +21,8 @@ Program Projected_band_structure
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle
-    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3),epoints(eres),a_spec,factor,dos
-    real*8,allocatable:: rwork(:),eval(:),eval_flat(:),eval_flatg(:),data_row(:,:,:),data_rowf(:),data_gf(:),data_g(:,:,:)
+    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3),epoints(eres),a_spec,factor,dos,data_g(5,3,nk*eres)
+    real*8,allocatable:: rwork(:),eval(:),eval_flat(:),eval_flatg(:),data_row(:,:,:)
     integer*4,allocatable:: ndeg(:,:,:),displs1(:),recvcounts1(:),displs2(:),recvcounts2(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:),kpminlist(:),kpmaxlist(:),kloclist(:),kloc_sum(:),buff_sum1(:),buff_sum2(:),buffsize1(:),buffsize2(:)
     complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),sH_flat(:),sH_flatg(:),SH(:,:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2)
@@ -92,9 +92,9 @@ Program Projected_band_structure
 
 !-----kpath
     ! !-kx -> kx
-    kpoints(:,1) = [ -0.5d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
     kpoints(:,2) = [ 0.0d0,  0.0d0,   0.0d0]  !-M
-    kpoints(:,3) = [ 0.5d0,  0.0d0,   0.0d0]  !-M
+    kpoints(:,3) = [ 0.1d0,  0.0d0,   0.0d0]  !-M
     
     
     ! ! ! -ky -> ky 
@@ -231,7 +231,7 @@ Program Projected_band_structure
 
         kloc_sum(i+1) = kloc_sum(i) + kloclist(i)
 
-        buffsize1(i) = kloclist(i)*3*eres*5
+        buffsize1(i) = kloclist(i)*3*eres
         sum1 = sum1+ buffsize1(i)
 
         buff_sum1(i+1) = sum1
@@ -295,7 +295,7 @@ Program Projected_band_structure
 
 !----- Perform fourier transform
 
-    allocate(data_row(3,kloc*eres,5),data_rowf(3*kloc*eres*5),data_gf(3*nk*eres*5),data_g(3,nk*eres,5))
+    allocate(data_row(5,3,kloc*eres))
 
     count = 0
     ! endif
@@ -346,6 +346,7 @@ Program Projected_band_structure
         count = 0
         do ib =1, N2
             if(ib.eq.(nblocks_2 + 1).or. ib.eq.((nblocks_2)*nblocks +1).or. ib.eq.((nblocks_2)*(nblocks+1) +1).or. ib.eq.((nblocks_2)*(nblocks+2) +1).or. ib.eq.((nblocks_2)*(2*nblocks+1)+1)) then
+                ! if(myid==0) print*, ib
                 do ie=1,eres
                     ! print*, ie, eres
                     a_spec = 0d0
@@ -355,36 +356,39 @@ Program Projected_band_structure
                         a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
                         ! print *, a_spec
                     enddo
-                    data_row(1,(ikp-1)*eres + ie, count+1) = xk(ik)
-                    data_row(2,(ikp-1)*eres + ie, count+1) = epoints(ie)
-                    data_row(3,(ikp-1)*eres + ie, count+1) = real(a_spec)! Top surface
-                    print*, data_row(:,(ikp-1)*eres + ie, count+1)
+                    data_row(count+1, 1,(ikp-1)*eres + ie) = xk(ik)
+                    data_row(count+1, 2,(ikp-1)*eres + ie) = epoints(ie)
+                    data_row(count+1, 3,(ikp-1)*eres + ie) = real(a_spec) ! Top surface
+                    ! if(myid==0) print*, data_row(count+1,:,(ikp-1)*eres + ie), count, ik, ib
                 enddo
                 count = count+1
             endif
         enddo
-
-        data_rowf(1+(ikp-1)*(3*eres*5):((3*eres*5)*ikp)) = reshape(data_row(:,:,:),[(3*eres)*5])
-
     enddo
 
-    call MPI_GATHERV(data_rowf,3*kloc*eres*5,MPI_DOUBLE_PRECISION, &
-                     data_gf,recvcounts1,displs1,MPI_DOUBLE_PRECISION, &
-                     0, MPI_COMM_WORLD,IERR)
+    do i=1,5
+        call MPI_GATHERV(data_row(i,:,:),3*kloc*eres,MPI_DOUBLE_PRECISION, &
+                        data_g(i,:,:),recvcounts1,displs1,MPI_DOUBLE_PRECISION, &
+                        0, MPI_COMM_WORLD,IERR)
+    enddo
+
     
     if(myid.eq.0) then
         ! print*,data_gf
-        do i=0,nk-1
-            do j = 0,4
-                do k = 0,eres-1
-                    offset = (k)*3 + (j)*3*eres + (i)*3*5*eres 
-                    ! print*,offset
-                    write(100+(j), '(3(1x,f20.12))') data_gf(1 + offset : 3 + offset)
-                enddo
-            enddo
-        enddo
+        ! do i=0,nk-1
+        !     do j = 0,4
+        !         do k = 0,eres-1
+        !             offset = (k)*3 + (j)*3*eres + (i)*3*5*eres 
+        !             ! print*,offset
+        !             write(100+(j), '(3(1x,f20.12))') data_gf(1 + offset : 3 + offset)
+        !         enddo
+        !     enddo
+        ! enddo
 
         do i=1,5
+            do j=1,nk*eres
+                write(100+(i-1),'(3(1x,f12.6))') data_g(i,:,j)
+            enddo
             write(100+(i-1),*) 'object "regular positions regular connections" class field'
             write(100+(i-1),*) 'component "positions" value 1'
             write(100+(i-1),*) 'component "connections" value 2'
