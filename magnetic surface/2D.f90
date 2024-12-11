@@ -3,19 +3,18 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=6,emax=7,eta=0.005
-    integer,parameter::nkpath=3,np=50,nblocks=10,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=120,nblocks_2=nblocks/2
+    integer,parameter::nkpath=3,np=50,nblocks=19,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=80,nblocks_2=nblocks/2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
-
 end module parameters
 
 Program Projected_band_structure
     use parameters
     Implicit None
     INCLUDE 'mpif.h'
+
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
-    character(len=5) suffix
     integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1,ib,offset
     integer*4 lwork,info,ik,count,sign,kloc,kpmin,kpmax,ecounts,kcount,interp_size,nr_top,nr_triv,rvec(3),index
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
@@ -29,14 +28,19 @@ Program Projected_band_structure
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
+    integer, dimension(8) :: time_start
+    integer, dimension(8) :: time_end
 !------------------------------------------------------
     call init_mpi
+!----Date and Time
+    call date_and_time(VALUES=time_start)
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
-
-    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
+    
     write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
+    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
     write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
+
     open(98, file=trim(adjustl(nnkp)))
 111 read(98, '(a)') line
     if (trim(adjustl(line)) .ne. "begin real_lattice") goto 111
@@ -52,52 +56,34 @@ Program Projected_band_structure
     open(102,file='block_3.dx')
     open(103,file='block_4.dx')
     open(104,file='block_5.dx')
-
-
-    ! Determine the suffix based on the value of a
-    if (a == 1.0d0) then
-        if (B .ne. 0d0) then
-            suffix = "TOP_B"
-        else
-            suffix = "TOP"
-        endif
-    else
-        if (B .ne. 0d0) then
-            suffix = "TRIV_B"
-        else
-            suffix = "TRIV"
-        endif
-    endif
-
 !------read H(R)
     interp_size=6
     ! if((nxblocks > interp_size).or.(nyblocks > interp_size).or.(nzblocks > interp_size)) interp_size = max(max(nxblocks,nyblocks),nzblocks)
+    
     read(99,*)
     read(99,*)nb,nr_top
     read(97,*)
     read(97,*)nb,nr_triv
-
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
     allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
+
     allocate(extrarow(nb*N2))
     allocate(Hkra(nb,nb,-6:6,-6:6))
     allocate(Hk(nb,nb))
-
     read(99,*)ndeg_top
     read(97,*)ndeg_triv
-
     lwork=max(1,2*(nb*N2+1)-1)
-    allocate(work(max(1,lwork)),rwork(max(1,3*(nb*N2+1)-2)))
 
+    allocate(work(max(1,lwork)),rwork(max(1,3*(nb*N2+1)-2)))
 !-----kpath
 
     select case (ax)
     case ('x')
         !-kx -> kx
-        kpoints(:,1) = [ -0.1d0,  0.0d0,   0.0d0]  !-M
-        kpoints(:,2) = [ 0.0d0,  0.0d0,   0.0d0]  !-M
-        kpoints(:,3) = [ 0.1d0,  0.0d0,   0.0d0]  !-M
+        kpoints(:,1) = [ -0.1d0,  0.0d0,  0.0d0]  !-M
+        kpoints(:,2) = [ 0.0d0,   0.0d0,  0.0d0]  !-M
+        kpoints(:,3) = [ 0.1d0,   0.0d0,  0.0d0]  !-M
     case ('y')
         ! -ky -> ky 
         kpoints(:,1) = [ 0.00d0, -0.1d0,  0.0d0]  !H
@@ -111,7 +97,6 @@ Program Projected_band_structure
     case default
         stop "Error: Select axis."
     end select
-
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
     xk(1)= -sqrt(dot_product(kvec1,kvec1))
@@ -134,17 +119,16 @@ Program Projected_band_structure
     kvec2=kpath(1,nk)*bvec(:,1)+kpath(2,nk)*bvec(:,2)+kpath(3,nk)*bvec(:,3)
     xk(nk)=xk(nk-1)+sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
     kpath = kpath*pi2
-
 !---- emesh
     de = (emax-emin)/eres
     do i=1, eres
+    
         epoints(i) = emin + de*i
     enddo
-
 !----Construct magnetic perturbation
     allocate(B_pt(nb, nb))
-
     ! B along Y axis
+    
     ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
     ! B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
 
@@ -155,6 +139,7 @@ Program Projected_band_structure
     ! B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
     ! B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
     B_pt=0d0
+
     do i=1,nb
 		do j=1,nb
 			if (i==j) then
@@ -167,10 +152,10 @@ Program Projected_band_structure
 		enddo
 	enddo
 
-
-!----Read in Hamiltonian
     interp_Hr=0d0
+!----Read in Hamiltonian
     ndeg = 0d0
+    
     do ir=1,nr_top
         do i=1,nb
             do j=1,nb
@@ -346,7 +331,6 @@ Program Projected_band_structure
 
         call zheev('V','U',dim,super_H(:,:),dim,eval(:),work,lwork,rwork,info)
         
-
         count = 0
         do ib =1, N2
             if(ib.eq.(nblocks_2 + 1).or. ib.eq.((nblocks_2)*nblocks +1).or. ib.eq.((nblocks_2)*(nblocks+1) +1).or. ib.eq.((nblocks_2)*(nblocks+2) +1).or. ib.eq.((nblocks_2)*(2*nblocks+1)+1)) then
@@ -376,19 +360,12 @@ Program Projected_band_structure
                         0, MPI_COMM_WORLD,IERR)
     enddo
 
-    
     if(myid.eq.0) then
-        ! print*,data_gf
-        ! do i=0,nk-1
-        !     do j = 0,4
-        !         do k = 0,eres-1
-        !             offset = (k)*3 + (j)*3*eres + (i)*3*5*eres 
-        !             ! print*,offset
-        !             write(100+(j), '(3(1x,f20.12))') data_gf(1 + offset : 3 + offset)
-        !         enddo
-        !     enddo
-        ! enddo
 
+        call date_and_time(VALUES=time_end)
+        print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
+        print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
+    
         do i=1,5
             do j=1,nk*eres
                 write(100+(i-1),'(3(1x,f12.6))') data_g(i,:,j)
