@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=6,emax=7,eta=0.005
-    integer,parameter::nkpath=3,np=50,nblocks=19,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=80,nblocks_2=nblocks/2
+    integer,parameter::nkpath=3,np=30,nblocks=15,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=80,nblocks_2=nblocks/2
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters
@@ -15,7 +15,7 @@ Program Projected_band_structure
 
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line
-    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1,ib,offset
+    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1,ib,offset,dur
     integer*4 lwork,info,ik,count,sign,kloc,kpmin,kpmax,ecounts,kcount,interp_size,nr_top,nr_triv,rvec(3),index
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
@@ -29,6 +29,8 @@ Program Projected_band_structure
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     integer, dimension(8) :: time_start
+    integer, dimension(8) :: time_prev
+    integer, dimension(8) :: time_next
     integer, dimension(8) :: time_end
 !------------------------------------------------------
     call init_mpi
@@ -290,7 +292,7 @@ Program Projected_band_structure
     ! endif
     ikp=0
     do ik=kpminlist(myid+1),kpmaxlist(myid+1)
-        if(myid==0) print *, ik,'/',kloc
+        if(myid==0) print *,'Iter:',ik,'/',kloc
         ikp=ikp+1
         do ira= -6,6 
             do irb = -6,6  ! Loop over R_ vectors
@@ -352,6 +354,17 @@ Program Projected_band_structure
                 count = count+1
             endif
         enddo
+        if(myid.eq.0) then
+            call date_and_time(VALUES=time_next)
+            if(ikp.gt.1) then 
+                dur =((time_next(6)-time_prev(6))*60 +  (time_next(7)-time_prev(7)))
+                print *, 'Duration: ', dur/60, ':', mod(dur,60)
+                print *, 'Remaining: ', dur*(kloc-ikp)/60 ,':', mod(dur*(kloc-ikp),60)
+                print *, 'Time: ', time_next(5), ':', time_next(6), ':', time_next(7)
+                print *,''
+            endif
+            call date_and_time(VALUES=time_prev)
+        endif
     enddo
 
     do i=1,5
@@ -361,10 +374,13 @@ Program Projected_band_structure
     enddo
 
     if(myid.eq.0) then
-
         call date_and_time(VALUES=time_end)
+        dur =((time_end(5)-time_start(5))*3600 + (time_end(6)-time_start(6))*60 +  (time_end(7)-time_start(7)))
+
+        print* , ''
         print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
         print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
+        print *, 'Duration: ', dur/3600,':', mod(dur,3600)/60, ':', mod(dur,60)
     
         do i=1,5
             do j=1,nk*eres
@@ -391,3 +407,4 @@ SUBROUTINE INIT_MPI
         Call MPI_COMM_SIZE( MPI_COMM_WORLD, NUMPROCS , IERR )
 !        Write(*,*) ‘Process’, myid, ' of ’, NUMPROCS , ‘is alive.’
 END SUBROUTINE INIT_MPI
+
