@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00,erange=3
-    integer*4,parameter::nxblocks=12,nyblocks=12,nzblocks=12,eres=10
+    integer*4,parameter::nxblocks=8,nyblocks=8,nzblocks=8,eres=10
     integer*4,parameter::NEV=100,NCV=200,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4 nb,nloc,myid,nprocs,icol_mod1,icol_mod2,icol_mod3
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
