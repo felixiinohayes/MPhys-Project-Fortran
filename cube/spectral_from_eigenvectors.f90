@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="cube"
-    real*8,parameter::emin=-0.3,emax=0.3,eta=0.02
+    real*8,parameter::emin=-0.3,emax=0.3,eta=0.01
     integer*8,parameter::nb=4,eres=100
     
 end module parameters
@@ -81,7 +81,7 @@ Program Projected_band_structure
                 ! if(ie==1) print *, d(i), p_l, factor, a_spec
                 ! if(j==1) print *, a_spec
             enddo
-            write(100, '(1(1x,f20.12))') a_spec
+            write(100, '(1(1x,f12.8))') a_spec
         enddo
         write(100, '(a)') 'attribute "dep" string "positions"' 
     enddo

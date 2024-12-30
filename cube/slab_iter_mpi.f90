@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="../BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00
-    integer*4,parameter::nxblocks=7,nyblocks=7,nzblocks=7,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.02
+    integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=10,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4,parameter::NEV=100,NCV=200
     integer*4 nb,nloc,myid,nprocs,icol_mod1,icol_mod2,icol_mod3
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
@@ -73,8 +73,8 @@ Program Projected_band_structure
     endif
 
     ! Construct d_file and v_file names based on nxblocks and suffix
-    write(d_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVALS.dat"
-    write(v_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVECS.dat"
+    write(d_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "05_EVALS.dat"
+    write(v_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "05_EVECS.dat"
 
     ! Open files with dynamically constructed names
     open(150, file=trim(adjustl(d_file)))
@@ -358,24 +358,6 @@ Program Projected_band_structure
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3
         integer :: rowcount, colcount
-
-        ! rowcount = 0
-        ! do irow = npminlist(myid+1), npmaxlist(myid+1)
-        !     colcount = 0
-        !     f3 = (irow-1) / (Nxy)
-        !     f2 = mod((irow-1) / nxblocks, nyblocks)
-        !     f1 = mod(irow-1, nxblocks)
-        !     if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
-        !         do icol = npminlist(id+1), npmaxlist(id+1)
-        !             r3 = ((icol-1) / Nxy) - f3
-        !             r2 = mod((icol-1) / nxblocks, nyblocks) - f2
-        !             r1 = mod(icol-1, nxblocks) - f1
-        !             vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3) + B_pt, vec_in(1+colcount*nb : nb*(colcount+1)))
-        !             colcount = colcount + 1
-        !         enddo
-        !     endif
-        !     rowcount = rowcount + 1
-        ! enddo
     
         rowcount = 0
         do irow = npminlist(myid+1), npmaxlist(myid+1)
@@ -383,15 +365,15 @@ Program Projected_band_structure
             f3 = (irow-1) / (Nxy)
             f2 = mod((irow-1) / nxblocks, nyblocks)
             f1 = mod(irow-1, nxblocks)
-            if ((abs(f1) .lt. 6) .and. (abs(f2) .lt. 6) .and. (abs(f3) .lt. 6)) then
-                do icol = npminlist(id+1), npmaxlist(id+1)
-                    r3 = ((icol-1) / Nxy) - f3
-                    r2 = mod((icol-1) / nxblocks, nyblocks) - f2
-                    r1 = mod(icol-1, nxblocks) - f1
+            do icol = npminlist(id+1), npmaxlist(id+1)
+                r3 = ((icol-1) / Nxy) - f3
+                r2 = mod((icol-1) / nxblocks, nyblocks) - f2
+                r1 = mod(icol-1, nxblocks) - f1
+                if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
                     vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3) + B_pt, vec_in(1+colcount*nb : nb*(colcount+1)))
-                    colcount = colcount + 1
-                enddo
-            endif
+                endif
+                colcount = colcount + 1
+            enddo
             rowcount = rowcount + 1
         enddo
 
