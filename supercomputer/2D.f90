@@ -17,7 +17,7 @@ Program Projected_band_structure
     character(len=80) top_file,triv_file,nnkp,line,b1_file,b2_file,b3_file,b4_file,b5_file
     character(len=6) axis,suffix
     integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1,ib,offset,dur,mag
-    integer*4 lwork,info,ik,count,sign,kloc,kpmin,kpmax,ecounts,kcount,interp_size,nr_top,nr_triv,rvec(3),index,ax
+    integer*4 lwork,info,ik,count,sign,kloc,kpmin,kpmax,ecounts,kcount,interp_size,nr_top,nr_triv,rvec(3),index,ax,fcount
     integer*4 recv(1),nr_(3),kindex(2),ai(3)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle,B
@@ -114,8 +114,13 @@ Program Projected_band_structure
         enddo
     enddo
 
+    fcount = 0 
     do ax = 1,3
         do mag = 1,2
+            
+            fcount = fcount + 1
+            print*, ''
+            
 !-----kpath
             if(mag==1) B = 0d0
             if(mag==2) B = 0.05d0
@@ -271,15 +276,16 @@ Program Projected_band_structure
             kloc = kloclist(myid+1) 
 
             allocate(SH(dim,dim,nk),super_H(dim,dim),sH_flat(buffsize1(myid+1)),sH_flatg(matsize*nk),eval(dim),eval_flat(dim*kloc),eval_flatg(dim*nk))
-
-            if(myid.eq.0) print *, "kloc:", kloclist
-            if(myid.eq.0) print *, "kpmin:", kpminlist
-            if(myid.eq.0) print *, "kpmax:", kpmaxlist
-            if(myid.eq.0) print *, "kloc_sum:", kloc_sum
-            if(myid.eq.0) print *, "buffsize1:", buffsize1
+!----Debugging
+            ! if(myid.eq.0) print *, "kloc:", kloclist
+            ! if(myid.eq.0) print *, "kpmin:", kpminlist
+            ! if(myid.eq.0) print *, "kpmax:", kpmaxlist
+            ! if(myid.eq.0) print *, "kloc_sum:", kloc_sum
+            ! if(myid.eq.0) print *, "buffsize1:", buffsize1
             ! if(myid.eq.0) print *, "buffsize2:", buffsize2
-            if(myid.eq.0) print *, "buff_sum1:", buff_sum1, displs1
-            ! if(myid.eq.0) print *, "buff_sum2:", buff_sum2, displs2            !----DX Files
+            ! if(myid.eq.0) print *, "buff_sum1:", buff_sum1, displs1
+            ! if(myid.eq.0) print *, "buff_sum2:", buff_sum2, displs2            
+!----DX Files
             if(myid.eq.0) then
                 do i = 1,5
                     write(100+(i-1), '(a,3(1x,i8))') 'object 1 class gridpositions counts',nk,eres
@@ -298,7 +304,7 @@ Program Projected_band_structure
             ! endif
             ikp=0
             do ik=kpminlist(myid+1),kpmaxlist(myid+1)
-                if(myid==0) print *,'Iter:',ik,'/',kloc
+                if(myid==0) print *, "Parameter: ",fcount,"/6 ", 'iteration:',ik,'/',kloc
                 ikp=ikp+1
                 do ira= -6,6 
                     do irb = -6,6  ! Loop over R_ vectors
@@ -360,17 +366,6 @@ Program Projected_band_structure
                         count = count+1
                     endif
                 enddo
-                if(myid.eq.0) then
-                    call date_and_time(VALUES=time_next)
-                    if(ikp.gt.1) then 
-                        dur =((time_next(6)-time_prev(6))*60 +  (time_next(7)-time_prev(7)))
-                        print *, 'Duration: ', dur/60, ':', mod(dur,60)
-                        print *, 'Remaining: ', dur*(kloc-ikp)/60 ,':', mod(dur*(kloc-ikp),60)
-                        print *, 'Time: ', time_next(5), ':', time_next(6), ':', time_next(7)
-                        print *,''
-                    endif
-                    call date_and_time(VALUES=time_prev)
-                endif
             enddo
 
             do i=1,5
@@ -380,13 +375,16 @@ Program Projected_band_structure
             enddo
 
             if(myid.eq.0) then
-                call date_and_time(VALUES=time_end)
-                dur =((time_end(5)-time_start(5))*3600 + (time_end(6)-time_start(6))*60 +  (time_end(7)-time_start(7)))
-
-                print* , ''
-                print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
-                print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
-                print *, 'Duration: ', dur/3600,':', mod(dur,3600)/60, ':', mod(dur,60)
+                call date_and_time(VALUES=time_next)
+                if(fcount.gt.1.and.fcount.lt.6) then 
+                    dur =((time_next(6)-time_prev(6))*60 +  (time_next(7)-time_prev(7)))
+                    print* ,''
+                    print *, 'Duration: ', dur/60, ':', mod(dur,60)
+                    print *, 'Remaining: ', dur*(6-fcount)/60 ,':', mod(dur*(6-fcount),60)
+                    print *, 'Time: ', time_next(5), ':', time_next(6), ':', time_next(7)
+                    print *,''
+                endif
+                call date_and_time(VALUES=time_prev)
             
                 do i=1,5
                     do j=1,nk*eres
@@ -403,6 +401,16 @@ Program Projected_band_structure
 
         enddo
     enddo 
+
+    if(myid.eq.0) then 
+        call date_and_time(VALUES=time_end)
+        dur =((time_end(5)-time_start(5))*3600 + (time_end(6)-time_start(6))*60 +  (time_end(7)-time_start(7)))
+
+        print* , ''
+        print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
+        print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
+        print *, 'Duration: ', dur/3600,':', mod(dur,3600)/60, ':', mod(dur,60)
+    endif   
 
     call MPI_FINALIZE(IERR)
 end Program Projected_band_structure

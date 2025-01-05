@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00,emin=-0.3,emax=0.3,eta=0.02
-    integer*4,parameter::nxblocks=7,nyblocks=7,nzblocks=7,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::nxblocks=4,nyblocks=4,nzblocks=4,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4,parameter::NEV=100,NCV=200,eres=100
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
@@ -43,8 +43,12 @@ Program Projected_band_structure
 
     pi2 = 4.0d0 * atan(1.0d0) * 2.0d0
 
-    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
-    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
+    ! write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
+    ! write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
+
+    write(top_file , '(a,a)') trim(adjustl(prefix)),"_new_topo_hr.dat" 
+    write(triv_file, '(a,a)') trim(adjustl(prefix)),"_new_trivial_hr.dat" 
+
     write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
     open(98, file=trim(adjustl(nnkp)))
 111 read(98, '(a)') line
