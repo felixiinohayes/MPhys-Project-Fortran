@@ -1,13 +1,13 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI"
+    character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00
-    integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=7,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=100,NCV=200
-    integer*4 nb,nloc,myid,nprocs,icol_mod1,icol_mod2,icol_mod3
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00,emin=-0.3,emax=0.3,eta=0.02
+    integer*4,parameter::nxblocks=7,nyblocks=7,nzblocks=7,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=100,NCV=200,eres=100
+    integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
     integer*4,allocatable :: npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
     complex*16,allocatable :: extrarow(:,:)
@@ -18,19 +18,19 @@ Program Projected_band_structure
     Implicit None
     include 'mpif.h'
 !------------------------------------------------------
-    character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,achar
+    character(len=80) top_file,triv_file,nnkp,line,v_file,d_file
     character(len=5) suffix
     integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3, xindex, yindex, rvec(3), index, interp_size
     integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ
     integer*8 LWORKL, N, ishift
-    integer*4 ierr, comm, rx
-    integer*4 npmin, npmax, leng, iter
-    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, p_l, de, dos
+    integer*4 ierr, comm
+    integer*4 npmin, npmax, iter
+    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, p_l, de, dos, epoints(eres)
     real*8, allocatable :: rwork(:), real_d(:)
     integer*4, allocatable :: vec_ind(:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
-    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), Z(:,:), vloc_flat(:), vloc_flatg(:), v(:,:), Zloc(:,:)
-    complex*16 SIGMA, b_sigma(2,2)
+    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), vloc_flat(:), vloc_flatg(:), v(:,:), Zloc(:,:)
+    complex*16 b_sigma(2,2)
     logical :: rvecmat
     logical, allocatable :: select(:)
     complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
@@ -72,15 +72,7 @@ Program Projected_band_structure
         endif
     endif
 
-    ! Construct d_file and v_file names based on nxblocks and suffix
-    write(d_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVALS.dat"
-    write(v_file, '(a,i0,a,a,a)') "data/C", nxblocks, "_", trim(suffix), "_EVECS.dat"
-
-    ! Open files with dynamically constructed names
-    open(150, file=trim(adjustl(d_file)))
-    open(200, file=trim(adjustl(v_file)))
-
-!------read H(R)
+!------read H(R) + B_pt
     interp_size=6
     ! if((nxblocks > interp_size).or.(nyblocks > interp_size).or.(nzblocks > interp_size)) interp_size = max(max(nxblocks,nyblocks),nzblocks)
     read(99,*)
@@ -96,37 +88,13 @@ Program Projected_band_structure
     read(99,*)ndeg_top
     read(97,*)ndeg_triv
     allocate(B_pt(nb,nb))
-    ! print *, nb, nr_top, nr_triv
-
-    !B along X-axis
-    ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
-    ! B_sigma(2,:) = [dcmplx(Bx,0d0) ,  dcmplx(0d0,0d0)]
-
-    !B along Y axis
-	! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-Bx)]
-    ! B_sigma(2,:) = [dcmplx(0d0,Bx) ,  dcmplx(0d0,0d0)]
 
     !B along Z-axis
     B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
     B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
 
 	B_pt=0d0
-	! do i=1,nb
-	! 	do j=1,nb
-	! 		if (i==j) then
-	! 			if (i<=nb/2) then
-	! 				B_pt(i,j) = B_sigma(1,1)
-	! 			else
-	! 				B_pt(i,j) = B_sigma(2,2)
-	! 			endif
-	! 		else if (i==j+nb/2) then
-	! 			B_pt(i,j) = B_sigma(2,1)
-	! 		else if (j==i+nb/2) then
-	! 			B_pt(i,j) = B_sigma(1,2)
-	! 		endif
-	! 	enddo
-	! enddo
-    
+
 	do i=1,nb
 		do j=1,nb
 			if (i==j) then
@@ -183,7 +151,7 @@ Program Projected_band_structure
     enddo
 
 
-
+!--- MPI nloc arrays
     call MPI_INIT(ierr)
     comm = MPI_COMM_WORLD
     call MPI_COMM_RANK(comm, myid, ierr)
@@ -221,6 +189,7 @@ Program Projected_band_structure
     if(myid.eq.0) print *, "nloc_sum:", nloc_sum
     if(myid.eq.0) print *, "nev_sum:", nev_sum
 
+!---P_ARPACK
     allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),real_d(NEV),WORKEV(2*NCV))
 
@@ -278,9 +247,6 @@ Program Projected_band_structure
         displs(i) = nev_sum(i) - 1
     enddo
 
-    ! print *, displs
-    ! print *, myid, vloc_flat(nloc*nev)
-
     
     do i=0,nprocs-1
         if(myid==i) print*,myid,'start: ',vloc_flat(1), 'end: ',vloc_flat(nloc*nev)
@@ -289,28 +255,63 @@ Program Projected_band_structure
     call MPI_GATHERV(vloc_flat, nloc*nev, MPI_DOUBLE_COMPLEX, &
                     vloc_flatg, nloclist_nev, displs, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
     
+!---- Projections
     if (myid == 0) then
-        ! print*,"POST GATHER"
-        ! do i=1,nprocs
-        !     print*, i-1, 'start: ',vloc_flatg(nev_sum(i)),'end: ',vloc_flatg(nev_sum(i+1)-1)
-        ! enddo
+
+        open(100, file='data/cube.dx')
         do i=1,nprocs
             v(nloc_sum(i):nloc_sum(i+1)-1,1:nev) = reshape(vloc_flatg(nev_sum(i):nev_sum(i+1)-1), [nloclist(i), nev])
         enddo
-    end if
     
-    ! Print eigenvalues on root process
-    if (myid == 0) then
-        write(150, *) NEV
-        write(150, '(3(1x,I7))') nxblocks,nyblocks,nzblocks
-        do i = 1, NEV
-            real_d(i) = real(d(i))
-            write(150, '(1(1x,f20.12))') real_d(i)
-            write(200, *) v(:,i)
-        end do
-    endif
+        de = (emax-emin)/eres
+        do i=1, eres
+            epoints(i) = emin + de*i
+        enddo
 
-    if(myid.eq.0) then
+        write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nzblocks,nxblocks,nyblocks
+        write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
+        write(100, '(a,3(1x,f12.8))') 'delta',0d0,0d0,1d0
+        write(100, '(a,3(1x,f12.8))') 'delta',0d0,1d0,0d0
+        write(100, '(a,3(1x,f12.6))') 'delta',1d0,0d0,0d0
+        write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nzblocks,nxblocks,nyblocks
+
+        print *, dot_product(v(:,1),v(:,1)) 
+
+        print *, "Calculating DOS..."
+        count = 0 
+        do ie=1,eres
+            count = count + 1
+            print*, ie, eres
+
+            write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
+                                    ' item', N3, ' data follows'
+            !----Spectral DOS
+            do j=0,N3-1
+                a_spec = 0d0
+                do i=1,NEV
+                    p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
+                    factor = ((epoints(ie) - d(i)))/eta
+                    a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
+
+                enddo
+                write(100, '(1(1x,f12.8))') a_spec
+            enddo
+            write(100, '(a)') 'attribute "dep" string "positions"' 
+        enddo
+        do i=0,eres-1
+            write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
+            'object',eres+3+i,' class field', &
+            'component "positions" value 1', &
+            'component "connections" value 2', &
+            'component "data" value ',3+i
+        enddo
+        write(100, '(a)') 'object "series" class series'
+        do i=0,eres-1
+            write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
+        enddo
+
+
+        write(100, '(A)') 'end'
 
         call date_and_time(VALUES=time_end)
 
@@ -330,7 +331,7 @@ Program Projected_band_structure
         complex*16, intent(in) :: vec_in(nloclist(myid+1))
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: comm, next, prev, status(MPI_STATUS_SIZE)
-        integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3, rowcount, colcount, reqsend, reqrec
+        integer*4 :: irow, icol, rowcount, colcount, reqsend, reqrec
         complex*16 :: mv_buf(nloclist(1))
 
         vec_out = 0d0
@@ -358,24 +359,6 @@ Program Projected_band_structure
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3
         integer :: rowcount, colcount
-
-        ! rowcount = 0
-        ! do irow = npminlist(myid+1), npmaxlist(myid+1)
-        !     colcount = 0
-        !     f3 = (irow-1) / (Nxy)
-        !     f2 = mod((irow-1) / nxblocks, nyblocks)
-        !     f1 = mod(irow-1, nxblocks)
-        !     if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
-        !         do icol = npminlist(id+1), npmaxlist(id+1)
-        !             r3 = ((icol-1) / Nxy) - f3
-        !             r2 = mod((icol-1) / nxblocks, nyblocks) - f2
-        !             r1 = mod(icol-1, nxblocks) - f1
-        !             vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3) + B_pt, vec_in(1+colcount*nb : nb*(colcount+1)))
-        !             colcount = colcount + 1
-        !         enddo
-        !     endif
-        !     rowcount = rowcount + 1
-        ! enddo
     
         rowcount = 0
         do irow = npminlist(myid+1), npmaxlist(myid+1)
@@ -383,18 +366,17 @@ Program Projected_band_structure
             f3 = (irow-1) / (Nxy)
             f2 = mod((irow-1) / nxblocks, nyblocks)
             f1 = mod(irow-1, nxblocks)
-            if ((abs(f1) .lt. 6) .and. (abs(f2) .lt. 6) .and. (abs(f3) .lt. 6)) then
-                do icol = npminlist(id+1), npmaxlist(id+1)
-                    r3 = ((icol-1) / Nxy) - f3
-                    r2 = mod((icol-1) / nxblocks, nyblocks) - f2
-                    r1 = mod(icol-1, nxblocks) - f1
+            do icol = npminlist(id+1), npmaxlist(id+1)
+                r3 = ((icol-1) / Nxy) - f3
+                r2 = mod((icol-1) / nxblocks, nyblocks) - f2
+                r1 = mod(icol-1, nxblocks) - f1
+                if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
                     vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3) + B_pt, vec_in(1+colcount*nb : nb*(colcount+1)))
-                    colcount = colcount + 1
-                enddo
-            endif
+                endif
+                colcount = colcount + 1
+            enddo
             rowcount = rowcount + 1
         enddo
-
 
     end subroutine tv
 
