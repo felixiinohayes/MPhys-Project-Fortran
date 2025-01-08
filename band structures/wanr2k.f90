@@ -4,7 +4,7 @@
       character(len=80):: prefix="../BiTeI"
       integer,parameter::nkpath=3,np=600
 !------------------------------------------------------
-      integer*4 ik,ikmax, skip,sign
+      integer*4 ik,ikmax, skip,sign,interp_size,nr_top,nr_triv,index,ir,ix,iy,iz,rvec(3),rvec_data(3)
       real*8 kz,ef,eg
       real*8 :: Te_sum, Bi_sum, I_sum
       character(len=30)::klabel(nkpath)
@@ -14,14 +14,15 @@
       real*8,parameter::third=1d0/3d0, alpha = 0
       real*8 phase,pi2,jk,a,b,x1,y1
       real*8 xk(nk),bvec(3,3),avec(3,3),kvec1(3),kvec2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
-      real*8,allocatable:: rvec(:,:),rvec_data(:,:),ene(:,:),rwork(:),od(:,:,:)
-      integer*4,allocatable:: ndeg(:)
-      complex*16,allocatable:: Hk(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),work(:),H_col(:)
+      real*8,allocatable:: ene(:,:),rwork(:),od(:,:,:)
+      integer*4,allocatable:: ndeg(:,:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
+      complex*16,allocatable:: Hk(:,:),work(:),H_col(:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
       complex*16 temp1,temp2
+      complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr,top_Hr,triv_Hr
 !------------------------------------------------------
-      write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
-      write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
-      write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
+      write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological_new.dat"
+      write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial_new.dat"
+      write(nnkp,'(a,a)')      trim(adjustl(prefix)),"_new.nnkp"
       pi2=4.0d0*atan(1.0d0)*2.0d0
 !---------------  reciprocal vectors
       open(98,file=trim(adjustl(nnkp)))
@@ -32,11 +33,19 @@
           read(98,'(a)')line
           read(98,'(a)')line
           read(98,*)bvec
+      open(99,file=trim(adjustl(top_file)))
+      open(97,file=trim(adjustl(triv_file)))
+      open(100,file='band.dat')
 !---------------kpath
-      data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
-      data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
-      data kpoints(:,3) /     third,      third,    0.5d0/  !H
+    !   data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
+    !   data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
+    !   data kpoints(:,3) /     third,      third,    0.5d0/  !H
 
+    data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
+    data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
+    data kpoints(:,3) /     0.0d0,      0.5d0,    0.5d0/  !H
+    
+    
       data klabel     /'L','A','H'/
 
       kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
@@ -60,26 +69,54 @@
       kpath = kpath*pi2
 
 !------read H(R) 
-      open(99,file=trim(adjustl(top_file)))
-      open(97,file=trim(adjustl(triv_file)))
-      open(100,file='band.dat')
+
+
+
       read(99,*)
-      read(99,*)nb,nr
-      allocate(rvec(3,nr),rvec_data(3,nr),Hk(nb,nb),triv_hr(nb,nb,nr),Top_hr(nb,nb,nr),ndeg(nr),ene(nb,nk),od(nb,nk,3),H_col(nb))
-      read(99,*)ndeg
-      do i = 1, 80
-             read(97, *)! Read and discard 80 lines
-      enddo
-      do k=1,nr
-         do i=1,nb
-            do j=1,nb
-               read(99,*)rvec(1,k),rvec(2,k),rvec(3,k),i1,i2,a,b
-               top_hr(i1,i2,k)=dcmplx(a,b)
-               read(97,*)rvec_data(1,k),rvec_data(2,k),rvec_data(3,k),j1,j2,x1,y1
-               triv_hr(j1,j2,k)=dcmplx(x1,y1)
-            enddo
-         enddo
-      enddo
+      read(99,*)nb,nr_top
+      read(97,*)
+      read(97,*)nb,nr_triv
+
+      allocate(Hk(nb,nb),ene(nb,nk),od(nb,nk,3),H_col(nb))
+      allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
+      allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),top_Hr(nb,nb,-6:6, -6:6, -6:6),triv_Hr(nb,nb,-6:6, -6:6, -6:6))
+      allocate(rvec_top(nr_top,3))
+     
+      read(99,*)ndeg_top
+      read(97,*)ndeg_triv
+
+      interp_Hr=0d0
+      !----Read in Hamiltonian
+          ndeg = 0d0
+          
+          do ir=1,nr_top
+              do i=1,nb
+                  do j=1,nb
+                     read(99,*)rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3),i1,i2,x1,y1
+                     top_Hr_temp(i1,i2)=dcmplx(x1,y1)
+                     ndeg(rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = ndeg_top(ir)
+                  enddo
+              enddo
+              top_Hr(:,:,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = top_Hr_temp(:,:)
+          enddo
+          do ir=1,nr_triv
+              do i=1,nb
+                  do j=1,nb
+                     read(97,*)rvec(1),rvec(2),rvec(3),i1,i2,x1,y1
+                     triv_Hr_temp(i1,i2)=dcmplx(x1,y1)
+                  enddo
+              enddo
+              triv_Hr(:,:,rvec(1),rvec(2),rvec(3)) = triv_Hr_temp(:,:)
+          enddo
+      
+          ! Interpolate Hamiltonian and add magnetic field
+          do ir=1,nr_top
+              do i=1,nb
+                  do j=1,nb
+                      interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
+                  enddo
+              enddo
+          enddo
 
      lwork=max(1,2*nb-1)
      allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
@@ -87,52 +124,52 @@
 !---- Fourier transform H(R) to H(k)
       ene=0d0
       do k=1,nk
-         HK=(0d0,0d0)
-         do j=1,nr
-
-            phase=0.0d0
-            do i=1,3
-               phase=phase+kpath(i,k)*rvec_data(i,j)  
+        HK=(0d0,0d0)
+        do ix=-6,6
+            do iy=-6,6
+                do iz=-6,6
+                    if(ndeg(ix,iy,iz).ne.0) then
+                        phase=0.0d0
+                        phase = phase + kpath(1,k) * ix + kpath(2,k) * iy +kpath(3,k) * iz
+                       
+                        Hk=Hk+((1-a)*(triv_Hr(:,:,ix,iy,iz))+(a)*(top_Hr(:,:,ix,iy,iz)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ix,iy,iz))
+                    endif
+                enddo
             enddo
-
-            HK=HK+((1-alpha)*(triv_hr(:,:,j))+alpha*(top_hr(:,:,j)))*dcmplx(cos(phase),-sin(phase))/float(ndeg(j))
-
-         enddo
+        enddo
+      
          call zheev('V','U',nb,HK,nb,ene(:,k),work,lwork,rwork,info) 
 
 !------Orbital Probability Calculation:
-         do l=1, nb
-            H_col = HK(:,l)
-            Te_sum= 0.0d0
-            Bi_sum = 0.0d0
-            I_sum = 0.0d0
-            do i=1, 2
-               skip = 0
-               skip = (i-1)*9;
-               do j=1, 3
-                  Te_sum = Te_sum + real(conjg(H_col(j+skip)) * (H_col(j+skip)))
-                  Bi_sum = Bi_sum + real(conjg(H_col(j+3+skip)) * (H_col(j+3+skip)))
-                  I_sum =  I_sum + real((conjg(H_col(j+6+skip)) * (H_col(j+6+skip))))
-               enddo
-            enddo
-            od(l,k,:) = [Te_sum, Bi_sum, I_sum]
-         enddo
+      !    do l=1, nb
+      !       H_col = HK(:,l)
+      !       Te_sum= 0.0d0
+      !       Bi_sum = 0.0d0
+      !       I_sum = 0.0d0
+      !       do i=1, 2
+      !          skip = 0
+      !          skip = (i-1)*9;
+      !          do j=1, 3
+      !             Te_sum = Te_sum + real(conjg(H_col(j+skip)) * (H_col(j+skip)))
+      !             Bi_sum = Bi_sum + real(conjg(H_col(j+3+skip)) * (H_col(j+3+skip)))
+      !             I_sum =  I_sum + real((conjg(H_col(j+6+skip)) * (H_col(j+6+skip))))
+      !          enddo
+      !       enddo
+      !       od(l,k,:) = [Te_sum, Bi_sum, I_sum]
+      !    enddo
       enddo
 
 !-----Fermi level:
-      ef = (MAXVAL(ene(12, :)) + MINVAL(ene(13, :)))/2.0d0
-      eg = MINVAL(ene(13, :)) - MAXVAL(ene(12, :))
+      ! ef = (MAXVAL(ene(12, :)) + MINVAL(ene(13, :)))/2.0d0
+      ! eg = MINVAL(ene(13, :)) - MAXVAL(ene(12, :))
 
-      print * , ef,eg
-
-!-----Orbital probability:
-
+      ! print * , ef,eg
 
       deallocate(HK,work)
       
       do i=1,nb
          do k=1,nk-1
-           write(100,'(5(x,f12.6))') xk(k), ene(i,k) 
+           write(100,'(5(x,f10.4))') xk(k), ene(i,k) 
          enddo
            write(100,*)
            write(100,*)

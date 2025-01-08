@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="../BiTeI", ax = 'y'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=8,np=400,eres=400,nblocks=60,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    character(len=80):: prefix="../BiTeI", ax = 'z'
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=4,emax=8,bfactor=0.005, B=0.00d0, passval=0.0d0
+    integer,parameter::nkpath=3,np=400,eres=400,nblocks=30,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -34,9 +34,9 @@ Program Projected_band_structure
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
-    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
-    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
-    write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
+    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_new.dat"
+    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_new.dat"
+    write(nnkp, '(a,a)') trim(adjustl(prefix)), "_new.nnkp"
     open(98, file=trim(adjustl(nnkp)))
 111 read(98, '(a)') line
     if (trim(adjustl(line)) .ne. "begin real_lattice") goto 111
@@ -47,7 +47,7 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='super_H_Y_60_longpath.dx')
+    open(100,file='super_H_15_new.dx')
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -97,15 +97,32 @@ Program Projected_band_structure
     ! kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
 
     ! -kz -> kz
-    ! G K M G A H L A 
-    kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    kpoints(:,2) = [ 2*third, third,  0.0d0]  !K
-    kpoints(:,3) = [ 0.5d0,  0.0d0,   0.0d0]  !M
-    kpoints(:,4) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    kpoints(:,5) = [ 0.0d0,  0.0d0,   0.5d0]  !A
-    kpoints(:,6) = [ 2*third, third,  0.5d0]  !H
-    kpoints(:,7) = [0.5d0, 0.0d0,    0.5d0]  !L
-    kpoints(:,8) = [ 0.0d0,  0.0d0,   0.5d0]  !A
+    ! ! G K M G A H L A 
+    ! kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    ! kpoints(:,2) = [ 2*third, third,  0.0d0]  !K
+    ! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.0d0]  !M
+    ! kpoints(:,4) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    ! kpoints(:,5) = [ 0.0d0,  0.0d0,   0.5d0]  !A
+    ! kpoints(:,6) = [ 2*third, third,  0.5d0]  !H
+    ! kpoints(:,7) = [0.5d0, 0.0d0,    0.5d0]  !L
+    ! kpoints(:,8) = [ 0.0d0,  0.0d0,   0.5d0]  !A
+
+    ! ! G X S Y G Z U R T Z
+    ! kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma  
+    ! kpoints(:,2) = [ 0.5d0,    0.0d0,   0.0d0]  !X
+    ! kpoints(:,3) = [ 0.5d0,    0.5d0,   0.0d0]  !S
+    ! kpoints(:,4) = [ 0.0d0,    0.5d0,   0.0d0]  !Y
+    ! kpoints(:,5) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    ! kpoints(:,6) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    ! kpoints(:,7) = [ 0.5d0,    0.0d0,   0.0d0]  !U
+    ! kpoints(:,8) = [ 0.5d0,    0.5d0,   0.0d0]  !R
+    ! kpoints(:,9) = [ 0.0d0,    0.5d0,   0.0d0]  !T
+    ! kpoints(:,10) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+
+    kpoints(:,1) = [ 0.5d0,    0.0d0,   0.5d0]  !U
+    kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    kpoints(:,3) = [ 0.0d0,    0.5d0,   0.5d0]  !T
+
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
