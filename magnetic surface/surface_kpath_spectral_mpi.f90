@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'z'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=4,emax=8,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=3,np=400,eres=400,nblocks=30,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    integer,parameter::nkpath=3,np=400,eres=400,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -74,7 +74,7 @@ Program Projected_band_structure
 
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks+1,nb*nblocks+1))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks,nb*nblocks))
     allocate(extrarow(nb*nblocks))
     allocate(Hkra(nb,nb,-6:6))
     allocate(Hk(nb,nb))
@@ -267,8 +267,8 @@ Program Projected_band_structure
     if(ax == 'y') kindex = [1,3]
     if(ax == 'z') kindex = [1,2]
 
-    extrarow(3:4) = +2*passval
-    extrarow(nblocks*nb-3:nblocks*nb-2) = -3*passval
+    ! extrarow(3:4) = +2*passval
+    ! extrarow(nblocks*nb-3:nblocks*nb-2) = -3*passval
 
 !----- Perform fourier transform
     ! nr12=nr/nr3
@@ -314,8 +314,8 @@ Program Projected_band_structure
                     endif
                 enddo
             enddo
-            super_H(nb*nblocks+1,:) = extrarow
-            super_H(:,nb*nblocks+1) = conjg(extrarow)
+            ! super_H(nb*nblocks+1,:) = extrarow
+            ! super_H(:,nb*nblocks+1) = conjg(extrarow)
             call zheev('V','U',nb*nblocks+1,super_H,nb*nblocks+1,k_ene(:,ik),work,lwork,rwork,info)
 
             do ie=1,nepoints
