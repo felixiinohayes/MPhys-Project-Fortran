@@ -300,7 +300,7 @@ Program Projected_band_structure
 
                             phase = phase + kpath(kindex(1),ik) * irb + kpath(kindex(2),ik) * irc
 
-                            Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
+                            Hk=Hk+interp_Hr(:,:,ai(1),ai(2),ai(3))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
                         endif
                     enddo
                 enddo

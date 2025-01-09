@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6,emax=7,eta=0.005
-    integer,parameter::nkpath=3,np=30,nblocks=13,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=80,nblocks_2=nblocks/2,depth=3
+    integer,parameter::nkpath=3,np=100,nblocks=13,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2,depth=3
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters
@@ -84,6 +84,7 @@ Program Projected_band_structure
 
 !----Read in Hamiltonian
     ndeg = 0d0
+    interp_Hr=0d0
             
     do ir=1,nr_top
         do i=1,nb
@@ -156,9 +157,9 @@ Program Projected_band_structure
             case (3)
                 ! -kz -> kz
                 axis= 'Z'
-                kpoints(:,1) = [ 0.00d0, 0.0d0,  -0.1d0]  !H
-                kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
-                kpoints(:,3) = [0.00d0,  0.0d0,  0.1d0]  !-H
+                kpoints(:,1) = [ 0.00d0, 0.0d0,  0.4d0]  !H
+                kpoints(:,2) = [  0.0d0,  0.0d0, 0.0d0]  !A
+                kpoints(:,3) = [0.00d0,  0.0d0,  0.6d0]  !-H
             case default
                 axis= 'X'
                 stop "Error: Select axis."
@@ -223,7 +224,6 @@ Program Projected_band_structure
                 enddo
             enddo
 
-            interp_Hr=0d0
 
             do i=1,nb
                 do j=1,nb
@@ -321,7 +321,7 @@ Program Projected_band_structure
 
                                 phase = phase + kpath(ax,ik) * irc
 
-                                Hk=Hk+((1-a)*(triv_Hr(:,:,ai(1),ai(2),ai(3)))+(a)*(top_Hr(:,:,ai(1),ai(2),ai(3))))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
+                                Hk=Hk+interp_Hr(:,:,ai(1),ai(2),ai(3))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
                             endif
                         enddo
                         Hkra(:,:,ira,irb) = Hk
@@ -403,17 +403,6 @@ Program Projected_band_structure
             enddo
 
             if(myid.eq.0) then
-                call date_and_time(VALUES=time_next)
-                if(fcount.gt.1.and.fcount.lt.6) then 
-                    dur =((time_next(6)-time_prev(6))*60 +  (time_next(7)-time_prev(7)))
-                    print* ,''
-                    print *, 'Duration: ', dur/60, ':', mod(dur,60)
-                    print *, 'Remaining: ', dur*(6-fcount)/60 ,':', mod(dur*(6-fcount),60)
-                    print *, 'Time: ', time_next(5), ':', time_next(6), ':', time_next(7)
-                    print *,''
-                endif
-                call date_and_time(VALUES=time_prev)
-            
                 do i=1,5
                     do j=1,nk*eres
                         write(100+(i-1),'(3(1x,f12.6))') data_g(i,:,j)
