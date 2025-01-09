@@ -315,7 +315,7 @@ Program Projected_band_structure
                             if(ax == 1) ai = [irc, ira, irb]
                             if(ax == 2) ai = [ira, irc, irb]
                             if(ax == 3) ai = [ira, irb, irc]
-
+                           
                             if(ndeg(ai(1),ai(2),ai(3)).ne.0) then 
                                 phase = 0d0
 
