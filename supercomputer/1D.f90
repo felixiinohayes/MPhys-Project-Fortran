@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="BiTeI", ax = 'y'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=3,emax=5.5,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=3,np=400,eres=400,nblocks=30,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    character(len=80):: prefix="BiTeI", ax = 'z'
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7,bfactor=0.005, B=0.00d0, passval=0.0d0
+    integer,parameter::nkpath=10,np=400,eres=400,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -26,9 +26,7 @@ Program Projected_band_structure
     integer*4,allocatable:: ndeg(:,:,:),displs(:),recvcounts(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16,allocatable::Hk(:,:),Hkra(:,:,:),work(:),super_H(:,:),sH(:,:),a_p_top(:,:),a_p_bottom(:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2)
-    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
-    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
-    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
+    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr,triv_Hr,top_Hr
 !------------------------------------------------------
     call init_mpi
 
@@ -74,7 +72,7 @@ Program Projected_band_structure
 
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks,nb*nblocks))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),super_H(nb*nblocks,nb*nblocks),top_Hr(nb,nb,-6:6, -6:6, -6:6),triv_Hr(nb,nb,-6:6, -6:6, -6:6))
     allocate(extrarow(nb*nblocks))
     allocate(Hkra(nb,nb,-6:6))
     allocate(Hk(nb,nb))
@@ -107,22 +105,21 @@ Program Projected_band_structure
     ! kpoints(:,7) = [0.5d0, 0.0d0,    0.5d0]  !L
     ! kpoints(:,8) = [ 0.0d0,  0.0d0,   0.5d0]  !A
 
-    ! ! G X S Y G Z U R T Z
-    ! kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma  
-    ! kpoints(:,2) = [ 0.5d0,    0.0d0,   0.0d0]  !X
-    ! kpoints(:,3) = [ 0.5d0,    0.5d0,   0.0d0]  !S
-    ! kpoints(:,4) = [ 0.0d0,    0.5d0,   0.0d0]  !Y
-    ! kpoints(:,5) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    ! kpoints(:,6) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
-    ! kpoints(:,7) = [ 0.5d0,    0.0d0,   0.0d0]  !U
-    ! kpoints(:,8) = [ 0.5d0,    0.5d0,   0.0d0]  !R
-    ! kpoints(:,9) = [ 0.0d0,    0.5d0,   0.0d0]  !T
-    ! kpoints(:,10) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    ! G X S Y G Z U R T Z
+    kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma  
+    kpoints(:,2) = [ 0.5d0,    0.0d0,   0.0d0]  !X
+    kpoints(:,3) = [ 0.5d0,    0.5d0,   0.0d0]  !S
+    kpoints(:,4) = [ 0.0d0,    0.5d0,   0.0d0]  !Y
+    kpoints(:,5) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    kpoints(:,6) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    kpoints(:,7) = [ 0.5d0,    0.0d0,   0.5d0]  !U
+    kpoints(:,8) = [ 0.5d0,    0.5d0,   0.5d0]  !R
+    kpoints(:,9) = [ 0.0d0,    0.5d0,   0.5d0]  !T
+    kpoints(:,10) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
 
-    kpoints(:,1) = [ -0.5d0,    0.0d0,   0.5d0]  !U
-    kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
-    kpoints(:,3) = [ 0.5d0,    0.0d0,   0.5d0]  !T
-
+    ! kpoints(:,1) = [ -0.5d0,    0.0d0,   0.5d0]  !U
+    ! kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    ! kpoints(:,3) = [ 0.5d0,    0.0d0,   0.5d0]  !T
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
@@ -200,6 +197,7 @@ Program Projected_band_structure
 !----Read in Hamiltonian
     interp_Hr=0d0
     ndeg = 0d0
+
     do ir=1,nr_top
         do i=1,nb
             do j=1,nb
@@ -234,6 +232,11 @@ Program Projected_band_structure
         enddo
     enddo
 
+    if(myid.eq.0) then
+        print*,nr_top
+        print*,'interp_Hr(5,4,-3,-2,-1)', interp_Hr(5,4,-3,-2,-1),'   -3   -2   -1    5    4 -0.00275907 -0.00075338'  
+        !                            1    1  -2   -2   -1    
+    endif
 
     ! do i=1,nb
     !     if(a==0) then 

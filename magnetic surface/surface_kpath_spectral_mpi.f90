@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'z'
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=4,emax=8,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=3,np=400,eres=400,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    integer,parameter::nkpath=5,np=400,eres=400,nblocks=5,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -34,9 +34,9 @@ Program Projected_band_structure
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
 
-    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_new.dat"
-    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_new.dat"
-    write(nnkp, '(a,a)') trim(adjustl(prefix)), "_new.nnkp"
+    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
+    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
+    write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
     open(98, file=trim(adjustl(nnkp)))
 111 read(98, '(a)') line
     if (trim(adjustl(line)) .ne. "begin real_lattice") goto 111
@@ -119,9 +119,11 @@ Program Projected_band_structure
     ! kpoints(:,9) = [ 0.0d0,    0.5d0,   0.0d0]  !T
     ! kpoints(:,10) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
 
-    kpoints(:,1) = [ 0.5d0,    0.0d0,   0.5d0]  !U
-    kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
-    kpoints(:,3) = [ 0.0d0,    0.5d0,   0.5d0]  !T
+    kpoints(:,1) = [ 0.5d0,    0.5d0,   0.0d0]  !R
+    kpoints(:,2) = [ 0.5d0,    0.0d0,   0.5d0]  !U
+    kpoints(:,3) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    kpoints(:,4) = [ 0.0d0,    0.5d0,   0.5d0]  !T
+    kpoints(:,5) = [ 0.5d0,    0.5d0,   0.0d0]  !R
 
 
     ! Initial point in the k path
@@ -234,7 +236,6 @@ Program Projected_band_structure
         enddo
     enddo
 
-
     ! do i=1,nb
     !     if(a==0) then 
     !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
@@ -242,7 +243,7 @@ Program Projected_band_structure
     !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
     !     endif
     ! enddo
-!
+
     recv(1)=(min(kpmax,nk)-kpmin+1)*nepoints*3
 
     allocate(spectral_A_single(3,recv(1)*nepoints),displs(numprocs),recvcounts(numprocs))
@@ -316,7 +317,7 @@ Program Projected_band_structure
             enddo
             ! super_H(nb*nblocks+1,:) = extrarow
             ! super_H(:,nb*nblocks+1) = conjg(extrarow)
-            call zheev('V','U',nb*nblocks+1,super_H,nb*nblocks+1,k_ene(:,ik),work,lwork,rwork,info)
+            call zheev('V','U',nb*nblocks,super_H,nb*nblocks,k_ene(:,ik),work,lwork,rwork,info)
 
             do ie=1,nepoints
                 spectral_A = 0d0

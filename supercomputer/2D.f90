@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6,emax=7,eta=0.005
-    integer,parameter::nkpath=3,np=30,nblocks=5,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=80,nblocks_2=nblocks/2
+    integer,parameter::nkpath=3,np=30,nblocks=13,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=80,nblocks_2=nblocks/2,depth=3
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters
@@ -16,9 +16,9 @@ Program Projected_band_structure
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,b1_file,b2_file,b3_file,b4_file,b5_file
     character(len=6) axis,suffix
-    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1,ib,offset,dur,mag
+    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,matsize,dim,sum2,sum1,ib,offset,dur,mag,ibx
     integer*4 lwork,info,ik,count,sign,kloc,kpmin,kpmax,ecounts,kcount,interp_size,nr_top,nr_triv,rvec(3),index,ax,fcount
-    integer*4 recv(1),nr_(3),kindex(2),ai(3)
+    integer*4 recv(1),nr_(3),kindex(2),ai(3),iblock(depth)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle,B
     real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3),epoints(eres),a_spec,factor,dos,data_g(5,3,nk*eres)
@@ -348,15 +348,43 @@ Program Projected_band_structure
                 count = 0
                 do ib =1, N2
                     if(ib.eq.(nblocks_2 + 1).or. ib.eq.((nblocks_2)*nblocks +1).or. ib.eq.((nblocks_2)*(nblocks+1) +1).or. ib.eq.((nblocks_2)*(nblocks+2) +1).or. ib.eq.((nblocks_2)*(2*nblocks+1)+1)) then
-                        ! if(myid==0) print*, ib
+                        select case (ib)
+                        case (nblocks_2 + 1) 
+                            ! FIRST
+                            do i =1,depth
+                                iblock(i) = ib + (i-1)*nblocks
+                            enddo
+                        case ((nblocks_2)*nblocks +1)
+                            !SECOND
+                            do i =1,depth
+                                iblock(i) = ib + (i-1)
+                            enddo
+                        case ((nblocks_2)*(nblocks+1) +1)
+                            !BULK
+                            do i =1,depth
+                                iblock(i) = ib 
+                            enddo
+                        case ((nblocks_2)*(nblocks+2) +1)
+                            !FOURTH
+                            ! iblock(:) =  [ib -2, ib -1, ib]
+                            do i =1,depth
+                                iblock(i) = ib  - (i-1)
+                            enddo
+                        case ((nblocks_2)*(2*nblocks+1)+1)
+                            !FIFTH
+                            do i =1,depth
+                                iblock(i) = ib - (i-1)*nblocks
+                            enddo
+                        end select
                         do ie=1,eres
                             ! print*, ie, eres
                             a_spec = 0d0
-                            do i=1,dim
-                                p_l = dot_product(super_H((1+nb*(ib-1)):(nb*(ib)),i), super_H((1+nb*(ib-1)):(nb*(ib)),i))
-                                factor = ((epoints(ie) - eval(i)))/eta
-                                a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
-                                ! print *, a_spec
+                            do ibx = 1,depth
+                                do i=1,dim
+                                    p_l = dot_product(super_H((1+nb*(iblock(ibx)-1)):(nb*(iblock(ibx))),i), super_H((1+nb*(iblock(ibx)-1)):(nb*(iblock(ibx))),i))
+                                    factor = ((epoints(ie) - eval(i)))/eta
+                                    a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
+                                enddo
                             enddo
                             data_row(count+1, 1,(ikp-1)*eres + ie) = xk(ik)
                             data_row(count+1, 2,(ikp-1)*eres + ie) = epoints(ie)

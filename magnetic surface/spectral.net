@@ -1,5 +1,5 @@
 //
-// time: Fri Nov 22 19:18:18 2024
+// time: Thu Jan  9 17:22:13 2025
 //
 // version: 3.2.0 (format), 4.4.4 (DX)
 //
@@ -13,8 +13,8 @@ macro main(
 ) {
     // 
     // node FileSelector[1]: x = 234, y = 44, inputs = 0, label = FileSelector
-    // output[1]: visible = 1, type = 32, value = "/Users/felixiinohayes/Documents/Programming/GitHub/MPhys-Project-Fortran/magnetic surface/super_H_Y_60_nopass.dx"
-    // output[2]: visible = 1, type = 32, value = "super_H_Y_60_nopass.dx"
+    // output[1]: visible = 1, type = 32, value = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/supercomputer/1D.dx"
+    // output[2]: visible = 1, type = 32, value = "1D.dx"
     //
     // 
     // node Import[1]: x = 240, y = 119, inputs = 6, label = Import
@@ -32,11 +32,11 @@ main_Import_1_out_1 =
     // node Sequencer[1]: x = 458, y = 104, inputs = 7, label = Sequencer
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "Sequencer_1"
     // input[4]: defaulting = 1, visible = 1, type = 1, value = 0
-    // input[5]: defaulting = 1, visible = 1, type = 1, value = 39
+    // input[5]: defaulting = 1, visible = 1, type = 1, value = 2
     // input[6]: defaulting = 1, visible = 0, type = 1, value = 1
-    // input[7]: defaulting = 0, visible = 0, type = 16777217, value = { 0 39 1 0 39 1 }
-    // vcr[1]: min = 0, max = 39, beg = 0, end = 39, cur = 33, inc = 1, loop = on, step = on, pal = off
-    // window: position = (0.2500,0.3047), size = 0.1458x0.0771, screen = 1
+    // input[7]: defaulting = 0, visible = 0, type = 16777217, value = { 0 2 1 0 2 1 }
+    // vcr[1]: min = 0, max = 2, beg = 0, end = 2, cur = 2, inc = 1, loop = on, step = on, pal = off
+    // window: position = (0.0068,0.0804), size = 0.1905x0.0870, screen = 0
     //
     main_Sequencer_1_out_1 = @frame;
     // 
@@ -101,12 +101,12 @@ main_Unmark_1_out_1 =
     // input[4]: defaulting = 0, visible = 0, type = 16777224, value = { [0.0 1.0] }
     // input[5]: defaulting = 0, visible = 0, type = 32, value = "Colormap_1"
     // input[7]: defaulting = 1, visible = 0, type = 5, value = 0.0
-    // input[8]: defaulting = 1, visible = 0, type = 5, value = 9.5652742
+    // input[8]: defaulting = 1, visible = 0, type = 5, value = 21.783293
     // input[9]: defaulting = 1, visible = 0, type = 1, value = 20
-    // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 0.0 9.5652742 }
+    // input[12]: defaulting = 0, visible = 0, type = 16777221, value = { 0.0 21.783293 }
     // input[17]: defaulting = 0, visible = 0, type = 5, value = 0.0
-    // input[18]: defaulting = 0, visible = 0, type = 5, value = 9.5652742
-    // window: position = (0.0133,0.2913), size = 0.3611x0.3996, screen = 0
+    // input[18]: defaulting = 0, visible = 0, type = 5, value = 21.783293
+    // window: position = (0.0136,0.2913), size = 0.3612x0.4000, screen = 0
     //
 main_Colormap_1_out_1[cache: 2],
 main_Colormap_1_out_2[cache: 2] = 
@@ -146,13 +146,13 @@ main_Color_1_out_1 =
     // node Image[1]: x = 388, y = 525, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0.24827 3.125 0]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [0.24827 3.125 3.97313]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 2.1292
-    // input[8]: defaulting = 0, visible = 0, type = 1, value = 1202
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.758
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [2.10522 3.17214 0]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [2.10522 3.17214 10.5284]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 1.44671
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 819
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.986
     // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 1 0]
-    // input[11]: defaulting = 1, visible = 0, type = 5, value = 30.0001
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 7.86067
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -165,14 +165,15 @@ main_Color_1_out_1 =
     // input[26]: defaulting = 0, visible = 0, type = 32, value = "tiff"
     // input[27]: defaulting = 0, visible = 0, type = 1, value = 1000
     // input[28]: defaulting = 0, visible = 0, type = 5, value = 1.65
-    // input[29]: defaulting = 0, visible = 0, type = 3, value = 0
+    // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[31]: defaulting = 0, visible = 0, type = 1, value = -30
-    // input[36]: defaulting = 0, visible = 0, type = 3, value = 0
-    // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"clear", "grey5", "black", "black"}
+    // input[33]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[36]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[37]: defaulting = 0, visible = 0, type = 16777248, value = {"clear", "white", "black", "black"}
     // input[38]: defaulting = 0, visible = 0, type = 16777248, value = {"background", "grid", "ticks", "labels"}
-    // input[41]: defaulting = 0, visible = 0, type = 32, value = "none"
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "panzoom"
     // depth: value = 24
-    // window: position = (0.4568,0.0501), size = 0.6333x0.9190, screen = 1
+    // window: position = (0.4633,0.0272), size = 0.5667x0.9228, screen = 0
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -232,7 +233,7 @@ main_Image_1_out_3 =
 // network: end of macro body
 CacheScene(main_Image_1_in_1, main_Image_1_out_1, main_Image_1_out_2);
 }
-main_FileSelector_1_out_1 = "/Users/felixiinohayes/Documents/Programming/GitHub/MPhys-Project-Fortran/magnetic surface/super_H_Y_60_nopass.dx";
+main_FileSelector_1_out_1 = "/Users/James/Desktop/GitHub/MPhys-Project-Fortran/supercomputer/1D.dx";
 main_Import_1_in_2 = NULL;
 main_Import_1_in_3 = NULL;
 main_Import_1_in_4 = NULL;
@@ -245,12 +246,12 @@ main_Sequencer_1_in_3 = NULL;
 main_Sequencer_1_in_4 = NULL;
 main_Sequencer_1_in_5 = NULL;
 main_Sequencer_1_in_6 = NULL;
-main_Sequencer_1_in_7 = { 0 39 1 0 39 1 };
+main_Sequencer_1_in_7 = { 0 2 1 0 2 1 };
 main_Sequencer_1_out_1 = NULL;
 
 @startframe = 0;
 @nextframe  = @startframe;
-@endframe   = 39;
+@endframe   = 2;
 @deltaframe = 1;
 main_Select_1_in_3 = NULL;
 main_Select_1_out_1 = NULL;
@@ -274,13 +275,13 @@ main_Colormap_1_in_8 = NULL;
 main_Colormap_1_in_9 = NULL;
 main_Colormap_1_in_10 = NULL;
 main_Colormap_1_in_11 = NULL;
-main_Colormap_1_in_12 = { 0.0 9.5652742 };
+main_Colormap_1_in_12 = { 0.0 21.783293 };
 main_Colormap_1_in_13 = NULL;
 main_Colormap_1_in_14 = NULL;
 main_Colormap_1_in_15 = NULL;
 main_Colormap_1_in_16 = NULL;
 main_Colormap_1_in_17 = 0.0;
-main_Colormap_1_in_18 = 9.5652742;
+main_Colormap_1_in_18 = 21.783293;
 main_Colormap_1_in_19 = NULL;
 main_Colormap_1_out_1 = NULL;
 main_Colormap_1_out_2 = NULL;
@@ -602,11 +603,11 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [0.24827 3.125 0];
-main_Image_1_in_6 = [0.24827 3.125 3.97313];
-main_Image_1_in_7 = 2.1292;
-main_Image_1_in_8 = 1202;
-main_Image_1_in_9 = 0.758;
+main_Image_1_in_5 = [2.10522 3.17214 0];
+main_Image_1_in_6 = [2.10522 3.17214 10.5284];
+main_Image_1_in_7 = 1.44671;
+main_Image_1_in_8 = 819;
+main_Image_1_in_9 = 0.986;
 main_Image_1_in_10 = [0 1 0];
 main_Image_1_in_11 = NULL;
 main_Image_1_in_12 = 0;
@@ -625,19 +626,19 @@ main_Image_1_in_25 = "/Users/felixiinohayes/Documents/GitHub/MPhys-Project-Fortr
 main_Image_1_in_26 = "tiff";
 main_Image_1_in_27 = 1000;
 main_Image_1_in_28 = 1.65;
-main_Image_1_in_29 = 0;
+main_Image_1_in_29 = 1;
 main_Image_1_in_30 = NULL;
 main_Image_1_in_31 = -30;
 main_Image_1_in_32 = NULL;
-main_Image_1_in_33 = NULL;
+main_Image_1_in_33 = 1;
 main_Image_1_in_34 = NULL;
 main_Image_1_in_35 = NULL;
-main_Image_1_in_36 = 0;
-main_Image_1_in_37 = {"clear", "grey5", "black", "black"};
+main_Image_1_in_36 = 1;
+main_Image_1_in_37 = {"clear", "white", "black", "black"};
 main_Image_1_in_38 = {"background", "grid", "ticks", "labels"};
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
-main_Image_1_in_41 = "none";
+main_Image_1_in_41 = "panzoom";
 main_Image_1_in_42 = NULL;
 main_Image_1_in_43 = NULL;
 main_Image_1_in_44 = NULL;

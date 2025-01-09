@@ -2,7 +2,7 @@
       Implicit None
 !--------to be midified by the usere
       character(len=80):: prefix="../BiTeI"
-      integer,parameter::nkpath=3,np=600
+      integer,parameter::nkpath=10,np=600
 !------------------------------------------------------
       integer*4 ik,ikmax, skip,sign,interp_size,nr_top,nr_triv,index,ir,ix,iy,iz,rvec(3),rvec_data(3)
       real*8 kz,ef,eg
@@ -11,8 +11,8 @@
       character(len=80) nnkp,line,top_file,triv_file
       integer*4,parameter::nk=(nkpath-1)*np+1
       integer*4 i,j,k,nr,i1,i2,lwork,info,ikx,iky,j1,j2,nb,l
-      real*8,parameter::third=1d0/3d0, alpha = 0
-      real*8 phase,pi2,jk,a,b,x1,y1
+      real*8,parameter::third=1d0/3d0, a = 1
+      real*8 phase,pi2,jk,b,x1,y1
       real*8 xk(nk),bvec(3,3),avec(3,3),kvec1(3),kvec2(3),xkl(nkpath),kpoints(3,nkpath),kpath(3,nk),dk(3)
       real*8,allocatable:: ene(:,:),rwork(:),od(:,:,:)
       integer*4,allocatable:: ndeg(:,:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
@@ -22,7 +22,7 @@
 !------------------------------------------------------
       write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological_new.dat"
       write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial_new.dat"
-      write(nnkp,'(a,a)')      trim(adjustl(prefix)),"_new.nnkp"
+      write(nnkp,'(a,a)')      trim(adjustl(prefix)),"_ortho.nnkp"
       pi2=4.0d0*atan(1.0d0)*2.0d0
 !---------------  reciprocal vectors
       open(98,file=trim(adjustl(nnkp)))
@@ -41,12 +41,22 @@
     !   data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
     !   data kpoints(:,3) /     third,      third,    0.5d0/  !H
 
-    data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
-    data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
-    data kpoints(:,3) /     0.0d0,      0.5d0,    0.5d0/  !H
+    ! data kpoints(:,1) /     0.5d0,      0.0d0,    0.5d0/  !L
+    ! data kpoints(:,2) /     0.0d0,      0.0d0,    0.5d0/  !A
+    ! data kpoints(:,3) /     0.0d0,      0.5d0,    0.5d0/  !H
+
+    kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma  
+    kpoints(:,2) = [ 0.5d0,    0.0d0,   0.0d0]  !X
+    kpoints(:,3) = [ 0.5d0,    0.5d0,   0.0d0]  !S
+    kpoints(:,4) = [ 0.0d0,    0.5d0,   0.0d0]  !Y
+    kpoints(:,5) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    kpoints(:,6) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    kpoints(:,7) = [ 0.5d0,    0.0d0,   0.5d0]  !U
+    kpoints(:,8) = [ 0.5d0,    0.5d0,   0.5d0]  !R
+    kpoints(:,9) = [ 0.0d0,    0.5d0,   0.5d0]  !T
+    kpoints(:,10) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
     
-    
-      data klabel     /'L','A','H'/
+    !   data klabel     /'L','A','H'/
 
       kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
       xk(1)= -sqrt(dot_product(kvec1,kvec1))
@@ -119,7 +129,10 @@
           enddo
 
      lwork=max(1,2*nb-1)
-     allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
+        allocate(work(max(1,lwork)),rwork(max(1,3*nb-2)))
+        print*,nr_top
+        print*,'interp_Hr(5,4,-3,-2,-1)', interp_Hr(5,4,-3,-2,-1),'   -3   -2   -1    5    4 -0.00275907 -0.00075338'  
+        !                           1    1  -2   -2   -1    
 
 !---- Fourier transform H(R) to H(k)
       ene=0d0
@@ -191,17 +204,17 @@
             
             open(99,file='band.plt')
             write(99,'(a,f12.8)')'ef=',ef
-            write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -0.12 : 0.12]'
+            write(99,'(a,f12.6,a,f12.6,a)') '#set xrange [ -5 : 5]'
             write(99,'(a)') &
                  'set terminal pdfcairo enhanced font "DejaVu"  transparent fontscale 1 size 5.00in, 5.00in'
             write(99,'(a,f4.2,a)')'set output "band.pdf"'
             write(99,'(14(a,/),a)') &
                  'set border',&
-                 'unset xtics',&
-                 'unset ytics',&
+                 'set xtics',&
+                 'set ytics',&
                  'set encoding iso_8859_1',&
                  'set size ratio 0 1.0,1.0',&
-                 '#set yrange [-0.4: 0.4 ]',&
+                 'set yrange [-1: 8]',&
                  'unset key',&
                  'set mytics 2',&
                  'set parametric',&
