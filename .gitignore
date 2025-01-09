@@ -13,3 +13,4 @@ Makefile
 *.ai
 .venv
 *.pdf
+*.nnkp
