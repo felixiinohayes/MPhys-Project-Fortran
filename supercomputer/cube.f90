@@ -147,9 +147,9 @@ Program Projected_band_structure
     enddo
 
     do i=1,nb
-        if(a==0) then 
+        if(a==0) then
             interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
-        else 
+        else
             interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
         endif
     enddo

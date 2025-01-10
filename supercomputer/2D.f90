@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6,emax=7,eta=0.005
-    integer,parameter::nkpath=3,np=100,nblocks=13,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2,depth=3
+    integer,parameter::nkpath=3,np=50,nblocks=13,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2,depth=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters
@@ -26,9 +26,7 @@ Program Projected_band_structure
     integer*4,allocatable:: ndeg(:,:,:),displs1(:),recvcounts1(:),displs2(:),recvcounts2(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:),kpminlist(:),kpmaxlist(:),kloclist(:),kloc_sum(:),buff_sum1(:),buff_sum2(:),buffsize1(:),buffsize2(:)
     complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),sH_flat(:),sH_flatg(:),SH(:,:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2)
-    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
-    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
-    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
+    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr, triv_Hr, top_Hr
     integer, dimension(8) :: time_start
     integer, dimension(8) :: time_prev
     integer, dimension(8) :: time_next
@@ -40,9 +38,9 @@ Program Projected_band_structure
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
     
-    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
-    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
-    write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
+    write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_new.dat"
+    write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_new.dat"
+    write(nnkp, '(a,a)') trim(adjustl(prefix)), "_new.nnkp"
 
     open(98, file=trim(adjustl(nnkp)))
 111 read(98, '(a)') line
@@ -64,7 +62,7 @@ Program Projected_band_structure
     read(97,*)nb,nr_triv
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),triv_Hr(nb,nb,-6:6, -6:6, -6:6),top_Hr(nb,nb,-6:6, -6:6, -6:6))
     allocate(extrarow(nb*N2))
     allocate(Hkra(nb,nb,-6:6,-6:6))
     allocate(Hk(nb,nb))
@@ -116,8 +114,8 @@ Program Projected_band_structure
     enddo
 
     fcount = 0 
-    do ax = 1,3
-        do mag = 1,2
+    do ax = 3,3
+        do mag = 1,1
             
             fcount = fcount + 1
             print*, ''
@@ -158,7 +156,7 @@ Program Projected_band_structure
                 ! -kz -> kz
                 axis= 'Z'
                 kpoints(:,1) = [ 0.00d0, 0.0d0,  0.4d0]  !H
-                kpoints(:,2) = [  0.0d0,  0.0d0, 0.0d0]  !A
+                kpoints(:,2) = [  0.0d0,  0.0d0, 0.5d0]  !A
                 kpoints(:,3) = [0.00d0,  0.0d0,  0.6d0]  !-H
             case default
                 axis= 'X'

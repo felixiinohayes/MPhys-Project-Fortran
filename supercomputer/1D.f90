@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI", ax = 'z'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=5.5,emax=7,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=10,np=400,eres=400,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=6.2,emax=6.8,bfactor=0.005, B=0.00d0, passval=0.0d0
+    integer,parameter::nkpath=3,np=150,eres=150,nblocks=40,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -106,20 +106,33 @@ Program Projected_band_structure
     ! kpoints(:,8) = [ 0.0d0,  0.0d0,   0.5d0]  !A
 
     ! G X S Y G Z U R T Z
-    kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma  
-    kpoints(:,2) = [ 0.5d0,    0.0d0,   0.0d0]  !X
-    kpoints(:,3) = [ 0.5d0,    0.5d0,   0.0d0]  !S
-    kpoints(:,4) = [ 0.0d0,    0.5d0,   0.0d0]  !Y
-    kpoints(:,5) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    kpoints(:,6) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
-    kpoints(:,7) = [ 0.5d0,    0.0d0,   0.5d0]  !U
-    kpoints(:,8) = [ 0.5d0,    0.5d0,   0.5d0]  !R
-    kpoints(:,9) = [ 0.0d0,    0.5d0,   0.5d0]  !T
-    kpoints(:,10) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    !kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma  
+    !kpoints(:,2) = [ 0.5d0,    0.0d0,   0.0d0]  !X
+    !kpoints(:,3) = [ 0.5d0,    0.5d0,   0.0d0]  !S
+    !kpoints(:,4) = [ 0.0d0,    0.5d0,   0.0d0]  !Y
+    !kpoints(:,5) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
+    !kpoints(:,6) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+    !kpoints(:,7) = [ 0.5d0,    0.0d0,   0.5d0]  !U
+    !kpoints(:,8) = [ 0.5d0,    0.5d0,   0.5d0]  !R
+    !kpoints(:,9) = [ 0.0d0,    0.5d0,   0.5d0]  !T
+    !kpoints(:,10) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
 
-    ! kpoints(:,1) = [ -0.5d0,    0.0d0,   0.5d0]  !U
-    ! kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
-    ! kpoints(:,3) = [ 0.5d0,    0.0d0,   0.5d0]  !T
+    select case (ax)
+    case ("z")
+     kpoints(:,1) = [ 0.2d0,    0.0d0,   0.5d0]  !U
+     kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+     kpoints(:,3) = [ 0.0d0,    0.2d0,   0.5d0]  !T
+
+   case ("y")
+     kpoints(:,1) = [ 0.0d0,    0.0d0,   0.3d0]  !U
+     kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+     kpoints(:,3) = [ 0.2d0,    0.0d0,   0.5d0]  !T
+
+   case ("x")
+     kpoints(:,1) = [ 0.0d0,    0.0d0,   0.3d0]  !U
+     kpoints(:,2) = [ 0.0d0,    0.0d0,   0.5d0]  !Z
+     kpoints(:,3) = [ 0.0d0,    0.2d0,   0.5d0]  !T
+    end select
 
     ! Initial point in the k path
     kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
