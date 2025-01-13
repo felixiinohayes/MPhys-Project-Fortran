@@ -84,27 +84,6 @@ Program Projected_band_structure
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*nblocks+1)-2)))
 
 !-----kpath
-    ! !-kx -> kx
-    ! kpoints(:,1) = [ -0.2d0,  0.0d0,   0.0d0]  !-M
-    ! kpoints(:,2) = [  0.0d0,  0.0d0,   0.0d0]  !Gamma
-    ! kpoints(:,3) = [  0.2d0,  0.0d0,   0.0d0]  !M   
-    
-    ! ! -ky -> ky 
-    ! kpoints(:,1) = [ 0.05d0, -0.1d0,  0.5d0]  !H
-    ! kpoints(:,2) = [  0.0d0,  0.0d0,  0.5d0]  !A
-    ! kpoints(:,3) = [-0.05d0,  0.1d0,  0.5d0]  !-H
-
-    ! -kz -> kz
-    ! ! G K M G A H L A 
-    ! kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    ! kpoints(:,2) = [ 2*third, third,  0.0d0]  !K
-    ! kpoints(:,3) = [ 0.5d0,  0.0d0,   0.0d0]  !M
-    ! kpoints(:,4) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma
-    ! kpoints(:,5) = [ 0.0d0,  0.0d0,   0.5d0]  !A
-    ! kpoints(:,6) = [ 2*third, third,  0.5d0]  !H
-    ! kpoints(:,7) = [0.5d0, 0.0d0,    0.5d0]  !L
-    ! kpoints(:,8) = [ 0.0d0,  0.0d0,   0.5d0]  !A
-
     ! G X S Y G Z U R T Z
     !kpoints(:,1) = [ 0.0d0,    0.0d0,   0.0d0]  !Gamma  
     !kpoints(:,2) = [ 0.5d0,    0.0d0,   0.0d0]  !X
@@ -245,20 +224,6 @@ Program Projected_band_structure
         enddo
     enddo
 
-    if(myid.eq.0) then
-        print*,nr_top
-        print*,'interp_Hr(5,4,-3,-2,-1)', interp_Hr(5,4,-3,-2,-1),'   -3   -2   -1    5    4 -0.00275907 -0.00075338'  
-        !                            1    1  -2   -2   -1    
-    endif
-
-    ! do i=1,nb
-    !     if(a==0) then 
-    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
-    !     else 
-    !         interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
-    !     endif
-    ! enddo
-!
     recv(1)=(min(kpmax,nk)-kpmin+1)*nepoints*3
 
     allocate(spectral_A_single(3,recv(1)*nepoints),displs(numprocs),recvcounts(numprocs))
