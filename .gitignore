@@ -14,3 +14,4 @@ Makefile
 .venv
 *.pdf
 *.nnkp
+*.txt

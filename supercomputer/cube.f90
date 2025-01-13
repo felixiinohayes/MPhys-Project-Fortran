@@ -5,12 +5,11 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00,emin=-0.3,emax=0.3,eta=0.02
-    integer*4,parameter::nxblocks=4,nyblocks=4,nzblocks=4,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=10,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4,parameter::NEV=100,NCV=200,eres=100
     integer*4 nb,nloc,myid,nprocs
-    complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr
-    integer*4,allocatable :: npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
-    complex*16,allocatable :: extrarow(:,:)
+    complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
+    integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
 end module parameters
 
 Program Projected_band_structure
@@ -29,12 +28,11 @@ Program Projected_band_structure
     real*8, allocatable :: rwork(:), real_d(:)
     integer*4, allocatable :: vec_ind(:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
-    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), vloc_flat(:), vloc_flatg(:), v(:,:), Zloc(:,:)
+    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), vloc_flat(:), vloc_flatg(:), Zloc(:,:), v(:,:)
     complex*16 b_sigma(2,2)
     logical :: rvecmat
     logical, allocatable :: select(:)
-    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: top_Hr
-    complex*16,dimension(4,4,-6:6,-6:6,-6:6) :: triv_Hr
+    complex*16,dimension(:,:,:,:,:),allocatable::triv_Hr, top_Hr
 !----Date and Time
     integer, dimension(8) :: time_start
     integer, dimension(8) :: time_end
@@ -46,10 +44,10 @@ Program Projected_band_structure
     ! write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_4band.dat"
     ! write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_4band.dat"
 
-    write(top_file , '(a,a)') trim(adjustl(prefix)),"_new_topo_hr.dat" 
-    write(triv_file, '(a,a)') trim(adjustl(prefix)),"_new_trivial_hr.dat" 
+    write(top_file , '(a,a)') trim(adjustl(prefix)),"_hr_topological_new.dat" 
+    write(triv_file, '(a,a)') trim(adjustl(prefix)),"_hr_trivial_new.dat" 
 
-    write(nnkp, '(a,a)') trim(adjustl(prefix)), ".nnkp"
+    write(nnkp, '(a,a)') trim(adjustl(prefix)), "_new.nnkp"
     open(98, file=trim(adjustl(nnkp)))
 111 read(98, '(a)') line
     if (trim(adjustl(line)) .ne. "begin real_lattice") goto 111
@@ -86,8 +84,7 @@ Program Projected_band_structure
 
     allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv))
     allocate(rvec_top(nr_top,3))
-    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6))
-    allocate(extrarow(nb,N))
+    allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6), top_Hr(nb,nb,-6:6, -6:6, -6:6), triv_Hr(nb,nb,-6:6, -6:6, -6:6))
 
     read(99,*)ndeg_top
     read(97,*)ndeg_triv
@@ -154,6 +151,7 @@ Program Projected_band_structure
         endif
     enddo
 
+    deallocate(top_Hr_temp, triv_Hr_temp, top_Hr, triv_Hr, rvec_top, ndeg_top, ndeg_triv)
 
 !--- MPI nloc arrays
     call MPI_INIT(ierr)
@@ -242,25 +240,21 @@ Program Projected_band_structure
         stop
     end if
 
-    allocate(v(N,NEV), vloc_flat(nloc*nev))
-    vloc_flat = reshape(Zloc,[nloc*nev])
+    deallocate(RESID, Vloc, WORKD, WORKL, RWORK, select, real_d, WORKEV)
 
-    allocate(vloc_flatg(N*NEV))
+    if (myid==0) allocate(vloc_flatg(N*NEV))
     allocate(displs(nprocs))
     do i=1, nprocs
         displs(i) = nev_sum(i) - 1
     enddo
 
-    
-    do i=0,nprocs-1
-        if(myid==i) print*,myid,'start: ',vloc_flat(1), 'end: ',vloc_flat(nloc*nev)
-    enddo
-
-    call MPI_GATHERV(vloc_flat, nloc*nev, MPI_DOUBLE_COMPLEX, &
+    call MPI_GATHERV(Zloc, nloc*nev, MPI_DOUBLE_COMPLEX, &
                     vloc_flatg, nloclist_nev, displs, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
     
+    deallocate(Zloc)
 !---- Projections
     if (myid == 0) then
+        allocate(v(N,NEV))
 
         open(100, file='data/cube.dx')
         do i=1,nprocs
@@ -339,7 +333,7 @@ Program Projected_band_structure
         complex*16 :: mv_buf(nloclist(1))
 
         vec_out = 0d0
-        
+
         call tv(myid, vec_in, vec_out)
 
        do i=1,nprocs-1
@@ -352,7 +346,7 @@ Program Projected_band_structure
 
             call tv(prev,mv_buf(1:nloclist(prev+1)),vec_out)
         enddo
-    
+
     end subroutine matmul_
 
     subroutine tv(id, vec_in, vec_out)
@@ -363,7 +357,7 @@ Program Projected_band_structure
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3
         integer :: rowcount, colcount
-    
+
         rowcount = 0
         do irow = npminlist(myid+1), npmaxlist(myid+1)
             colcount = 0
