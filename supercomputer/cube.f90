@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.02
-    integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=10,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::nxblocks=4,nyblocks=4,nzblocks=4,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4,parameter::NEV=100,NCV=200,eres=100
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
@@ -16,13 +16,13 @@ Program Projected_band_structure
     use parameters
     Implicit None
     include 'mpif.h'
-#ifdef B
-    real, parameter :: B = B
+#ifdef BVAL
+    real, parameter :: B = BVAL
 #else
-    real, parameter :: B = 0.0
+    real, parameter :: B = 0d0
 #endif
 !------------------------------------------------------
-    character(len=80) top_file,triv_file,nnkp,line,v_file,d_file
+    character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,data_file
     character(len=5) suffix
     integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3, xindex, yindex, rvec(3), index, interp_size
     integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ
@@ -104,7 +104,7 @@ Program Projected_band_structure
 	do i=1,nb
 		do j=1,nb
 			if (i==j) then
-				if (i==1 .or. i==3) then
+				if (i==1 .or. i==(nb/2)+1) then
 					B_pt(i,j) = B_sigma(1,1)
 				else
 					B_pt(i,j) = B_sigma(2,2)
@@ -261,7 +261,8 @@ Program Projected_band_structure
     if (myid == 0) then
         allocate(v(N,NEV))
 
-        open(100, file='data/cube.dx')
+        data_file = "data/cube_"// trim(adjustl(suffix)) // ".dx"
+        open(100, file=trim(adjustl(data_file)))
         do i=1,nprocs
             v(nloc_sum(i):nloc_sum(i+1)-1,1:nev) = reshape(vloc_flatg(nev_sum(i):nev_sum(i+1)-1), [nloclist(i), nev])
         enddo

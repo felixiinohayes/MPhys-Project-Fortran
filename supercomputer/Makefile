@@ -1,4 +1,4 @@
-ARPACK_LIB = /Users/felixiinohayes/Programming/arpack-ng/build/lib
+ARPACK_LIB = /opt/homebrew/Cellar/arpack/3.9.1_1/lib
 NUMPROCS = 4
 
 FFLAGS = -fallow-argument-mismatch -ffree-line-length-0 -O3 -cpp
@@ -17,15 +17,15 @@ ${main2}: ${main2}.f90
 	${FC} ${FFLAGS} -o ${main2} ${main2}.f90 ${LIB}
 
 run: ${main1} ${main2}
-	@echo "Running ${main2} once"
+	@echo "Running ${main2}"
 	mpirun -n ${NUMPROCS} ./${main2}
-	@echo "Running ${main1} with B=0.0"
+	@echo "Running ${main1} with B=0.05"
+	@${MAKE} run-cube B=0.05
+	@echo "Running ${main1} with B=0"
 	@${MAKE} run-cube B=0.0
-	@echo "Running ${main1} with B=0.2"
-	@${MAKE} run-cube B=0.2
 
 run-cube:
-	${FC} ${FFLAGS} -DB=${B} -o ${main1} ${main1}.f90 ${LIB}
+	${FC} ${FFLAGS} -DBVAL=${B} -o ${main1} ${main1}.f90 ${LIB}
 	mpirun -n ${NUMPROCS} ./${main1}
 
 clean:
