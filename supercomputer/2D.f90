@@ -2,8 +2,8 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6.2,emax=6.8,eta=0.005
-    integer,parameter::nkpath=3,np=100,nblocks=15,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=100,nblocks_2=nblocks/2,depth=1
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6.1,emax=6.8,eta=0.005
+    integer,parameter::nkpath=3,np=50,nblocks=15,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=50,nblocks_2=nblocks/2,depth=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters
@@ -155,9 +155,9 @@ Program Projected_band_structure
             case (3)
                 ! -kz -> kz
                 axis= 'Z'
-                kpoints(:,1) = [ 0.00d0, 0.0d0,  0.3d0]  !H
+                kpoints(:,1) = [ 0.00d0, 0.0d0,  0.0d0]  !H
                 kpoints(:,2) = [  0.0d0,  0.0d0, 0.5d0]  !A
-                kpoints(:,3) = [0.00d0,  0.0d0,  0.7d0]  !-H
+                kpoints(:,3) = [0.00d0,  0.0d0,  1.0d0]  !-H
             case default
                 axis= 'X'
                 stop "Error: Select axis."
@@ -403,7 +403,7 @@ Program Projected_band_structure
             if(myid.eq.0) then
                 do i=1,5
                     do j=1,nk*eres
-                        write(100+(i-1),'(3(1x,f12.6))') data_g(i,:,j)
+                        write(100+(i-1),'(3(1x,f12.8))') data_g(i,:,j)
                     enddo
                     write(100+(i-1),*) 'object "regular positions regular connections" class field'
                     write(100+(i-1),*) 'component "positions" value 1'

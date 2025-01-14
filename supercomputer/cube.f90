@@ -5,7 +5,7 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00,emin=-0.3,emax=0.3,eta=0.02
-    integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=10,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::nxblocks=50,nyblocks=50,nzblocks=50,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4,parameter::NEV=100,NCV=200,eres=100
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
@@ -369,7 +369,7 @@ Program Projected_band_structure
                 r2 = mod((icol-1) / nxblocks, nyblocks) - f2
                 r1 = mod(icol-1, nxblocks) - f1
                 if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
-                    vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3) + B_pt, vec_in(1+colcount*nb : nb*(colcount+1)))
+                    vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in(1+colcount*nb : nb*(colcount+1)))
                 endif
                 colcount = colcount + 1
             enddo
