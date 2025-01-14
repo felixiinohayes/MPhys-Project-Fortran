@@ -3,7 +3,7 @@ module parameters
 !--------to be modified by the user
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6.1,emax=6.8,eta=0.005
-    integer,parameter::nkpath=3,np=50,nblocks=15,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=50,nblocks_2=nblocks/2,depth=1
+    integer,parameter::nkpath=3,np=50,nblocks=7,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=50,nblocks_2=nblocks/2,depth=1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters

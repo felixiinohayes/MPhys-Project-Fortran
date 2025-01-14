@@ -4,8 +4,8 @@ module parameters
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
     character*2:: which='SM'
-    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,B=0.00,emin=-0.3,emax=0.3,eta=0.02
-    integer*4,parameter::nxblocks=50,nyblocks=50,nzblocks=50,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    real*8,parameter::ef_triv=4.23,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.02
+    integer*4,parameter::nxblocks=10,nyblocks=10,nzblocks=10,maxiter=100000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
     integer*4,parameter::NEV=100,NCV=200,eres=100
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
@@ -16,6 +16,11 @@ Program Projected_band_structure
     use parameters
     Implicit None
     include 'mpif.h'
+#ifdef B
+    real, parameter :: B = B
+#else
+    real, parameter :: B = 0.0
+#endif
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file
     character(len=5) suffix

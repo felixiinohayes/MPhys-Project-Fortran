@@ -19,3 +19,11 @@ Libraries:
 
 Expected behaviour:
 - 
+
+INSTRUCTIONS:
+
+1. Ensure arpack is installed
+2. Edit Makefile ARPACK_LIB variable to arpack installation path.
+3. Edit Makefile NUMPROCS variable.
+4. make
+5. make run
