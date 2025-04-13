@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=15,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=500,NCV=2*NEV,eres=20
+    integer*4,parameter::nxblocks=9,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=11200,NCV=2*NEV,eres=20
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -18,34 +18,38 @@ Program Projected_band_structure
     include 'mpif.h'
 
     interface
-    function get_maxrss() bind(c)
+    function get_footprint() bind(c)
         use iso_c_binding
-        integer(c_long) :: get_maxrss
-    end function get_maxrss
+        integer(c_long) :: get_footprint
+    end function get_footprint
 
 end interface
 #ifdef BVAL
-    real, parameter :: B = BVAL
+#define B_VALUE BVAL
 #else
-    real, parameter :: B = 0d0
+#define B_VALUE 0d0
 #endif
+    real*8, parameter :: B = B_VALUE
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,data_file
     character(len=5) suffix
-    integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3, xindex, yindex, rvec(3), index, interp_size
-    integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ
+    integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3
+    integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ, xindex, yindex, rvec(3), index, interp_size, jloc, owner
     integer*8 LWORKL, N, ishift
     integer*4 ierr, comm
     integer*4 npmin, npmax, iter
-    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, p_l, de, dos, epoints(eres)
+    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, de, dos, epoints(eres), mem
     real*8, allocatable :: rwork(:), real_d(:)
     integer*4, allocatable :: vec_ind(:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
-    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), vloc_flat(:), vloc_flatg(:), Zloc(:,:), v(:,:)
+    complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), Zloc(:,:), p_l_loc(:), p_l(:)
     complex*16 b_sigma(2,2)
     logical :: rvecmat
     logical, allocatable :: select(:)
     complex*16,dimension(:,:,:,:,:),allocatable::triv_Hr, top_Hr
+    integer(c_long) ::global_footprint_sum, global_footprint_max
+    integer(c_long) :: local_footprint = 0
+    real :: memory_sum_gb, memory_max_gb
 !----Date and Time
     integer, dimension(8) :: time_start
     integer, dimension(8) :: time_end
@@ -169,9 +173,14 @@ end interface
     call MPI_COMM_RANK(comm, myid, ierr)
     call MPI_COMM_SIZE(comm, nprocs, ierr)
 
+    if(myid.eq.0) then
+        print*, 'B:', B
+    endif
+
+
     allocate(npminlist(nprocs),npmaxlist(nprocs),nloclist(nprocs),nloc_sum(nprocs+1),nev_sum(nprocs+1),nloclist_nev(nprocs))
  
-    N=nb*N3
+    ! N=nb*N3
 
     do i=1,nprocs
         nloc = (N3)/nprocs
@@ -194,7 +203,7 @@ end interface
     
     
     nloc = nloclist(myid+1) 
-!----Debugging
+! ----Debugging
     ! if(myid.eq.0) then
     !     print *, "nloc:", nloclist
     !     print *, "nloc*nev:", nloclist_nev
@@ -205,8 +214,14 @@ end interface
     ! endif
 
 !---P_ARPACK
+    if(myid.eq.0) print*,'1',local_footprint/ (1024.0d0 ** 3),'GB'
+
+    local_footprint = max(local_footprint, get_footprint())  
     allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),real_d(NEV),WORKEV(2*NCV))
+    local_footprint = max(local_footprint, get_footprint())  
+
+    if(myid.eq.0) print*,'2',local_footprint/ (1024.0d0 ** 3),'GB'
 
     iparam(1)=1
     iparam(3)=maxiter
@@ -225,7 +240,7 @@ end interface
     ! Arnoldi iterations using pznaupd
     do while (iter < maxiter)
         iter = iter + 1
-        if (myid == 0) print *, 'Iterations: ', iter
+        if ((myid == 0).and.(mod(iter,100).eq.0)) print *, 'Iterations: ', iter
 
         call pznaupd(comm, IDO, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
 
@@ -247,76 +262,90 @@ end interface
 
     call pzneupd(comm, rvecmat, 'A', select, D, Zloc, LDV, (0.0d0, 0.0d0), WORKEV, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
 
+    call MPI_Barrier(MPI_COMM_WORLD, ierr)
     if (INFO .ne. 0) then
         if (myid == 0) print *, 'Error with pzneupd, info =', INFO
             call MPI_FINALIZE(ierr)
         stop
     end if
-
-    open(101, file="eigenvalues.dat")
-    do i=1,NEV
-        write(101, '(1x,f12.8)') D(i)
-    enddo
-    close(101)
-
+    
     deallocate(RESID, Vloc, WORKD, WORKL, RWORK, select, real_d, WORKEV)
+    local_footprint = max(local_footprint, get_footprint()) 
+    if(myid.eq.0) print*,'3',local_footprint/ (1024.0d0 ** 3),'GB'
+ 
 
-    if (myid==0) allocate(vloc_flatg(N*NEV))
-    allocate(displs(nprocs))
-    do i=1, nprocs
-        displs(i) = nev_sum(i) - 1
+
+!---- Projections
+    de = (emax-emin)/eres
+    do i=1, eres
+        epoints(i) = emin + de*i
     enddo
 
-    call MPI_GATHERV(Zloc, nloc*nev, MPI_DOUBLE_COMPLEX, &
-                    vloc_flatg, nloclist_nev, displs, MPI_DOUBLE_COMPLEX, 0, MPI_COMM_WORLD, ierr)
-    
-    deallocate(Zloc)
-!---- Projections
     if (myid == 0) then
-        allocate(v(N,NEV))
-
-        data_file = "data/cube_"// trim(adjustl(suffix)) // ".dx"
+        data_file = "data/copy_cube_"// trim(adjustl(suffix)) // ".dx"
         open(100, file=trim(adjustl(data_file)))
-        do i=1,nprocs
-            v(nloc_sum(i):nloc_sum(i+1)-1,1:nev) = reshape(vloc_flatg(nev_sum(i):nev_sum(i+1)-1), [nloclist(i), nev])
-        enddo
-    
-        de = (emax-emin)/eres
-        do i=1, eres
-            epoints(i) = emin + de*i
-        enddo
-
-        deallocate(vloc_flatg)
-
         write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nzblocks,nxblocks,nyblocks
         write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
         write(100, '(a,3(1x,f12.8))') 'delta' ,0d0,0d0,1d0
         write(100, '(a,3(1x,f12.8))') 'delta' ,0d0,1d0,0d0
-        write(100, '(a,3(1x,f12.6))') 'delta' ,1d0,0d0,0d0
+        write(100, '(a,3(1x,f12.8))') 'delta' ,1d0,0d0,0d0
         write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nzblocks,nxblocks,nyblocks
-
-        print *, dot_product(v(:,1),v(:,1)) 
-
         print *, "Calculating DOS..."
-        count = 0 
-        do ie=1,eres
-            count = count + 1
-            print*, ie, eres
+    endif
 
-            write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+count,' class array type float rank 1 shape',1,&
-                                    ' item', N3, ' data follows'
-            !----Spectral DOS
-            do j=0,N3-1
+    count = 0
+    do ie=1,eres
+        if (myid == 0) then
+            write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+ie,' class array type float rank 1 shape',1,&
+                                ' item', N3, ' data follows'
+        endif
+        !----Spectral DOS
+        do j=0,N3-1
+            count = count + 1
+            ! if(mod(count,100).eq.0) print*, myid,count,'/',N3*eres
+            owner = 0
+            do i = 1, nprocs
+                if (j >= (npminlist(i) - 1) .and. j < npmaxlist(i)) then
+                    owner = i - 1
+                    exit
+                endif
+            enddo
+
+            ! Compute local contribution to p_l for each eigenvector
+            allocate(p_l_loc(NEV))
+            p_l_loc = 0d0  ! Array to hold local contributions for all NEV
+            allocate(p_l(NEV))
+            p_l = 0d0
+
+            if (myid == owner) then
+                jloc = j - (npminlist(myid+1) - 1)
+                do i = 1, NEV
+                    p_l_loc(i) = dot_product(Zloc(1+(jloc*nb):(jloc+1)*nb, i), &
+                                            Zloc(1+(jloc*nb):(jloc+1)*nb, i))
+                enddo
+            endif
+
+            call MPI_Reduce(p_l_loc, p_l, NEV, MPI_DOUBLE_PRECISION, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+
+            if (myid == 0) then
                 a_spec = 0d0
-                do i=1,NEV
-                    p_l = dot_product( v( 1+(j*nb) : (j+1)*nb, i), v( 1+(j*nb) : (j+1)*nb, i))
-                    factor = ((epoints(ie) - d(i)))/eta
-                    a_spec = a_spec + p_l * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
+                do i = 1, NEV
+                    factor = ((epoints(ie) - real(D(i))) / eta)
+                    a_spec = a_spec + real(p_l(i)) * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
                 enddo
                 write(100, '(1(1x,f12.8))') a_spec
-            enddo
-            write(100, '(a)') 'attribute "dep" string "positions"' 
+            endif
+            deallocate(p_l_loc, p_l)
         enddo
+        if (myid == 0) write(100, '(a)') 'attribute "dep" string "positions"' 
+    enddo
+
+    local_footprint = max(local_footprint, get_footprint())
+    print*,myid,'4',local_footprint/ (1024.0d0 ** 3),'GB'
+    call MPI_Reduce(local_footprint, global_footprint_sum, 1, MPI_INTEGER8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
+    call MPI_Reduce(local_footprint, global_footprint_max, 1, MPI_INTEGER8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
+
+    if (myid == 0) then
         do i=0,eres-1
             write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
             'object',eres+3+i,' class field', &
@@ -329,7 +358,6 @@ end interface
             write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
         enddo
 
-
         write(100, '(A)') 'end'
 
         call date_and_time(VALUES=time_end)
@@ -337,25 +365,26 @@ end interface
         print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
         print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
 
+        memory_sum_gb = real(global_footprint_sum) / (1024.0 ** 3)
+        memory_max_gb = real(global_footprint_max) / (1024.0 ** 3)
+        mem = 1.2 * (3*nb*nb*13*13*13 + &  ! interp_Hr
+            ncv*10 + &            ! ARPACK workspace
+            3*ncv**2 + &          ! ARPACK workspace
+            nloc*(1.5*ncv + 7) + &  ! Communication buffers
+            NEV*2) * 16d0 / (1024.0d0 ** 3)
+        print *, ''
+        print *, '------------------------------------------------'
+        print *, 'Memory calculations:'
+        print *, 'Total:',mem*nprocs,'GB'
+        print *, '------------------------------------------------'
+        print *, ''
+        print *, 'Memory usage:'
+        print *, 'Total: ', memory_sum_gb, ' GB'
+        print *, 'Per process: ', memory_max_gb, ' GB'
+        print *, ''
+        print *, 'Percentage used (total): ', 100.0d0*memory_sum_gb / (mem*nprocs), '%'
+        print *, 'Percentage used (per process): ', 100.0d0*memory_max_gb / (mem), '%'    
     endif
-    ! if (myid == 0) then
-    !     memory_sum_gb = real(global_maxrss_sum) / (1024.0 ** 3)
-    !     memory_max_gb = real(global_maxrss_max) / (1024.0 ** 3)
-    !     mem = ((matsize*16.0d0+dim*8.0d0)*(2*nk+1))/(2*(10.0d0**9))
-    !     print *, ''
-    !     print *, '------------------------------------------------'
-    !     print *, 'Memory calculations:'
-    !     print *, 'Total:',mem,'GB'
-    !     print *, 'Per process:', mem / numprocs, 'GB'
-    !     print *, '------------------------------------------------'
-    !     print *, ''
-    !     print *, 'Memory usage:'
-    !     print *, 'Total: ', memory_sum_gb, ' GB'
-    !     print *, 'Per process: ', memory_max_gb, ' GB'
-    !     print *, ''
-    !     print *, 'Percentage used (total): ', 100.0d0*memory_sum_gb / mem, '%'
-    !     print *, 'Percentage used (per process): ', 100.0d0*memory_max_gb / (mem/numprocs), '%'
-    ! endif
 
     ! Finalize MPI
     call MPI_FINALIZE(ierr)
@@ -371,6 +400,8 @@ end interface
         integer*4 :: comm, next, prev, status(MPI_STATUS_SIZE)
         integer*4 :: irow, icol, rowcount, colcount, reqsend, reqrec
         complex*16 :: mv_buf(nloclist(1))
+
+        local_footprint = max(local_footprint, get_footprint())
 
         vec_out = 0d0
 
@@ -409,7 +440,8 @@ end interface
                 r2 = mod((icol-1) / nxblocks, nyblocks) - f2
                 r1 = mod(icol-1, nxblocks) - f1
                 if ((abs(r1) .lt. 6) .and. (abs(r2) .lt. 6) .and. (abs(r3) .lt. 6)) then
-                    vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + matmul(interp_Hr(:,:,r1,r2,r3), vec_in(1+colcount*nb : nb*(colcount+1)))
+                    vec_out(1+rowcount*nb : nb*(rowcount+1)) = vec_out(1+rowcount*nb : nb*(rowcount+1)) + &
+                                            matmul(interp_Hr(:,:,r1,r2,r3), vec_in(1+colcount*nb : nb*(colcount+1)))
                 endif
                 colcount = colcount + 1
             enddo

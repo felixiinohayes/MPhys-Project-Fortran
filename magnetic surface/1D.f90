@@ -1,9 +1,9 @@
 module parameters
     Implicit None
 !--------to be modified by the user
-    character(len=80):: prefix="BiTeI", ax = 'z'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=6.2,emax=6.8,bfactor=0.005, B=0.00d0, passval=0.0d0
-    integer,parameter::nkpath=3,np=150,eres=150,nblocks=40,nk=(nkpath-1)*np+1,nepoints=2*eres+1
+    character(len=80):: prefix="../BiTeI", ax = 'z'
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,emin=6.2,emax=6.8,bfactor=0.005, B=0.05d0, passval=0.0d0
+    integer,parameter::nkpath=3,np=150,eres=150,nblocks=20,nk=(nkpath-1)*np+1,nepoints=2*eres+1
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 
@@ -45,7 +45,7 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    open(100,file='1D.dx')
+    open(100,file='1D_BZ.dx')
 
     ! Determine the suffix based on the value of a
     if (a == 1.0d0) then
@@ -163,28 +163,32 @@ Program Projected_band_structure
     endif
     allocate(B_pt(nb, nb))
 
-     !B along Y axis
+    ! B along Y axis
     ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(0d0,-B)]
     ! B_sigma(2,:) = [dcmplx(0d0,B) ,  dcmplx(0d0,0d0)]
 
-     !B along X axis
-    B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(B,0d0)]
-    B_sigma(2,:) = [dcmplx(B,0d0) ,  dcmplx(0d0,0d0)]
+    !  !B along X axis
+    ! B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(B,0d0)]
+    ! B_sigma(2,:) = [dcmplx(B,0d0) ,  dcmplx(0d0,0d0)]
 
-    ! B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
-    ! B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
+    !B along Z axis
+    B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
+    B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
+
     B_pt=0d0
     do i=1,nb
-		do j=1,nb
-			if (i==j) then
-				if (i==1 .or. i==3) then
-					B_pt(i,j) = B_sigma(1,1)
-				else
-					B_pt(i,j) = B_sigma(2,2)
-				endif
+        do j=1,nb
+            if (i==j) then
+                if (mod(i,2).eq.1) then
+                    B_pt(i,j) = B_sigma(1,1)
+                    B_pt(i+1,j) = B_sigma(2,1)
+                    B_pt(i,j+1) = B_sigma(1,2)
+                else
+                    B_pt(i,j) = B_sigma(2,2)
+                endif
             endif
-		enddo
-	enddo
+        enddo
+    enddo
 
 !----Read in Hamiltonian
     interp_Hr=0d0
@@ -216,11 +220,6 @@ Program Projected_band_structure
             do j=1,nb
                 interp_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = (1-a)*triv_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) + a*top_Hr(i,j,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3))
             enddo
-        enddo
-    enddo
-    do i=1,nb
-        do j=1,nb
-            interp_Hr(i,j,0,0,0) = interp_Hr(i,j,0,0,0) + B_pt(i,j)
         enddo
     enddo
 
@@ -282,7 +281,7 @@ Program Projected_band_structure
                         endif
                     enddo
                 enddo
-                Hkra(:,:,ira) = Hk
+                Hkra(:,:,ira) = Hk + B_pt
             enddo
 
             do i=0,nblocks-1

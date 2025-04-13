@@ -2,7 +2,7 @@ module parameters
     Implicit None
 !--------to be modified by the user
     character(len=80):: prefix="../BiTeI", ax = 'x'
-    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.00d0,passval=0.0d0,emin=6,emax=7,eta=0.005
+    real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,B=0.005d0,passval=0.0d0,emin=6,emax=7,eta=0.005
     integer,parameter::nkpath=3,np=30,nblocks=15,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=80,nblocks_2=nblocks/2
     integer nb
     INTEGER IERR,MYID,NUMPROCS

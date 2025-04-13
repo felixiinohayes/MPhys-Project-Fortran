@@ -1,7 +1,7 @@
      Program Wannier_band_structure
      Implicit None
 !-------to be midified by the usere
-     character(len=80):: prefix="BiTeI"
+     character(len=80):: prefix="../BiTeI"
      integer,parameter::nkpath=3,np=1000
 !-----------------------------------------------------
      integer*4 ik,ikmax, skip,sign,count
@@ -19,9 +19,9 @@
      complex*16,allocatable:: Hk(:,:),Top_hr(:,:,:),Triv_hr(:,:,:),work(:),H_col(:),B_pt(:,:)
      complex*16 temp1,temp2,B_sigma(2,2)
 !-----------------------------------------------------
-     write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological.dat"
-     write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial.dat"
-     write(nnkp,'(a,a)')      trim(adjustl(prefix)),".nnkp"
+     write(top_file,'(a,a)')trim(adjustl(prefix)),"_hr_topological_new.dat"
+     write(triv_file,'(a,a)')trim(adjustl(prefix)),"_hr_trivial_new.dat"
+     write(nnkp,'(a,a)')      trim(adjustl(prefix)),"_ortho.nnkp"
      pi2=4.0d0*atan(1.0d0)*2.0d0
 !--------------  reciprocal vectors
      open(98,file=trim(adjustl(nnkp)))
@@ -38,8 +38,6 @@
      ! kpoints(:,1) = [ 0.25d0,  -0.5d0,   0.5d0 ]  !H
      ! kpoints(:,2) = [ 0.0d0,   0.0d0,   0.5d0 ]  !A
      ! kpoints(:,3) = [ -0.25d0,   0.5d0,   0.5d0 ]  !-H
-
-
 
      ! ! kx -> -kx
      kpoints(:,1) = [ -0.5d0,   0.0d0,   0.5d0 ]  !L
@@ -104,18 +102,34 @@
 !     B_sigma(1,:) = [dcmplx(0d0,0d0),  dcmplx(Bx,0d0)]
 !     B_sigma(2,:) = [dcmplx(Bx,0d0) ,  dcmplx(0d0,0d0)]
 
-	B_pt=0d0
+	! B_pt=0d0
+	! do i=1,nb
+	! 	do j=1,nb
+	! 		if (i==j) then
+	! 			if (i<10) then
+	! 				B_pt(i,j) = B_sigma(1,1)
+	! 			else
+	! 				B_pt(i,j) = B_sigma(2,2)
+	! 			endif
+	! 		else if (i==j+9) then
+	! 			B_pt(i,j) = B_sigma(2,1)
+	! 		else if (j==i+9) then
+	! 			B_pt(i,j) = B_sigma(1,2)
+	! 		endif
+	! 	enddo
+	! enddo
+     B_pt=0d0
 	do i=1,nb
 		do j=1,nb
 			if (i==j) then
-				if (i<10) then
+				if (i<(nb/2)+1) then
 					B_pt(i,j) = B_sigma(1,1)
 				else
 					B_pt(i,j) = B_sigma(2,2)
 				endif
-			else if (i==j+9) then
+			else if (i==j+(nb/2)) then
 				B_pt(i,j) = B_sigma(2,1)
-			else if (j==i+9) then
+			else if (j==i+(nb/2)) then
 				B_pt(i,j) = B_sigma(1,2)
 			endif
 		enddo
