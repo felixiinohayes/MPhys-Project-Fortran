@@ -2,7 +2,7 @@ module parameters
     Implicit None
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6.1,emax=6.8,eta=0.005
-    integer,parameter::nblocks=7,nkpath=3,np=150,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=150,nblocks_2=nblocks/2,depth=3
+    integer,parameter::nblocks=5,nkpath=3,np=150,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=150,nblocks_2=nblocks/2,depth=3
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters
@@ -12,19 +12,11 @@ Program Projected_band_structure
     use iso_c_binding
     Implicit None
     INCLUDE 'mpif.h'
-    
-    ! Interface for the C function
-    interface
-        function get_footprint() bind(c)
-            use iso_c_binding
-            integer(c_long) :: get_footprint
-        end function get_footprint
-    end interface
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,b1_file,b2_file,b3_file,b4_file,b5_file
     character(len=6) axis,suffix
     integer*8 matsize,dim
-    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,sum2,sum1,ib,offset,dur,mag,ibx
+    integer*4 i,j,k,l,nr,i1,i2,j1,j2,ie,il,ir,ir3,ir12,nr12,r3,ikp,jk,ira,irb,irc,ra,rb,fa,fb,n,sum2,sum1,ib,offset,dur,mag,ibx,proc_id
     integer*4 lwork,info,ik,count,sign,kloc,kpmin,kpmax,ecounts,kcount,interp_size,nr_top,nr_triv,rvec(3),index,ax,fcount
     integer*4 recv(1),nr_(3),kindex(2),ai(3),iblock(depth),values(2)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
@@ -35,9 +27,6 @@ Program Projected_band_structure
     complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),sH_flat(:),sH_flatg(:),SH(:,:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
     complex*16 B_sigma(2,2)
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr, triv_Hr, top_Hr
-    integer(c_long) ::global_footprint_sum, global_footprint_max
-    integer(c_long) :: local_footprint = 0
-    real :: memory_sum_gb, memory_max_gb
     integer, dimension(8) :: time_start
     integer, dimension(8) :: time_prev
     integer, dimension(8) :: time_next
@@ -186,10 +175,6 @@ Program Projected_band_structure
             open(103, file=trim(adjustl(b4_file)))
             open(104, file=trim(adjustl(b5_file)))
 
-            if(myid.eq.0) then
-                print*, 'axis:', axis, 'suffix:', suffix, 'B:', B
-            endif
-
             ! Initial point in the k path
             kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
             xk(1)= -sqrt(dot_product(kvec1,kvec1))
@@ -268,7 +253,7 @@ Program Projected_band_structure
 
                 displs1(i) = buff_sum1(i) - 1
 
-            !   For the MPI_GATHERV(super_H) call
+                !   For the MPI_GATHERV(super_H) call
                 ! buffsize1(i) = (kpmaxlist(i)-kpminlist(i)+1)*matsize
                 ! sum1 = sum1+ buffsize1(i)
 
@@ -276,22 +261,20 @@ Program Projected_band_structure
 
                 ! displs1(i) = buff_sum1(i) - 1
 
-                ! !For the MPI_GATHERV(evals) call
+                ! !For the MPI_GATHERV(eval) call
                 ! buffsize2(i) = (kpmaxlist(i)-kpminlist(i)+1)*dim !For the MPI_GATHERV(eval) call
                 ! sum2 = sum2+ buffsize2(i)
 
                 ! buff_sum2(i+1) = sum2
 
-            !    displs2(i) = buff_sum2(i) -1
+                !    displs2(i) = buff_sum2(i) -1
             enddo
 
             recvcounts1 = buffsize1
             recvcounts2 = buffsize2
             kloc = kloclist(myid+1) 
 
-            local_footprint = max(local_footprint, get_footprint())  
             allocate(super_H(dim,dim),eval(dim))
-            local_footprint = max(local_footprint, get_footprint())  
 !----Debugging
             ! if(myid.eq.0) print *, "kloc:", kloclist
             ! if(myid.eq.0) print *, "kpmin:", kpminlist
@@ -304,6 +287,7 @@ Program Projected_band_structure
 !----DX Files
             if(myid.eq.0) then
                 do i = 1,5
+                    print*, 'writing to file', i
                     write(100+(i-1), '(a,3(1x,i8))') 'object 1 class gridpositions counts',nk,eres
                     write(100+(i-1), '(a,3(1x,f12.8))') 'origin',-0.1d0,emin
                     write(100+(i-1), '(a,3(1x,f12.8))') 'delta',sqrt(dot_product(dk,dk)),0d0
@@ -318,7 +302,6 @@ Program Projected_band_structure
 
             mem_size = size(ndeg)+size(interp_hr)+size(triv_hr)+size(top_hr)+size(Hkra) + &
                        size(rwork)+size(work)+size(super_H)+size(eval)+size(data_row)
-
             print*, myid, "mem_size:", mem_size*16.0d0/(1024.0**3), "GB"
 
             count = 0
@@ -365,7 +348,6 @@ Program Projected_band_structure
                 enddo
 
                 call zheev('V','U',dim,super_H(:,:),dim,eval(:),work,lwork,rwork,info)
-                local_footprint = max(local_footprint, get_footprint())  
                 
                 count = 0
                 do ib =1, N2
@@ -400,7 +382,6 @@ Program Projected_band_structure
                             enddo
                         end select
                         do ie=1,eres
-                            ! print*, ie, eres
                             a_spec = 0d0
                             do ibx = 1,depth
                                 do i=1,dim
@@ -412,31 +393,36 @@ Program Projected_band_structure
                             data_row(count+1, 1,(ikp-1)*eres + ie) = xk(ik)
                             data_row(count+1, 2,(ikp-1)*eres + ie) = epoints(ie)
                             data_row(count+1, 3,(ikp-1)*eres + ie) = real(a_spec) ! Top surface
-                            ! if(myid==0) print*, data_row(count+1,:,(ikp-1)*eres + ie), count, ik, ib
                         enddo
                         count = count+1
                     endif
                 enddo
             enddo
 
-            do i=1,5
-                call MPI_GATHERV(data_row(i,:,:),3*kloc*eres,MPI_DOUBLE_PRECISION, &
-                                data_g(i,:,:),recvcounts1,displs1,MPI_DOUBLE_PRECISION, &
-                                0, MPI_COMM_WORLD,IERR)
+            call MPI_BARRIER(MPI_COMM_WORLD, IERR)
+
+            do i=1,5 
+                do proc_id=0, numprocs-1 
+                    if (myid .eq. proc_id) then 
+                    
+                        do j=1,kloc*eres
+                            write(100+(i-1),'(3(1x,f12.8))') data_row(i,:,j)
+                        enddo
+
+                        if (myid .eq. numprocs-1) then
+                            write(100+(i-1),*) 'object "regular positions regular connections" class field'
+                            write(100+(i-1),*) 'component "positions" value 1'
+                            write(100+(i-1),*) 'component "connections" value 2'
+                            write(100+(i-1),*) 'component "data" value 3'
+                            write(100+(i-1),*) 'end'
+                        endif
+                        
+                        close(100+(i-1))
+                    endif
+                    call MPI_BARRIER(MPI_COMM_WORLD, IERR)
+                enddo
             enddo
 
-            if(myid.eq.0) then
-                do i=1,5
-                    do j=1,nk*eres
-                        write(100+(i-1),'(3(1x,f12.8))') data_g(i,:,j)
-                    enddo
-                    write(100+(i-1),*) 'object "regular positions regular connections" class field'
-                    write(100+(i-1),*) 'component "positions" value 1'
-                    write(100+(i-1),*) 'component "connections" value 2'
-                    write(100+(i-1),*) 'component "data" value 3'
-                    write(100+(i-1),*) 'end'
-                enddo
-            endif
             deallocate(super_H,eval,data_row)
         enddo
     enddo 
@@ -450,23 +436,7 @@ Program Projected_band_structure
         print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
         print *, 'Duration: ', dur/3600,':', mod(dur,3600)/60, ':', mod(dur,60)
     endif   
-    local_footprint = max(local_footprint, get_footprint())
-    if (local_footprint < 0) then
-        print *, 'Error getting memory usage on myid ', myid
-        call MPI_Finalize(IERR)
-        stop
-    endif
-
-    print*,myid,local_footprint/(1024.0**3)
-
-    call MPI_Allreduce(local_footprint, global_footprint_sum, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD, IERR)
-    ! Maximum memory per process
-    call MPI_Allreduce(local_footprint, global_footprint_max, 1, MPI_LONG, MPI_MAX, MPI_COMM_WORLD, IERR)
-
-    ! Convert to GB and report (on rank 0)
     if (myid == 0) then
-        memory_sum_gb = real(global_footprint_sum) / (1024.0 ** 3)
-        memory_max_gb = real(global_footprint_max) / (1024.0 ** 3)
         ! mem = ((matsize*16.0d0+dim*8.0d0*(2*nk+1)*(1+1/numprocs)+dim))/(10.0d0**9)
         mem = NUMPROCS*mem_size*16.0d0/(1024**3)
         print *, ''
@@ -476,12 +446,6 @@ Program Projected_band_structure
         print *, 'Per process:', mem/NUMPROCS, 'GB'
         print *, '------------------------------------------------'
         print *, ''
-        print *, 'Memory usage:'
-        print *, 'Total: ', memory_sum_gb, ' GB'
-        print *, 'Per process: ', memory_max_gb, ' GB'
-        print *, ''
-        print *, 'Percentage used (total): ', 100.0d0*memory_sum_gb / (mem), '%'
-        print *, 'Percentage used (per process): ', 100.0d0*memory_max_gb / (mem/NUMPROCS), '%'
     endif
     call MPI_FINALIZE(IERR)
 end Program Projected_band_structure
