@@ -21,13 +21,26 @@ run: ${main1} ${main2}
 	@echo "Running ${main2}"
 	@timestamp=$$(date +"%Y%m%d_%H%M%S"); \
 	mpirun -n ${NUMPROCS} ./${main2} > logs/2D_$${timestamp}.log 2>&1
-	@echo "Running ${main1} with B=0.05"
-	@${MAKE} run-cube B=0.05
-	@echo "Running ${main1} with B=0"
-	@${MAKE} run-cube B=0.0
+#--------------------------------
+#---Run B=0.05
+	@echo "Running ${main1} with B=0.05 E=0.2"
+	@${MAKE} run-cube B=0.05 E=0.2
+	@echo "Running ${main1} with B=0.05 E=0.0"
+	@${MAKE} run-cube B=0.05 E=0.2
+	@echo "Running ${main1} with B=0.05 E=-0.2"
+	@${MAKE} run-cube B=0.05 E=0.2
+#--------------------------------
+#---Run B=0.0
+	@echo "Running ${main1} with B=0 E=0.2"
+	@${MAKE} run-cube B=0 E=0.2
+	@echo "Running ${main1} with B=0 E=0.0"
+	@${MAKE} run-cube B=0 E=0.0
+	@echo "Running ${main1} with B=0 E=-0.2"
+	@${MAKE} run-cube B=0 E=-0.2
+#--------------------------------
 
 run-cube:
-	${FC} ${FFLAGS} -DBVAL=${B} -o ${main1} ${main1}.f90 ${LIB}
+	${FC} ${FFLAGS} -DBVAL=${B} -DEVAL=${E} -o ${main1} ${main1}.f90 ${LIB}
 	@timestamp=$$(date +"%Y%m%d_%H%M%S"); \
 	mpirun -n ${NUMPROCS} ./${main1} > logs/cube_${B}_$${timestamp}.log 2>&1
 

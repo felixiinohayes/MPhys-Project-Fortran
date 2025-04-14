@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=7,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=300,NCV=2*NEV,eres=20
+    integer*4,parameter::nxblocks=10,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=300,NCV=450,eres=20
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -84,6 +84,12 @@ Program Projected_band_structure
         endif
     endif
 
+    if (E .gt. 0d0) then
+        suffix = trim(adjustl(suffix)) // "_E1"
+    else if (E .lt. 0d0) then
+        suffix = trim(adjustl(suffix)) // "_E2"
+    endif
+
 !------read H(R) + B_pt
     interp_size=6
     ! if((nxblocks > interp_size).or.(nyblocks > interp_size).or.(nzblocks > interp_size)) interp_size = max(max(nxblocks,nyblocks),nzblocks)
@@ -157,7 +163,7 @@ Program Projected_band_structure
         if(a==0) then
             interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_triv
         else
-            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top
+            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) - ef_top - E
         endif
     enddo
 
