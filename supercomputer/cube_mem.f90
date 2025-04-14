@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=9,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=11200,NCV=2*NEV,eres=20
+    integer*4,parameter::nxblocks=8,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=100,NCV=2*NEV,eres=20
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -273,8 +273,6 @@ end interface
     local_footprint = max(local_footprint, get_footprint()) 
     if(myid.eq.0) print*,'3',local_footprint/ (1024.0d0 ** 3),'GB'
  
-
-
 !---- Projections
     de = (emax-emin)/eres
     do i=1, eres
@@ -367,15 +365,15 @@ end interface
 
         memory_sum_gb = real(global_footprint_sum) / (1024.0 ** 3)
         memory_max_gb = real(global_footprint_max) / (1024.0 ** 3)
-        mem = 1.2 * (3*nb*nb*13*13*13 + &  ! interp_Hr
-            ncv*10 + &            ! ARPACK workspace
-            3*ncv**2 + &          ! ARPACK workspace
-            nloc*(1.5*ncv + 7) + &  ! Communication buffers
-            NEV*2) * 16d0 / (1024.0d0 ** 3)
+
+        mem = size(Vloc)+size(Zloc)+size(WORKD)+size(WORKL)+size(RWORK)+size(select)+size(D)+size(real_d)+size(WORKEV)
+        mem = mem*16.0d0/(1024.0**3)
+
         print *, ''
         print *, '------------------------------------------------'
         print *, 'Memory calculations:'
         print *, 'Total:',mem*nprocs,'GB'
+        print *, 'Per process:',mem,'GB'
         print *, '------------------------------------------------'
         print *, ''
         print *, 'Memory usage:'

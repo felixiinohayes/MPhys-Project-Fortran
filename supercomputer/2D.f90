@@ -319,6 +319,8 @@ Program Projected_band_structure
             mem_size = size(ndeg)+size(interp_hr)+size(triv_hr)+size(top_hr)+size(Hkra) + &
                        size(rwork)+size(work)+size(super_H)+size(eval)+size(data_row)
 
+            print*, myid, "mem_size:", mem_size*16.0d0/(1024.0**3), "GB"
+
             count = 0
             ! endif
             ikp=0
@@ -454,7 +456,9 @@ Program Projected_band_structure
         call MPI_Finalize(IERR)
         stop
     endif
+
     print*,myid,local_footprint/(1024.0**3)
+
     call MPI_Allreduce(local_footprint, global_footprint_sum, 1, MPI_LONG, MPI_SUM, MPI_COMM_WORLD, IERR)
     ! Maximum memory per process
     call MPI_Allreduce(local_footprint, global_footprint_max, 1, MPI_LONG, MPI_MAX, MPI_COMM_WORLD, IERR)
