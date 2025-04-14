@@ -169,12 +169,6 @@ Program Projected_band_structure
             b4_file = "data/B4_" // trim(adjustl(axis)) // "_" // trim(adjustl(suffix)) // ".dx"
             b5_file = "data/B5_" // trim(adjustl(axis)) // "_" // trim(adjustl(suffix)) // ".dx"
 
-            open(100, file=trim(adjustl(b1_file)))
-            open(101, file=trim(adjustl(b2_file)))
-            open(102, file=trim(adjustl(b3_file)))
-            open(103, file=trim(adjustl(b4_file)))
-            open(104, file=trim(adjustl(b5_file)))
-
             ! Initial point in the k path
             kvec1(:)=(kpoints(1,1)-kpoints(1,2))*bvec(:,1)+(kpoints(2,1)-kpoints(2,2))*bvec(:,2)+(kpoints(3,1)-kpoints(3,2))*bvec(:,3)
             xk(1)= -sqrt(dot_product(kvec1,kvec1))
@@ -288,12 +282,20 @@ Program Projected_band_structure
             if(myid.eq.0) then
                 do i = 1,5
                     print*, 'writing to file', i
+                    select case(i)
+                    case(1); open(100+(i-1), file=trim(adjustl(b1_file)), status='replace', form='formatted')
+                    case(2); open(100+(i-1), file=trim(adjustl(b2_file)), status='replace', form='formatted')
+                    case(3); open(100+(i-1), file=trim(adjustl(b3_file)), status='replace', form='formatted')
+                    case(4); open(100+(i-1), file=trim(adjustl(b4_file)), status='replace', form='formatted')
+                    case(5); open(100+(i-1), file=trim(adjustl(b5_file)), status='replace', form='formatted')
+                    end select
                     write(100+(i-1), '(a,3(1x,i8))') 'object 1 class gridpositions counts',nk,eres
                     write(100+(i-1), '(a,3(1x,f12.8))') 'origin',-0.1d0,emin
                     write(100+(i-1), '(a,3(1x,f12.8))') 'delta',sqrt(dot_product(dk,dk)),0d0
                     write(100+(i-1), '(a,3(1x,f12.6))') 'delta',0d0,de
                     write(100+(i-1), '(a,3(1x,i8))') 'object 2 class gridconnections counts',nk,eres
                     write(100+(i-1), '(a,i8,a,i8,a,i10,a)') 'object',3,' class array type float rank 1 shape',3,' item', nk*eres, ' data follows'
+                    close(100+(i-1))
                 enddo
             endif            
 
@@ -404,11 +406,20 @@ Program Projected_band_structure
             do i=1,5 
                 do proc_id=0, numprocs-1 
                     if (myid .eq. proc_id) then 
+                        ! Open file for this processor
+                        select case(i)
+                        case(1); open(100+(i-1), file=trim(adjustl(b1_file)), status='old', access='append', form='formatted')
+                        case(2); open(100+(i-1), file=trim(adjustl(b2_file)), status='old', access='append', form='formatted')
+                        case(3); open(100+(i-1), file=trim(adjustl(b3_file)), status='old', access='append', form='formatted')
+                        case(4); open(100+(i-1), file=trim(adjustl(b4_file)), status='old', access='append', form='formatted')
+                        case(5); open(100+(i-1), file=trim(adjustl(b5_file)), status='old', access='append', form='formatted')
+                        end select
                     
                         do j=1,kloc*eres
                             write(100+(i-1),'(3(1x,f12.8))') data_row(i,:,j)
                         enddo
 
+                        ! Write footer if last processor
                         if (myid .eq. numprocs-1) then
                             write(100+(i-1),*) 'object "regular positions regular connections" class field'
                             write(100+(i-1),*) 'component "positions" value 1'
