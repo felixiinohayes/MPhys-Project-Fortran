@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=10,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=300,NCV=450,eres=20
+    integer*4,parameter::nxblocks=4,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=50,NCV=100,eres=20
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -31,7 +31,7 @@ Program Projected_band_structure
     real*8, parameter :: B = B_VALUE
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,data_file
-    character(len=5) suffix
+    character(len=10) suffix
     integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3
     integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ, xindex, yindex, rvec(3), index, interp_size, jloc, owner
     integer*8 LWORKL, N, ishift
@@ -84,10 +84,19 @@ Program Projected_band_structure
         endif
     endif
 
+    ! Add energy suffix with proper formatting
     if (E .gt. 0d0) then
-        suffix = trim(adjustl(suffix)) // "_E1"
+        write(suffix, '(a,a)') trim(suffix), "_E-2"
     else if (E .lt. 0d0) then
-        suffix = trim(adjustl(suffix)) // "_E2"
+        write(suffix, '(a,a)') trim(suffix), "_E2"
+    else
+        suffix = trim(suffix) // "_E0"
+    endif   
+
+    if (myid == 0) then
+        print*, 'B:', B
+        print*, 'E:', E
+        print*, 'suffix:', suffix
     endif
 
 !------read H(R) + B_pt
@@ -275,7 +284,7 @@ Program Projected_band_structure
     enddo
 
     if (myid == 0) then
-        data_file = "data/copy_cube_"// trim(adjustl(suffix)) // ".dx"
+        data_file = "data/C_"// trim(adjustl(suffix)) // ".dx"
         open(100, file=trim(adjustl(data_file)))
         write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nzblocks,nxblocks,nyblocks
         write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
