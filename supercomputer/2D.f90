@@ -21,10 +21,10 @@ Program Projected_band_structure
     integer*4 recv(1),nr_(3),kindex(2),ai(3),iblock(depth),values(2)
     real*8,parameter::third=1d0/3d0, two = 2.0d0, sqrt2 = sqrt(two)
     real*8 phase,pi2,x1,y1,x2,y2,de,exp_factor,p_l,spectral_A,emiddle,B,mem,cq,xq,bq,mem_size
-    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3),epoints(eres),a_spec,factor,dos,data_g(5,3,nk*eres)
-    real*8,allocatable:: rwork(:),eval(:),eval_flat(:),eval_flatg(:),data_row(:,:,:)
-    integer*4,allocatable:: ndeg(:,:,:),displs1(:),recvcounts1(:),displs2(:),recvcounts2(:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:),kpminlist(:),kpmaxlist(:),kloclist(:),kloc_sum(:),buff_sum1(:),buff_sum2(:),buffsize1(:),buffsize2(:)
-    complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),sH_flat(:),sH_flatg(:),SH(:,:,:),B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),extrarow(:)
+    real*8 xk(nk),avec(3,3),bvec(3,3),rvec_data(3),kpoints(3,nkpath),dk(3),kpath(3,nk),kvec1(3),kvec2(3),epoints(eres),a_spec,factor,dos
+    real*8,allocatable:: rwork(:),eval(:),data_row(:,:,:)
+    integer*4,allocatable:: ndeg(:,:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:),kpminlist(:),kpmaxlist(:),kloclist(:),kloc_sum(:)
+    complex*16,allocatable::Hk(:,:),Hkra(:,:,:,:),work(:),super_H(:,:),B_pt(:,:),Hr_temp(:,:)
     complex*16 B_sigma(2,2)
     complex*16,dimension(:,:,:,:,:),allocatable :: interp_Hr, triv_Hr, top_Hr
     integer, dimension(8) :: time_start
@@ -60,10 +60,9 @@ Program Projected_band_structure
     read(99,*)nb,nr_top
     read(97,*)
     read(97,*)nb,nr_triv
-    allocate(top_Hr_temp(nb,nb),triv_Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
+    allocate(Hr_temp(nb,nb),ndeg_top(nr_top),ndeg_triv(nr_triv),ndeg(-6:6, -6:6, -6:6))
     allocate(rvec_top(nr_top,3))
     allocate(interp_Hr(nb,nb,-6:6, -6:6, -6:6),triv_Hr(nb,nb,-6:6, -6:6, -6:6),top_Hr(nb,nb,-6:6, -6:6, -6:6))
-    allocate(extrarow(nb*N2))
     allocate(Hkra(nb,nb,-6:6,-6:6))
     allocate(Hk(nb,nb))
     allocate(B_pt(nb, nb))
@@ -73,9 +72,7 @@ Program Projected_band_structure
 
     allocate(work(max(1,lwork)),rwork(max(1,3*(nb*N2+1)-2)))
 
-    allocate(kpminlist(numprocs),kpmaxlist(numprocs),kloclist(numprocs),kloc_sum(numprocs+1), & 
-    buff_sum2(numprocs+1),buffsize2(numprocs),displs2(numprocs),recvcounts2(numprocs),&
-    buff_sum1(numprocs+1),buffsize1(numprocs),displs1(numprocs),recvcounts1(numprocs))
+    allocate(kpminlist(numprocs),kpmaxlist(numprocs),kloclist(numprocs),kloc_sum(numprocs+1))
 
     dim = (N2*nb)
     matsize= dim**2
@@ -88,20 +85,20 @@ Program Projected_band_structure
         do i=1,nb
             do j=1,nb
             read(99,*)rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3),i1,i2,x1,y1
-            top_Hr_temp(i1,i2)=dcmplx(x1,y1)
+            Hr_temp(i1,i2)=dcmplx(x1,y1)
             ndeg(rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = ndeg_top(ir)
             enddo
         enddo
-        top_Hr(:,:,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = top_Hr_temp(:,:)
+        top_Hr(:,:,rvec_top(ir,1),rvec_top(ir,2),rvec_top(ir,3)) = Hr_temp(:,:)
     enddo
     do ir=1,nr_triv
         do i=1,nb
             do j=1,nb
             read(97,*)rvec(1),rvec(2),rvec(3),i1,i2,x1,y1
-            triv_Hr_temp(i1,i2)=dcmplx(x1,y1)
+            Hr_temp(i1,i2)=dcmplx(x1,y1)
             enddo
         enddo
-        triv_Hr(:,:,rvec(1),rvec(2),rvec(3)) = triv_Hr_temp
+        triv_Hr(:,:,rvec(1),rvec(2),rvec(3)) = Hr_temp
     enddo
 
 !----- Interpolate Hamiltonian 
@@ -227,45 +224,43 @@ Program Projected_band_structure
     
             sum1 = 1
             sum2 = 1
-            kloc_sum(1) = 1
-            buff_sum1(1)  = 1
-            buff_sum2(1)  = 1
+            ! kloc_sum(1) = 1
+            ! buff_sum1(1)  = 1
+            ! buff_sum2(1)  = 1
 
-            do i=1,numprocs
-                kloc=nk/numprocs
-                if (mod(nk,numprocs).ne.0) kloc=kloc+1
-                kpminlist(i)=1+(i-1)*kloc
-                kpmaxlist(i)=min(i*kloc,nk)
-                kloclist(i) = (kpmaxlist(i)-kpminlist(i)+1)
+            ! do i=1,numprocs
+            !     kloc=nk/numprocs
+            !     if (mod(nk,numprocs).ne.0) kloc=kloc+1
+            !     kpminlist(i)=1+(i-1)*kloc
+            !     kpmaxlist(i)=min(i*kloc,nk)
+            !     kloclist(i) = (kpmaxlist(i)-kpminlist(i)+1)
 
-                kloc_sum(i+1) = kloc_sum(i) + kloclist(i)
+            !     kloc_sum(i+1) = kloc_sum(i) + kloclist(i)
 
-                buffsize1(i) = kloclist(i)*3*eres
-                sum1 = sum1+ buffsize1(i)
+            !     buffsize1(i) = kloclist(i)*3*eres
+            !     sum1 = sum1+ buffsize1(i)
 
-                buff_sum1(i+1) = sum1
+            !     buff_sum1(i+1) = sum1
 
-                displs1(i) = buff_sum1(i) - 1
+            !     displs1(i) = buff_sum1(i) - 1
 
-                !   For the MPI_GATHERV(super_H) call
-                ! buffsize1(i) = (kpmaxlist(i)-kpminlist(i)+1)*matsize
-                ! sum1 = sum1+ buffsize1(i)
+            !       For the MPI_GATHERV(super_H) call
+            !     buffsize1(i) = (kpmaxlist(i)-kpminlist(i)+1)*matsize
+            !     sum1 = sum1+ buffsize1(i)
 
-                ! buff_sum1(i+1) = sum1
+            !     buff_sum1(i+1) = sum1
 
-                ! displs1(i) = buff_sum1(i) - 1
+            !     displs1(i) = buff_sum1(i) - 1
 
-                ! !For the MPI_GATHERV(eval) call
-                ! buffsize2(i) = (kpmaxlist(i)-kpminlist(i)+1)*dim !For the MPI_GATHERV(eval) call
-                ! sum2 = sum2+ buffsize2(i)
+            !     !For the MPI_GATHERV(eval) call
+            !     buffsize2(i) = (kpmaxlist(i)-kpminlist(i)+1)*dim !For the MPI_GATHERV(eval) call
+            !     sum2 = sum2+ buffsize2(i)
 
-                ! buff_sum2(i+1) = sum2
+            !     buff_sum2(i+1) = sum2
 
-                !    displs2(i) = buff_sum2(i) -1
-            enddo
+            !        displs2(i) = buff_sum2(i) -1
+            ! enddo
 
-            recvcounts1 = buffsize1
-            recvcounts2 = buffsize2
             kloc = kloclist(myid+1) 
 
             allocate(super_H(dim,dim),eval(dim))
@@ -274,10 +269,6 @@ Program Projected_band_structure
             ! if(myid.eq.0) print *, "kpmin:", kpminlist
             ! if(myid.eq.0) print *, "kpmax:", kpmaxlist
             ! if(myid.eq.0) print *, "kloc_sum:", kloc_sum
-            ! if(myid.eq.0) print *, "buffsize1:", buffsize1
-            ! if(myid.eq.0) print *, "buffsize2:", buffsize2
-            ! if(myid.eq.0) print *, "buff_sum1:", buff_sum1, displs1
-            ! if(myid.eq.0) print *, "buff_sum2:", buff_sum2, displs2            
 !----DX Files
             if(myid.eq.0) then
                 do i = 1,5
@@ -448,7 +439,6 @@ Program Projected_band_structure
         print *, 'Duration: ', dur/3600,':', mod(dur,3600)/60, ':', mod(dur,60)
     endif   
     if (myid == 0) then
-        ! mem = ((matsize*16.0d0+dim*8.0d0*(2*nk+1)*(1+1/numprocs)+dim))/(10.0d0**9)
         mem = NUMPROCS*mem_size*16.0d0/(1024**3)
         print *, ''
         print *, '------------------------------------------------'

@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=8,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=100,NCV=2*NEV,eres=20
+    integer*4,parameter::nxblocks=7,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=300,NCV=2*NEV,eres=20
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -13,22 +13,21 @@ end module parameters
 
 Program Projected_band_structure
     use parameters
-    use iso_c_binding
     Implicit None
     include 'mpif.h'
 
-    interface
-    function get_footprint() bind(c)
-        use iso_c_binding
-        integer(c_long) :: get_footprint
-    end function get_footprint
-
-end interface
 #ifdef BVAL
 #define B_VALUE BVAL
 #else
 #define B_VALUE 0d0
 #endif
+
+#ifdef EVAL
+#define E_VALUE EVAL
+#else
+#define E_VALUE ef_top
+#endif
+    real*8, parameter :: E = E_VALUE
     real*8, parameter :: B = B_VALUE
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,data_file
@@ -47,9 +46,6 @@ end interface
     logical :: rvecmat
     logical, allocatable :: select(:)
     complex*16,dimension(:,:,:,:,:),allocatable::triv_Hr, top_Hr
-    integer(c_long) ::global_footprint_sum, global_footprint_max
-    integer(c_long) :: local_footprint = 0
-    real :: memory_sum_gb, memory_max_gb
 !----Date and Time
     integer, dimension(8) :: time_start
     integer, dimension(8) :: time_end
@@ -214,14 +210,9 @@ end interface
     ! endif
 
 !---P_ARPACK
-    if(myid.eq.0) print*,'1',local_footprint/ (1024.0d0 ** 3),'GB'
 
-    local_footprint = max(local_footprint, get_footprint())  
     allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),real_d(NEV),WORKEV(2*NCV))
-    local_footprint = max(local_footprint, get_footprint())  
-
-    if(myid.eq.0) print*,'2',local_footprint/ (1024.0d0 ** 3),'GB'
 
     iparam(1)=1
     iparam(3)=maxiter
@@ -270,8 +261,6 @@ end interface
     end if
     
     deallocate(RESID, Vloc, WORKD, WORKL, RWORK, select, real_d, WORKEV)
-    local_footprint = max(local_footprint, get_footprint()) 
-    if(myid.eq.0) print*,'3',local_footprint/ (1024.0d0 ** 3),'GB'
  
 !---- Projections
     de = (emax-emin)/eres
@@ -338,10 +327,6 @@ end interface
         if (myid == 0) write(100, '(a)') 'attribute "dep" string "positions"' 
     enddo
 
-    local_footprint = max(local_footprint, get_footprint())
-    print*,myid,'4',local_footprint/ (1024.0d0 ** 3),'GB'
-    call MPI_Reduce(local_footprint, global_footprint_sum, 1, MPI_INTEGER8, MPI_SUM, 0, MPI_COMM_WORLD, ierr)
-    call MPI_Reduce(local_footprint, global_footprint_max, 1, MPI_INTEGER8, MPI_MAX, 0, MPI_COMM_WORLD, ierr)
 
     if (myid == 0) then
         do i=0,eres-1
@@ -363,9 +348,6 @@ end interface
         print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
         print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
 
-        memory_sum_gb = real(global_footprint_sum) / (1024.0 ** 3)
-        memory_max_gb = real(global_footprint_max) / (1024.0 ** 3)
-
         mem = size(Vloc)+size(Zloc)+size(WORKD)+size(WORKL)+size(RWORK)+size(select)+size(D)+size(real_d)+size(WORKEV)
         mem = mem*16.0d0/(1024.0**3)
 
@@ -375,13 +357,6 @@ end interface
         print *, 'Total:',mem*nprocs,'GB'
         print *, 'Per process:',mem,'GB'
         print *, '------------------------------------------------'
-        print *, ''
-        print *, 'Memory usage:'
-        print *, 'Total: ', memory_sum_gb, ' GB'
-        print *, 'Per process: ', memory_max_gb, ' GB'
-        print *, ''
-        print *, 'Percentage used (total): ', 100.0d0*memory_sum_gb / (mem*nprocs), '%'
-        print *, 'Percentage used (per process): ', 100.0d0*memory_max_gb / (mem), '%'    
     endif
 
     ! Finalize MPI
@@ -399,13 +374,11 @@ end interface
         integer*4 :: irow, icol, rowcount, colcount, reqsend, reqrec
         complex*16 :: mv_buf(nloclist(1))
 
-        local_footprint = max(local_footprint, get_footprint())
-
         vec_out = 0d0
 
         call tv(myid, vec_in, vec_out)
 
-       do i=1,nprocs-1
+        do i=1,nprocs-1
             mv_buf=0d0
             next = mod(myid + i, nprocs)
             prev = mod(myid - i + nprocs, nprocs)
