@@ -2,10 +2,10 @@ module parameters
     Implicit None
     character(len=80):: prefix="BiTeI"
     character*1:: bmat='I'
-    character*2:: which='SM'
+    character*2:: which='LM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=5,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::eres=10,nshifts=eres+1,NEV_tot=700,NEV=10,NCV=2*NEV
+    integer*4,parameter::nxblocks=4,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::nshifts=200,NEV_tot=20000,nev_shift=20,NEV=NEV_tot*nev_shift/nshifts,NCV=2*NEV,eres=20
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -13,39 +13,42 @@ end module parameters
 
 Program Projected_band_structure
     use parameters
+    use iso_c_binding
     Implicit None
     include 'mpif.h'
 
-#ifdef BVAL
-#define B_VALUE BVAL
-#else
-#define B_VALUE 0d0
-#endif
+    interface
+    function get_maxrss() bind(c)
+        use iso_c_binding
+        integer(c_long) :: get_maxrss
+    end function get_maxrss
 
-#ifdef EVAL
-#define E_VALUE EVAL
+end interface
+#ifdef BVAL
+    real, parameter :: B = BVAL
 #else
-#define E_VALUE ef_top
+    real, parameter :: B = 0d0
 #endif
-    real*8, parameter :: E = E_VALUE
-    real*8, parameter :: B = B_VALUE
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,data_file
     character(len=5) suffix
-    integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3,is
+    integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3
     integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ, xindex, yindex, rvec(3), index, interp_size, jloc, owner
     integer*8 LWORKL, N, ishift
     integer*4 ierr, comm
     integer*4 npmin, npmax, iter
-    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, de, dos, epoints(eres+1), mem
-    real*8, allocatable :: rwork(:), real_d(:)
+    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, de, dos, epoints(eres)
+    real*8, allocatable :: rwork(:), real_d(:),shifts(:)
     integer*4, allocatable :: vec_ind(:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
-    complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:),diag(:)
+    complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
     complex*16, allocatable :: RESID(:), Vloc(:,:), WORKD(:), WORKL(:), D(:), WORKEV(:), Zloc(:,:), p_l_loc(:), p_l(:)
-    complex*16 b_sigma(2,2)
+    complex*16 b_sigma(2,2),sigma
     logical :: rvecmat
     logical, allocatable :: select(:)
     complex*16,dimension(:,:,:,:,:),allocatable::triv_Hr, top_Hr
+    integer(c_long) ::global_maxrss_sum, global_maxrss_max
+    integer(c_long) :: local_maxrss = 0
+    real :: memory_sum_gb, memory_max_gb
 !----Date and Time
     integer, dimension(8) :: time_start
     integer, dimension(8) :: time_end
@@ -83,14 +86,6 @@ Program Projected_band_structure
             suffix = "TRIV"
         endif
     endif
-
-    if (E .gt. 0d0) then
-        write(suffix, '(a,a)') trim(suffix), "_E-2"
-    else if (E .lt. 0d0) then
-        write(suffix, '(a,a)') trim(suffix), "_E2"
-    else
-        suffix = trim(suffix) // "_E0"
-    endif   
 
 !------read H(R) + B_pt
     interp_size=6
@@ -177,104 +172,73 @@ Program Projected_band_structure
     call MPI_COMM_RANK(comm, myid, ierr)
     call MPI_COMM_SIZE(comm, nprocs, ierr)
 
-    if(myid.eq.0) then
-        print*, 'B:', B
-    endif
-
-!----Energy points
-    de = (emax-emin)/eres
-    do i=1, eres+1
-        epoints(i) = emin + de*(i-1)
+    allocate(npminlist(nprocs),npmaxlist(nprocs),nloclist(nprocs),nloc_sum(nprocs+1),nev_sum(nprocs+1),nloclist_nev(nprocs))
+ 
+    ! N=nb*N3
+    do i=1,nprocs
+        nloc = (N3)/nprocs
+        if (mod(N3,nprocs).ne.0) nloc = nloc +1 
+        npminlist(i)=1+(i-1)*nloc
+        npmaxlist(i)=min(i*nloc,N3)
+        nloclist(i) = (npmaxlist(i)-npminlist(i)+1)*nb
+        nloclist_nev(i) = (npmaxlist(i)-npminlist(i)+1)*nb*nev
     enddo
 
+    nloc_sum(1) = 1
+    nev_sum(1) = 1
+    do i=1,nprocs
+        nloc_sum(i+1) = nloc_sum(i) + nloclist(i)
+    enddo
 
-    if (myid == 0) then
-        data_file = "data/CU_"// trim(adjustl(suffix)) // ".dx"
-        open(100, file=trim(adjustl(data_file)))
-        write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nzblocks,nxblocks,nyblocks
-        write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
-        write(100, '(a,3(1x,f12.8))') 'delta' ,0d0,0d0,1d0
-        write(100, '(a,3(1x,f12.8))') 'delta' ,0d0,1d0,0d0
-        write(100, '(a,3(1x,f12.8))') 'delta' ,1d0,0d0,0d0
-        write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nzblocks,nxblocks,nyblocks
-    endif
+    do i=2,nprocs+1
+        nev_sum(i) = (nloc_sum(i)-1)*nev +1
+    enddo
+    
+    nloc = nloclist(myid+1) 
+! ----Debugging
+    ! if(myid.eq.0) then
+    !     print *, "nloc:", nloclist
+    !     print *, "nloc*nev:", nloclist_nev
+    !     print *, "npmin:", npminlist
+    !     print *, "npmax:", npmaxlist
+    !     print *, "nloc_sum:", nloc_sum
+    !     print *, "nev_sum:", nev_sum
+    ! endif
 
-    allocate(npminlist(nprocs),npmaxlist(nprocs),nloclist(nprocs),nloc_sum(nprocs+1),nev_sum(nprocs+1),nloclist_nev(nprocs),diag(nb))
+!---P_ARPACK
+    allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
     allocate(select(NCV),D(NEV),real_d(NEV),WORKEV(2*NCV))
 
-!----Shift loop
-    do is = 1,nshifts
+    iparam(1)=1
+    iparam(3)=maxiter
+    iparam(7)=1
+    lworkl=3*(NCV**2) + 5*NCV
+    iter=0
+    IDO=0
+    INFO=0
+    LDV=nloc
+    WORKL=0d0
+    WORKD=0d0
+    RWORK=0d0
+    rvecmat=.true.
+    select=.true.
 
-        do i=1,nb
-            diag(i) = interp_Hr(i,i,0,0,0)
-            interp_Hr(i,i,0,0,0) = interp_Hr(i,i,0,0,0) + epoints(is)
-        enddo
-
-        if(myid.eq.0) then
-            print*, 'Shift:', is, 'Energy:', epoints(is), 'NEV:', NEV
-            write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+is,' class array type float rank 1 shape',1,&
-                                ' item', N3, ' data follows'
-        endif
-    
-        do i=1,nprocs
-            nloc = (N3)/nprocs
-            if (mod(N3,nprocs).ne.0) nloc = nloc +1 
-            npminlist(i)=1+(i-1)*nloc
-            npmaxlist(i)=min(i*nloc,N3)
-            nloclist(i) = (npmaxlist(i)-npminlist(i)+1)*nb
-            nloclist_nev(i) = (npmaxlist(i)-npminlist(i)+1)*nb*nev
-        enddo
-
-        nloc_sum(1) = 1
-        nev_sum(1) = 1
-        do i=1,nprocs
-            nloc_sum(i+1) = nloc_sum(i) + nloclist(i)
-        enddo
-
-        do i=2,nprocs+1
-            nev_sum(i) = (nloc_sum(i)-1)*nev +1
-        enddo
+    do i = 1, nshifts
+        ! Calculate shifts
+        de = (emax-emin)/(nshifts-1)
+        shifts(i) = emin + (i-1) * de
+        sigma = dcmplx(shifts(i),0d0)
         
-        
-        nloc = nloclist(myid+1) 
-    ! ----Debugging
-        ! if(myid.eq.0) then
-        !     print *, "nloc:", nloclist
-        !     print *, "nloc*nev:", nloclist_nev
-        !     print *, "npmin:", npminlist
-        !     print *, "npmax:", npmaxlist
-        !     print *, "nloc_sum:", nloc_sum
-        !     print *, "nev_sum:", nev_sum
-        ! endif
-
-    ! !---P_ARPACK
-
-        allocate(RESID(nloc),Vloc(nloc,NCV),Zloc(nloc,NEV),WORKD(nloc*3),WORKL(3*NCV*NCV + 5*NCV+10),RWORK(NCV))
-
-        iparam(1)=1
-        iparam(3)=maxiter
-        iparam(7)=1
-        lworkl=3*(NCV**2) + 5*NCV
-        iter=0
-        IDO=0
-        INFO=0
-        LDV=nloc
-        WORKL=0d0
-        WORKD=0d0
-        RWORK=0d0
-        rvecmat=.true.
-        select=.true.
-
         ! Arnoldi iterations using pznaupd
         do while (iter < maxiter)
             iter = iter + 1
-            if ((myid == 0).and.(mod(iter,100).eq.0)) print *, 'Iterations: ', iter, 'Shift:', is,'/',nshifts
+            if (myid == 0) print *, 'Iterations: ', iter
 
             call pznaupd(comm, IDO, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
 
             if (IDO == 99) exit
             if (IDO == -1 .or. IDO == 1) then
-                call matmul_(comm, WORKD(IPNTR(1):IPNTR(1)+nloc-1), WORKD(IPNTR(2):IPNTR(2)+nloc-1))
+                call matmul_(comm, WORKD(IPNTR(1):IPNTR(1)+nloc-1), WORKD(IPNTR(2):IPNTR(2)+nloc-1), sigma)
                 continue
             endif
         end do
@@ -289,25 +253,46 @@ Program Projected_band_structure
         rvecmat = .true.
 
         call pzneupd(comm, rvecmat, 'A', select, D, Zloc, LDV, (0.0d0, 0.0d0), WORKEV, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
-        
-    !----Shift eigenvalues to correct position
-        do i=1,NEV
-            D(i) = D(i) + epoints(is)
-        enddo
+    enddo
 
-        call MPI_Barrier(MPI_COMM_WORLD, ierr)
-        if (INFO .ne. 0) then
-            if (myid == 0) print *, 'Error with pzneupd, info =', INFO
-                call MPI_FINALIZE(ierr)
-            stop
-        end if
-        
-        deallocate(RESID, Vloc, WORKD, WORKL, RWORK)    
+
+    call MPI_Barrier(MPI_COMM_WORLD, ierr)
+    if (INFO .ne. 0) then
+        if (myid == 0) print *, 'Error with pzneupd, info =', INFO
+            call MPI_FINALIZE(ierr)
+        stop
+    end if
     
-        count = 0
+    deallocate(RESID, Vloc, WORKD, WORKL, RWORK, select, real_d, WORKEV)
+
+!---- Projections
+    de = (emax-emin)/eres
+    do i=1, eres
+        epoints(i) = emin + de*i
+    enddo
+
+    if (myid == 0) then
+        data_file = "data/copy_cube_"// trim(adjustl(suffix)) // ".dx"
+        open(100, file=trim(adjustl(data_file)))
+        write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nzblocks,nxblocks,nyblocks
+        write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
+        write(100, '(a,3(1x,f12.8))') 'delta' ,0d0,0d0,1d0
+        write(100, '(a,3(1x,f12.8))') 'delta' ,0d0,1d0,0d0
+        write(100, '(a,3(1x,f12.6))') 'delta' ,1d0,0d0,0d0
+        write(100, '(a,3(1x,i8))') 'object 2 class gridconnections counts',nzblocks,nxblocks,nyblocks
+        print *, "Calculating DOS..."
+    endif
+
+    count = 0
+    do ie=1,eres
+        if (myid == 0) then
+            write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+ie,' class array type float rank 1 shape',1,&
+                                ' item', N3, ' data follows'
+        endif
         !----Spectral DOS
         do j=0,N3-1
             count = count + 1
+            if(mod(count,100).eq.0) print*, myid,count,'/',N3*eres
             owner = 0
             do i = 1, nprocs
                 if (j >= (npminlist(i) - 1) .and. j < npmaxlist(i)) then
@@ -335,37 +320,26 @@ Program Projected_band_structure
             if (myid == 0) then
                 a_spec = 0d0
                 do i = 1, NEV
-                    factor = ((epoints(is) - real(D(i))) / eta)
-                    print*,i,epoints(is),real(D(i)),p_l(i),factor
+                    factor = ((epoints(ie) - real(D(i))) / eta)
                     a_spec = a_spec + real(p_l(i)) * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
                 enddo
                 write(100, '(1(1x,f12.8))') a_spec
             endif
             deallocate(p_l_loc, p_l)
         enddo
-        
         if (myid == 0) write(100, '(a)') 'attribute "dep" string "positions"' 
-
-        ! Restore original diagonal elements
-        do i=1,nb
-            interp_Hr(i,i,0,0,0) = diag(i)
-        enddo
-        deallocate(Zloc)
     enddo
 
-    deallocate(npminlist,npmaxlist,nloclist,nloc_sum,nev_sum,nloclist_nev)
-    deallocate(diag,select,D,real_d,WORKEV)
-
     if (myid == 0) then
-        do i=0,eres
+        do i=0,eres-1
             write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-            'object',eres+4+i,' class field', &
+            'object',eres+3+i,' class field', &
             'component "positions" value 1', &
             'component "connections" value 2', &
             'component "data" value ',3+i
         enddo
         write(100, '(a)') 'object "series" class series'
-        do i=0,eres
+        do i=0,eres-1
             write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
         enddo
 
@@ -375,16 +349,6 @@ Program Projected_band_structure
 
         print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
         print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
-
-        mem = size(Vloc)+size(Zloc)+size(WORKD)+size(WORKL)+size(RWORK)+size(select)+size(D)+size(real_d)+size(WORKEV)
-        mem = mem*16.0d0/(1024.0**3)
-
-        print *, ''
-        print *, '------------------------------------------------'
-        print *, 'Memory calculations:'
-        print *, 'Total:',mem*nprocs,'GB'
-        print *, 'Per process:',mem,'GB'
-        print *, '------------------------------------------------'
     endif
 
     ! Finalize MPI
@@ -392,11 +356,11 @@ Program Projected_band_structure
 
     contains
 
-    subroutine matmul_(comm,vec_in, vec_out)
+    subroutine matmul_(comm,vec_in, vec_out,sigma)
         use parameters
         implicit none
         include 'mpif.h'
-        complex*16, intent(in) :: vec_in(nloclist(myid+1))
+        complex*16, intent(in) :: vec_in(nloclist(myid+1)),sigma
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: comm, next, prev, status(MPI_STATUS_SIZE)
         integer*4 :: irow, icol, rowcount, colcount, reqsend, reqrec
@@ -404,9 +368,9 @@ Program Projected_band_structure
 
         vec_out = 0d0
 
-        call tv(myid, vec_in, vec_out)
+        call tv(myid, vec_in, vec_out,sigma)
 
-        do i=1,nprocs-1
+       do i=1,nprocs-1
             mv_buf=0d0
             next = mod(myid + i, nprocs)
             prev = mod(myid - i + nprocs, nprocs)
@@ -414,16 +378,18 @@ Program Projected_band_structure
             call mpi_sendrecv(vec_in, nloclist(myid+1), MPI_DOUBLE_COMPLEX, next, 0, &
                               mv_buf, nloclist(prev+1), MPI_DOUBLE_COMPLEX, prev, 0, comm, status, ierr)
 
-            call tv(prev,mv_buf(1:nloclist(prev+1)),vec_out)
+            call tv(prev,mv_buf(1:nloclist(prev+1)),vec_out,sigma)
         enddo
+
+
 
     end subroutine matmul_
 
-    subroutine tv(id, vec_in, vec_out)
+    subroutine tv(id, vec_in, vec_out,sigma)
         use parameters
         implicit none
         integer*4, intent(in) :: id
-        complex*16, intent(in) :: vec_in(nloclist(id+1))
+        complex*16, intent(in) :: vec_in(nloclist(id+1)),sigma
         complex*16, intent(out) :: vec_out(nloclist(myid+1))
         integer*4 :: irow, icol, r1, r2, r3, f1, f2, f3
         integer :: rowcount, colcount
@@ -447,6 +413,7 @@ Program Projected_band_structure
             rowcount = rowcount + 1
         enddo
 
+        vec_out = vec_out - sigma*vec_in
     end subroutine tv
 
 end program 

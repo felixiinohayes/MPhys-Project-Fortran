@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=4,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::NEV=50,NCV=100,eres=20
+    integer*4,parameter::nxblocks=5,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::NEV=100,NCV=200,eres=10
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -37,7 +37,7 @@ Program Projected_band_structure
     integer*8 LWORKL, N, ishift
     integer*4 ierr, comm
     integer*4 npmin, npmax, iter
-    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, de, dos, epoints(eres), mem
+    real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, de, dos, epoints(eres+1), mem
     real*8, allocatable :: rwork(:), real_d(:)
     integer*4, allocatable :: vec_ind(:,:),ndeg_top(:),ndeg_triv(:),rvec_top(:,:)
     complex*16, allocatable :: super_H(:,:), surface_vec(:), B_pt(:,:),top_Hr_temp(:,:),triv_Hr_temp(:,:)
@@ -84,7 +84,6 @@ Program Projected_band_structure
         endif
     endif
 
-    ! Add energy suffix with proper formatting
     if (E .gt. 0d0) then
         write(suffix, '(a,a)') trim(suffix), "_E-2"
     else if (E .lt. 0d0) then
@@ -279,12 +278,12 @@ Program Projected_band_structure
  
 !---- Projections
     de = (emax-emin)/eres
-    do i=1, eres
-        epoints(i) = emin + de*i
+    do i=1, eres+1
+        epoints(i) = emin + de*(i-1)
     enddo
 
     if (myid == 0) then
-        data_file = "data/C_"// trim(adjustl(suffix)) // ".dx"
+        data_file = "data/CM_"// trim(adjustl(suffix)) // ".dx"
         open(100, file=trim(adjustl(data_file)))
         write(100, '(a,3(1x,i8))') 'object 1 class gridpositions counts',nzblocks,nxblocks,nyblocks
         write(100, '(a,3(1x,f12.8))') 'origin',0d0,0d0,0d0
@@ -296,7 +295,7 @@ Program Projected_band_structure
     endif
 
     count = 0
-    do ie=1,eres
+    do ie=1,eres+1
         if (myid == 0) then
             write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+ie,' class array type float rank 1 shape',1,&
                                 ' item', N3, ' data follows'
@@ -344,15 +343,15 @@ Program Projected_band_structure
 
 
     if (myid == 0) then
-        do i=0,eres-1
+        do i=0,eres
             write(100,'(A,i8,A,/,A,/,A,/,A,i8,/)') &
-            'object',eres+3+i,' class field', &
+            'object',eres+4+i,' class field', &
             'component "positions" value 1', &
             'component "connections" value 2', &
             'component "data" value ',3+i
         enddo
         write(100, '(a)') 'object "series" class series'
-        do i=0,eres-1
+        do i=0,eres
             write(100, '(a,i8,a,i8,a,i8)') 'member', i, ' value', (i+eres+3), ' position', i
         enddo
 
