@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=5,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::eres=10,nshifts=eres+1,NEV_tot=700,NEV=10,NCV=2*NEV
+    integer*4,parameter::nxblocks=20,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::eres=10,nshifts=eres+1,NEV_tot=700,NEV=100,NCV=2*NEV
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
