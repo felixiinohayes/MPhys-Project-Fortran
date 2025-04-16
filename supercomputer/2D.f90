@@ -2,7 +2,7 @@ module parameters
     Implicit None
     character(len=80):: prefix="BiTeI"
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6.1,emax=6.8,eta=0.005
-    integer,parameter::nblocks=5,nkpath=3,np=150,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=150,nblocks_2=nblocks/2,depth=3
+    integer,parameter::nblocks=60,nkpath=3,np=150,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=150,nblocks_2=nblocks/2,depth=3
     integer nb
     INTEGER IERR,MYID,NUMPROCS
 end module parameters
@@ -37,7 +37,7 @@ Program Projected_band_structure
     call date_and_time(VALUES=time_start)
 
     pi2=4.0d0*atan(1.0d0)*2.0d0
-    
+
     write(triv_file, '(a,a)') trim(adjustl(prefix)), "_hr_trivial_new.dat"
     write(top_file, '(a,a)') trim(adjustl(prefix)), "_hr_topological_new.dat"
     write(nnkp, '(a,a)') trim(adjustl(prefix)), "_ortho.nnkp"
@@ -55,7 +55,7 @@ Program Projected_band_structure
 !------read H(R)
     interp_size=6
     ! if((nxblocks > interp_size).or.(nyblocks > interp_size).or.(nzblocks > interp_size)) interp_size = max(max(nxblocks,nyblocks),nzblocks)
-    
+
     read(99,*)
     read(99,*)nb,nr_top
     read(97,*)
@@ -101,7 +101,7 @@ Program Projected_band_structure
         triv_Hr(:,:,rvec(1),rvec(2),rvec(3)) = Hr_temp
     enddo
 
-!----- Interpolate Hamiltonian 
+!----- Interpolate Hamiltonian
     do ir=1,nr_top
         do i=1,nb
             do j=1,nb
@@ -110,13 +110,13 @@ Program Projected_band_structure
         enddo
     enddo
 
-    fcount = 0 
-    do ax = 1,3 
+    fcount = 0
+    do ax = 1,3
         do mag = 1,2
-            
+
             fcount = fcount + 1
             print*, ''
-            
+
 !-----kpath
             if(mag==1) B = 0d0
             if(mag==2) B = 0.05d0
@@ -144,7 +144,7 @@ Program Projected_band_structure
                 kpoints(:,2) = [ 0.0d0,   0.0d0,  0.0d0]  !-M
                 kpoints(:,3) = [ 0.2d0,   0.0d0,  0.0d0]  !-M
             case (2)
-                ! -ky -> ky 
+                ! -ky -> ky
                 axis = 'Y'
                 kpoints(:,1) = [ 0.00d0, -0.1d0,  0.0d0]  !H
                 kpoints(:,2) = [  0.0d0,  0.0d0,  0.0d0]  !A
@@ -171,14 +171,14 @@ Program Projected_band_structure
             xk(1)= -sqrt(dot_product(kvec1,kvec1))
 
             kvec1 = 0d0
-            
+
             ! Interpolation between points
             do i = 1, nkpath-1
                 do j = 1, np
                     ik = j + np*(i-1)
                     dk = (kpoints(:,i+1)-kpoints(:,i))/np
                     kpath(:, ik) = kpoints(:,(i)) + (dk*(j-1))
-                    kvec2 = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3) 
+                    kvec2 = kpath(1,ik)*bvec(:,1) + kpath(2,ik)*bvec(:,2) + kpath(3,ik)*bvec(:,3)
                     if(ik.gt.1) xk(ik) =  xk(ik-1) + sqrt(dot_product(kvec2-kvec1,kvec2-kvec1))
                     kvec1 = kvec2
                 enddo
@@ -191,11 +191,11 @@ Program Projected_band_structure
 !---- Energy mesh
             de = (emax-emin)/eres
             do i=1, eres
-            
+
                 epoints(i) = emin + de*i
             enddo
 !----Construct magnetic perturbation
-        
+
             ! B along Z axis
             B_sigma(1,:) = [dcmplx(B,0d0),  dcmplx(0d0,0d0)]
             B_sigma(2,:) = [dcmplx(0d0,0d0) ,  dcmplx(-B,0d0)]
@@ -219,60 +219,34 @@ Program Projected_band_structure
                 do j=1,nb
                     interp_Hr(i,j,0,0,0) = interp_Hr(i,j,0,0,0) + B_pt(i,j)
                 enddo
-            enddo            
+            enddo
 !-----kloc
-    
+
             sum1 = 1
             sum2 = 1
-            ! kloc_sum(1) = 1
-            ! buff_sum1(1)  = 1
-            ! buff_sum2(1)  = 1
+            kloc_sum(1) = 1
 
-            ! do i=1,numprocs
-            !     kloc=nk/numprocs
-            !     if (mod(nk,numprocs).ne.0) kloc=kloc+1
-            !     kpminlist(i)=1+(i-1)*kloc
-            !     kpmaxlist(i)=min(i*kloc,nk)
-            !     kloclist(i) = (kpmaxlist(i)-kpminlist(i)+1)
+            do i=1,numprocs
+                kloc=nk/numprocs
+                if (mod(nk,numprocs).ne.0) kloc=kloc+1
+                kpminlist(i)=1+(i-1)*kloc
+                kpmaxlist(i)=min(i*kloc,nk)
+                kloclist(i) = (kpmaxlist(i)-kpminlist(i)+1)
 
-            !     kloc_sum(i+1) = kloc_sum(i) + kloclist(i)
+                kloc_sum(i+1) = kloc_sum(i) + kloclist(i)
+            enddo
 
-            !     buffsize1(i) = kloclist(i)*3*eres
-            !     sum1 = sum1+ buffsize1(i)
-
-            !     buff_sum1(i+1) = sum1
-
-            !     displs1(i) = buff_sum1(i) - 1
-
-            !       For the MPI_GATHERV(super_H) call
-            !     buffsize1(i) = (kpmaxlist(i)-kpminlist(i)+1)*matsize
-            !     sum1 = sum1+ buffsize1(i)
-
-            !     buff_sum1(i+1) = sum1
-
-            !     displs1(i) = buff_sum1(i) - 1
-
-            !     !For the MPI_GATHERV(eval) call
-            !     buffsize2(i) = (kpmaxlist(i)-kpminlist(i)+1)*dim !For the MPI_GATHERV(eval) call
-            !     sum2 = sum2+ buffsize2(i)
-
-            !     buff_sum2(i+1) = sum2
-
-            !        displs2(i) = buff_sum2(i) -1
-            ! enddo
-
-            kloc = kloclist(myid+1) 
+            kloc = kloclist(myid+1)
 
             allocate(super_H(dim,dim),eval(dim))
 !----Debugging
-            ! if(myid.eq.0) print *, "kloc:", kloclist
-            ! if(myid.eq.0) print *, "kpmin:", kpminlist
-            ! if(myid.eq.0) print *, "kpmax:", kpmaxlist
-            ! if(myid.eq.0) print *, "kloc_sum:", kloc_sum
+            if(myid.eq.0) print *, "kloc:", kloclist
+            if(myid.eq.0) print *, "kpmin:", kpminlist
+            if(myid.eq.0) print *, "kpmax:", kpmaxlist
+            if(myid.eq.0) print *, "kloc_sum:", kloc_sum
 !----DX Files
             if(myid.eq.0) then
                 do i = 1,5
-                    print*, 'writing to file', i
                     select case(i)
                     case(1); open(100+(i-1), file=trim(adjustl(b1_file)), status='replace', form='formatted')
                     case(2); open(100+(i-1), file=trim(adjustl(b2_file)), status='replace', form='formatted')
@@ -288,7 +262,7 @@ Program Projected_band_structure
                     write(100+(i-1), '(a,i8,a,i8,a,i10,a)') 'object',3,' class array type float rank 1 shape',3,' item', nk*eres, ' data follows'
                     close(100+(i-1))
                 enddo
-            endif            
+            endif
 
 !----- Perform fourier transform
             allocate(data_row(5,3,kloc*eres))
@@ -303,17 +277,17 @@ Program Projected_band_structure
             do ik=kpminlist(myid+1),kpmaxlist(myid+1)
                 if(myid==0) print *, "axis:",ax,"/3 mag:",mag,"/2 kloc:",ik,"/",kloc
                 ikp=ikp+1
-                do ira= -6,6 
+                do ira= -6,6
                     do irb = -6,6  ! Loop over R_ vectors
-                        Hk=0d0   
+                        Hk=0d0
                         do irc = -6,6
-                            
+
                             ! Now 'ax' is  the only axis where periodicity is maintained
                             if(ax == 1) ai = [irc, ira, irb]
                             if(ax == 2) ai = [ira, irc, irb]
                             if(ax == 3) ai = [ira, irb, irc]
-                           
-                            if(ndeg(ai(1),ai(2),ai(3)).ne.0) then 
+
+                            if(ndeg(ai(1),ai(2),ai(3)).ne.0) then
                                 phase = 0d0
 
                                 phase = phase + kpath(ax,ik) * irc
@@ -321,7 +295,7 @@ Program Projected_band_structure
                                 Hk=Hk+interp_Hr(:,:,ai(1),ai(2),ai(3))*dcmplx(cos(phase),-sin(phase))/float(ndeg(ai(1),ai(2),ai(3)))
                             endif
                         enddo
-                        Hkra(:,:,ira,irb) = Hk 
+                        Hkra(:,:,ira,irb) = Hk
                     enddo
                 enddo
 
@@ -341,13 +315,13 @@ Program Projected_band_structure
                 enddo
 
                 call zheev('V','U',dim,super_H(:,:),dim,eval(:),work,lwork,rwork,info)
-                
+
                 count = 0
                 do ib =1, N2
                     if(ib.eq.(nblocks_2 + 1).or. ib.eq.((nblocks_2)*nblocks +1).or. ib.eq.((nblocks_2)*(nblocks+1) +1).or. ib.eq.((nblocks_2)*(nblocks+2) +1).or. ib.eq.((nblocks_2)*(2*nblocks+1)+1)) then
                         select case (ib)
                         !Skin depth of magnetic field
-                        case (nblocks_2 + 1) 
+                        case (nblocks_2 + 1)
                             ! FIRST
                             do i =1,depth
                                 iblock(i) = ib + (i-1)*nblocks
@@ -360,7 +334,7 @@ Program Projected_band_structure
                         case ((nblocks_2)*(nblocks+1) +1)
                             !BULK
                             do i =1,depth
-                                iblock(i) = ib 
+                                iblock(i) = ib
                             enddo
                         case ((nblocks_2)*(nblocks+2) +1)
                             !FOURTH
@@ -394,9 +368,9 @@ Program Projected_band_structure
 
             call MPI_BARRIER(MPI_COMM_WORLD, IERR)
 
-            do i=1,5 
-                do proc_id=0, numprocs-1 
-                    if (myid .eq. proc_id) then 
+            do i=1,5
+                do proc_id=0, numprocs-1
+                    if (myid .eq. proc_id) then
                         ! Open file for this processor
                         select case(i)
                         case(1); open(100+(i-1), file=trim(adjustl(b1_file)), status='old', access='append', form='formatted')
@@ -405,7 +379,7 @@ Program Projected_band_structure
                         case(4); open(100+(i-1), file=trim(adjustl(b4_file)), status='old', access='append', form='formatted')
                         case(5); open(100+(i-1), file=trim(adjustl(b5_file)), status='old', access='append', form='formatted')
                         end select
-                    
+
                         do j=1,kloc*eres
                             write(100+(i-1),'(3(1x,f12.8))') data_row(i,:,j)
                         enddo
@@ -418,7 +392,7 @@ Program Projected_band_structure
                             write(100+(i-1),*) 'component "data" value 3'
                             write(100+(i-1),*) 'end'
                         endif
-                        
+
                         close(100+(i-1))
                     endif
                     call MPI_BARRIER(MPI_COMM_WORLD, IERR)
@@ -427,9 +401,9 @@ Program Projected_band_structure
 
             deallocate(super_H,eval,data_row)
         enddo
-    enddo 
+    enddo
 
-    if(myid.eq.0) then 
+    if(myid.eq.0) then
         call date_and_time(VALUES=time_end)
         dur =((time_end(5)-time_start(5))*3600 + (time_end(6)-time_start(6))*60 +  (time_end(7)-time_start(7)))
 
@@ -437,7 +411,7 @@ Program Projected_band_structure
         print *, 'Start time: ', time_start(5), ':', time_start(6), ':', time_start(7)
         print *, 'End time: ', time_end(5), ':', time_end(6), ':', time_end(7)
         print *, 'Duration: ', dur/3600,':', mod(dur,3600)/60, ':', mod(dur,60)
-    endif   
+    endif
     if (myid == 0) then
         mem = NUMPROCS*mem_size*16.0d0/(1024**3)
         print *, ''
@@ -460,6 +434,3 @@ SUBROUTINE INIT_MPI
         Call MPI_COMM_SIZE( MPI_COMM_WORLD, NUMPROCS , IERR )
 !        Write(*,*) 'Process', myid, ' of ', NUMPROCS , 'is alive.'
 END SUBROUTINE INIT_MPI
-
-
-

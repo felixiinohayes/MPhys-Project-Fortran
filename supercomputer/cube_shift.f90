@@ -4,8 +4,8 @@ module parameters
     character*1:: bmat='I'
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
-    integer*4,parameter::nxblocks=20,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::eres=10,nshifts=eres+1,NEV=100,NCV=2*NEV
+    integer*4,parameter::nxblocks=80,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
+    integer*4,parameter::eres=20,nshifts=eres+1,NEV=3500,NCV=2*NEV
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -46,8 +46,8 @@ Program Projected_band_structure
     call date_and_time(VALUES=time_start)
 
     pi2 = 4.0d0 * atan(1.0d0) * 2.0d0
-    write(top_file , '(a,a)') trim(adjustl(prefix)),"_hr_topological_new.dat" 
-    write(triv_file, '(a,a)') trim(adjustl(prefix)),"_hr_trivial_new.dat" 
+    write(top_file , '(a,a)') trim(adjustl(prefix)),"_hr_topological_new.dat"
+    write(triv_file, '(a,a)') trim(adjustl(prefix)),"_hr_trivial_new.dat"
 
     write(nnkp, '(a,a)') trim(adjustl(prefix)), "_ortho.nnkp"
     open(98, file=trim(adjustl(nnkp)))
@@ -200,10 +200,10 @@ Program Projected_band_structure
             write(100, '(a,i8,a,i8,a,i10,a)') 'object',2+is,' class array type float rank 1 shape',1,&
                                 ' item', N3, ' data follows'
         endif
-    
+
         do i=1,nprocs
             nloc = (N3)/nprocs
-            if (mod(N3,nprocs).ne.0) nloc = nloc +1 
+            if (mod(N3,nprocs).ne.0) nloc = nloc +1
             npminlist(i)=1+(i-1)*nloc
             npmaxlist(i)=min(i*nloc,N3)
             nloclist(i) = (npmaxlist(i)-npminlist(i)+1)*nb
@@ -219,9 +219,9 @@ Program Projected_band_structure
         do i=2,nprocs+1
             nev_sum(i) = (nloc_sum(i)-1)*nev +1
         enddo
-        
-        
-        nloc = nloclist(myid+1) 
+
+
+        nloc = nloclist(myid+1)
     ! ----Debugging
         ! if(myid.eq.0) then
         !     print *, "nloc:", nloclist
@@ -274,7 +274,7 @@ Program Projected_band_structure
         rvecmat = .true.
 
         call pzneupd(comm, rvecmat, 'A', select, D, Zloc, LDV, (0.0d0, 0.0d0), WORKEV, 'I', nloc, 'SM', NEV, TOL, RESID, NCV, Vloc, LDV, IPARAM, IPNTR, WORKD, WORKL, LWORKL, WORKD, INFO)
-        
+
     !----Shift eigenvalues to correct position
         do i=1,NEV
             D(i) = D(i) + epoints(is)
@@ -286,9 +286,9 @@ Program Projected_band_structure
                 call MPI_FINALIZE(ierr)
             stop
         end if
-        
-        deallocate(RESID, Vloc, WORKD, WORKL, RWORK)    
-    
+
+        deallocate(RESID, Vloc, WORKD, WORKL, RWORK)
+
         count = 0
         !----Spectral DOS
         do j=0,N3-1
@@ -328,8 +328,8 @@ Program Projected_band_structure
             endif
             deallocate(p_l_loc, p_l)
         enddo
-        
-        if (myid == 0) write(100, '(a)') 'attribute "dep" string "positions"' 
+
+        if (myid == 0) write(100, '(a)') 'attribute "dep" string "positions"'
 
         ! Restore original diagonal elements
         do i=1,nb
@@ -434,4 +434,4 @@ Program Projected_band_structure
 
     end subroutine tv
 
-end program 
+end program
