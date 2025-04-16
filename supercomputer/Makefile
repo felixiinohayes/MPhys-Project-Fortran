@@ -20,7 +20,7 @@ ${main2}: ${main2}.f90
 run: ${main1} ${main2}
 	@echo "Running ${main2}"
 	@timestamp=$$(date +"%Y%m%d_%H%M%S"); \
-	mpirun -n ${NUMPROCS_2D} ./${main2} > logs/2D_${timestamp}.log
+	mpirun -n ${NUMPROCS_2D} ./${main2} > logs/2D_$${timestamp}.log
 #--------------------------------
 #---Run B=0.05
 	@echo "Running ${main1} with B=0.05"
@@ -33,7 +33,7 @@ run: ${main1} ${main2}
 run-cube:
 	${FC} ${FFLAGS} -DBVAL=${B} -o ${main1} ${main1}.f90 ${LIB}
 	@timestamp=$$(date +"%Y%m%d_%H%M%S"); \
-	mpirun -n ${NUMPROCS_SHIFT} ./${main1} > logs/cube_${timestamp}.log
+	mpirun -n ${NUMPROCS_SHIFT} ./${main1} > logs/cube_B${B}_$${timestamp}.log
 
 clean:
 	rm -rf *.mod *.csv *.o *.c ${main1} ${main2}
