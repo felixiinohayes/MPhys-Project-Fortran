@@ -1,15 +1,22 @@
-Project overview:
-Band-structure computations for BiTeI in the topological insulator phase with degrees of broken periodicity.
+# Project Overview
 
-DEPENDENCIES:
-Compilers:
-- mpif90, gfortran
+Band-structure computations for BiTeI in the topological insulator phase, incorporating broken periodicity.
 
-Libraries:
-- openmpi, lapack, openblas, arpack (and parpack)
+## Dependencies
 
-INSTRUCTIONS:
-1. Edit ARPACK_LIB variable in the Makefile to arpack lib path.
-2. Optional: I believe these are normally system-dependent but if there are any optimisation flags you think we should use, feel free to add - do NOT put floating point optimisations (e.g -ffast-math)
-3. Run "make run" and it should compile and run everything.
-4. The results will be saved in the "data" directory. Please send us back this directory as well as the "logs" directory.
+**Compilers:**
+- `mpif90`
+- `gfortran`
+
+**Libraries:**
+- `openmpi`
+- `lapack`
+- `openblas`
+- `arpack` (including `parpack`)
+
+## Instructions
+
+1. Edit the `ARPACK_LIB` variable in the `Makefile` to point to the correct ARPACK library path on your system.
+2. *(Optional)* You may add system-specific optimisation flags if desired. **Do not** include floating-point optimisations such as `-ffast-math`, as they may compromise numerical accuracy.
+3. Run `make run` to compile and execute the code.
+4. Results will be saved in the `data` directory. Please send us back both the `data` and `logs` directories.
