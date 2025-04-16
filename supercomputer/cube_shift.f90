@@ -5,7 +5,7 @@ module parameters
     character*2:: which='SM'
     real*8,parameter::ef_triv=4.196,ef_top=6.5,a=1,TOL=0.01,emin=-0.3,emax=0.3,eta=0.005
     integer*4,parameter::nxblocks=20,nyblocks=nxblocks,nzblocks=nxblocks,maxiter=1000000,N3=nxblocks*nyblocks*nzblocks,Nxy=nxblocks*nyblocks
-    integer*4,parameter::eres=10,nshifts=eres+1,NEV_tot=700,NEV=100,NCV=2*NEV
+    integer*4,parameter::eres=10,nshifts=eres+1,NEV=100,NCV=2*NEV
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
@@ -21,13 +21,6 @@ Program Projected_band_structure
 #else
 #define B_VALUE 0d0
 #endif
-
-#ifdef EVAL
-#define E_VALUE EVAL
-#else
-#define E_VALUE ef_top
-#endif
-    real*8, parameter :: E = E_VALUE
     real*8, parameter :: B = B_VALUE
 !------------------------------------------------------
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,data_file
@@ -83,14 +76,6 @@ Program Projected_band_structure
             suffix = "TRIV"
         endif
     endif
-
-    if (E .gt. 0d0) then
-        write(suffix, '(a,a)') trim(suffix), "_E-2"
-    else if (E .lt. 0d0) then
-        write(suffix, '(a,a)') trim(suffix), "_E2"
-    else
-        suffix = trim(suffix) // "_E0"
-    endif   
 
 !------read H(R) + B_pt
     interp_size=6
@@ -336,7 +321,7 @@ Program Projected_band_structure
                 a_spec = 0d0
                 do i = 1, NEV
                     factor = ((epoints(is) - real(D(i))) / eta)
-                    print*,i,epoints(is),real(D(i)),p_l(i),factor
+                    ! print*,i,epoints(is),real(D(i)),p_l(i),factor
                     a_spec = a_spec + real(p_l(i)) * (exp(-0.5d0*factor**2)) * 1/(eta*sqrt(2*pi2))
                 enddo
                 write(100, '(1(1x,f12.8))') a_spec
