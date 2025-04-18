@@ -1,6 +1,6 @@
 module parameters
     Implicit None
-    character(len=80):: prefix="BiTeI"
+    character(len=80):: prefix="input/BiTeI"
     real*8,parameter::ef_triv=5.2,ef_top=6.5,a=1,passval=0.0d0,emin=6.1,emax=6.8,eta=0.005
     integer,parameter::nblocks=60,nkpath=3,np=150,nk=(nkpath-1)*np+1,N2=nblocks**2,eres=150,nblocks_2=nblocks/2,depth=3
     integer nb
@@ -240,10 +240,10 @@ Program Projected_band_structure
 
             allocate(super_H(dim,dim),eval(dim))
 !----Debugging
-            if(myid.eq.0) print *, "kloc:", kloclist
-            if(myid.eq.0) print *, "kpmin:", kpminlist
-            if(myid.eq.0) print *, "kpmax:", kpmaxlist
-            if(myid.eq.0) print *, "kloc_sum:", kloc_sum
+            ! if(myid.eq.0) print *, "kloc:", kloclist
+            ! if(myid.eq.0) print *, "kpmin:", kpminlist
+            ! if(myid.eq.0) print *, "kpmax:", kpmaxlist
+            ! if(myid.eq.0) print *, "kloc_sum:", kloc_sum
 !----DX Files
             if(myid.eq.0) then
                 do i = 1,5

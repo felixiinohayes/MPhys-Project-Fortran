@@ -1,0 +1,10 @@
+#!/bin/bash
+#$ -N run2D
+#$ -cwd
+#$ -pe mpi 80
+#$ -j y
+#$ -o logs/2D_$JOB_ID.log
+
+module load mpi/gcc/openmpi/4.1.6-ucx-gcc-14.1.0
+
+mpirun -np 80 ./bin/2D
