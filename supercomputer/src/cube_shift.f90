@@ -9,26 +9,21 @@ module parameters
     integer*4 nb,nloc,myid,nprocs
     complex*16,dimension(:,:,:,:,:),allocatable::interp_Hr
     integer*4,allocatable::npminlist(:),npmaxlist(:),nloclist(:),nloc_sum(:),nev_sum(:),nloclist_nev(:),displs(:)
+    real*8 :: B 
 end module parameters
 
 Program Projected_band_structure
     use parameters
     Implicit None
     include 'mpif.h'
-
-#ifdef BVAL
-#define B_VALUE BVAL
-#else
-#define B_VALUE 0d0
-#endif
-    real*8, parameter :: B = B_VALUE
-!------------------------------------------------------
+!------------------------------------------------------    
+    character(len=32) :: arg
     character(len=80) top_file,triv_file,nnkp,line,v_file,d_file,data_file
     character(len=5) suffix
     integer*4 i, j, k, l, nr_top, nr_triv, ie, lwork, info, ik, count, ir, ir3, ir12, nr12, r1, r2, r3, sign, il, i1, j1, i2, j2, i3, j3,is
     integer*4 IPARAM(11), IPNTR(14), IDO, LDV, LDZ, xindex, yindex, rvec(3), index, interp_size, jloc, owner
     integer*8 LWORKL, N, ishift
-    integer*4 ierr, comm
+    integer*4 comm, ierr, num_args
     integer*4 npmin, npmax, iter
     real*8 avec(3,3), bvec(3,3), pi2, x1, x2, y1, y2, a_spec, factor, de, dos, epoints(eres+1), mem
     real*8, allocatable :: rwork(:), real_d(:)
@@ -43,6 +38,30 @@ Program Projected_band_structure
     integer, dimension(8) :: time_start
     integer, dimension(8) :: time_end
 
+!------------------------------------------------------
+    call MPI_INIT(ierr)
+    comm = MPI_COMM_WORLD
+    call MPI_COMM_RANK(comm, myid, ierr)
+    call MPI_COMM_SIZE(comm, nprocs, ierr)
+
+    B = 0.0d0
+
+    if (myid == 0) then
+        num_args = command_argument_count()
+        if (num_args > 0) then
+            call get_command_argument(1, arg)
+            read(arg, *, iostat=ierr) B
+            if (ierr /= 0) then
+                print *, "Error: Invalid B value. Using default B = 0.0"
+                B = 0.0d0
+            endif
+        endif
+    endif
+
+    ! Broadcast B value to all processes
+    call MPI_BCAST(B, 1, MPI_DOUBLE_PRECISION, 0, comm, ierr)
+
+!------------------------------------------------------
     call date_and_time(VALUES=time_start)
 
     pi2 = 4.0d0 * atan(1.0d0) * 2.0d0
@@ -60,9 +79,8 @@ Program Projected_band_structure
     read(98, *) bvec
     open(99, file=trim(adjustl(top_file)))
     open(97, file=trim(adjustl(triv_file)))
-    ! print*, nxblocks, nyblocks, nzblocks, NEV, NCV
 
-    ! Determine the suffix based on the value of a
+!---- Determine the suffix (and filename) based on the value of a
     if (a == 1.0d0) then
         if (B .ne. 0d0) then
             suffix = "TOP_B"
@@ -156,15 +174,8 @@ Program Projected_band_structure
 
     deallocate(top_Hr_temp, triv_Hr_temp, top_Hr, triv_Hr, rvec_top, ndeg_top, ndeg_triv)
 
-!--- MPI nloc arrays
-    call MPI_INIT(ierr)
-    comm = MPI_COMM_WORLD
-    call MPI_COMM_RANK(comm, myid, ierr)
-    call MPI_COMM_SIZE(comm, nprocs, ierr)
-
-    if(myid.eq.0) then
-        print*, 'B:', B
-    endif
+    
+    print*, 'myid:', myid, 'B:', B
 
 !----Energy points
     de = (emax-emin)/eres
@@ -201,6 +212,7 @@ Program Projected_band_structure
                                 ' item', N3, ' data follows'
         endif
 
+!--- MPI nloc arrays
         do i=1,nprocs
             nloc = (N3)/nprocs
             if (mod(N3,nprocs).ne.0) nloc = nloc +1

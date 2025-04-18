@@ -3,11 +3,9 @@
 #$ -cwd
 #$ -pe mpi 168
 #$ -j y
-#$ -o logs/cubeB005_$JOB_ID.log
+#$ -o logs/cubeB000_$JOB_ID.log
 
 module load mpi/gcc/openmpi/4.1.6-ucx-gcc-14.1.0
 
-# Recompile with B=0.05
-make cube-B0.00
-
-mpirun -np 168 ./bin/cube_shift
+# Run with B=0.00
+mpirun -np 168 ./bin/cube_shift 0.00

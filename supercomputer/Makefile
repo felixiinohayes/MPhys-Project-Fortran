@@ -17,8 +17,5 @@ ${BIN}/${main1}: ${SRC}/${main1}.f90
 ${BIN}/${main2}: ${SRC}/${main2}.f90
 	${FC} ${FFLAGS} -o $@ $< ${LIB}
 
-cube-B%: ${SRC}/${main1}.f90
-	${FC} ${FFLAGS} -DBVAL=$* -o ${BIN}/${main1} $< ${LIB}
-
 clean:
 	rm -rf *.mod *.o ${BIN}/* logs/*
